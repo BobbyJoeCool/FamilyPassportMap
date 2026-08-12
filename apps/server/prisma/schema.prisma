@@ -1,0 +1,36 @@
+// FamilyPassportMap database schema.
+// Whenever a model, field, relation, or constraint changes here, update
+// Documentation/diagrams/ERD.mmd in the same change — see CLAUDE.md's Diagram Sync Requirements.
+//
+// The datasource URL is NOT set here — Prisma 7 reads it from prisma.config.ts
+// (which loads DATABASE_URL from .env). Connecting also requires an explicit driver
+// adapter (@prisma/adapter-better-sqlite3) when instantiating PrismaClient — Prisma 7
+// removed the old "just works" bundled query engine. See prisma.config.ts and
+// Documentation/Phase-1-Data-Layer-People.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Person {
+  id                 String         @id @default(cuid())
+  name               String
+  colorHex           String
+  profilePicturePath String?
+  createdAt          DateTime       @default(now())
+  visitedStates      VisitedState[]
+}
+
+model VisitedState {
+  id        String   @id @default(cuid())
+  personId  String
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  stateCode String // 2-letter USPS code, e.g. "CA"
+  visitedAt DateTime @default(now())
+
+  @@unique([personId, stateCode])
+}

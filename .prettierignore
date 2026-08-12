@@ -1,0 +1,8 @@
+node_modules
+dist
+build
+generated
+DevNotes
+apps/server/data
+apps/server/prisma/migrations
+package-lock.json

@@ -1,0 +1,26 @@
+%% FamilyPassportMap — Master Entity-Relationship Diagram
+%% This is the single source of truth for the database schema. It must always match
+%% apps/server/prisma/schema.prisma exactly — see CLAUDE.md's "Diagram Sync Requirements".
+%% Implemented as of Phase 1 (migration 20260812220505_add_person_and_visited_state).
+
+erDiagram
+    PERSON ||--o{ VISITED_STATE : "visits"
+
+    PERSON {
+        string id PK "cuid"
+        string name
+        string colorHex "validated hex color"
+        string profilePicturePath "nullable, DATA_DIR/uploads/..."
+        datetime createdAt
+    }
+
+    VISITED_STATE {
+        string id PK "cuid"
+        string personId FK "-> Person.id, onDelete Cascade"
+        string stateCode "2-letter USPS code, e.g. CA"
+        datetime visitedAt
+    }
+
+    %% Unique constraint: VISITED_STATE (personId, stateCode) — a person can only
+    %% have one VisitedState row per state.
+    %% Deleting a Person cascade-deletes their VisitedState rows.
