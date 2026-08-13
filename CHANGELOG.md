@@ -6,7 +6,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
-Nothing in progress right now — see [`PHASES.md`](PHASES.md) for what's next (Phase 2: Interactive Map).
+Nothing in progress right now — see [`PHASES.md`](PHASES.md) for what's next (Phase 3: Compare View).
+
+## [0.2.0] — 2026-08-13 — Interactive Map (Single-Person View)
+
+The core interaction of the whole app: pick a person, click states, watch them fill in.
+
+- API: `GET /api/people/:id/visits`, `PUT`/`DELETE /api/people/:id/visits/:stateCode` — idempotent, validated against the real 50-state list
+- Shared canonical US states list + FIPS↔USPS mapping in `packages/shared`
+- Web UI: Map page — person selector, click-to-toggle US map (`react-simple-maps`), colored per-person, persists immediately with optimistic UI and failure reconciliation
+
+Full scope and acceptance criteria: [`Documentation/Phase-2-Interactive-Map.md`](Documentation/Phase-2-Interactive-Map.md)
 
 ## [0.1.0] — 2026-08-12 — Data Layer & People Management
 

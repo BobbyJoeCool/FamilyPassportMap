@@ -8,7 +8,7 @@ Each phase has a matching self-contained design spec in [`Documentation/`](Docum
 |---|---|---|---|---|
 | 0 | — (pre-release) | Environment & Tech Stack Setup | [Documentation/Phase-0-Environment-Setup.md](Documentation/Phase-0-Environment-Setup.md) | **Complete** |
 | 1 | v0.1.0 | Data Layer & People Management | [Documentation/Phase-1-Data-Layer-People.md](Documentation/Phase-1-Data-Layer-People.md) | **Complete** |
-| 2 | v0.2.0 | Interactive Map (Single-Person View) | [Documentation/Phase-2-Interactive-Map.md](Documentation/Phase-2-Interactive-Map.md) | Not started |
+| 2 | v0.2.0 | Interactive Map (Single-Person View) | [Documentation/Phase-2-Interactive-Map.md](Documentation/Phase-2-Interactive-Map.md) | **Complete** |
 | 3 | v0.3.0 | Compare View (Side-by-Side) | [Documentation/Phase-3-Compare-View.md](Documentation/Phase-3-Compare-View.md) | Not started |
 | 4 | v0.4.0 | List View | [Documentation/Phase-4-List-View.md](Documentation/Phase-4-List-View.md) | Not started |
 | 5 | v0.5.0 | Responsive Design & PWA Packaging | [Documentation/Phase-5-Responsive-PWA.md](Documentation/Phase-5-Responsive-PWA.md) | Not started |

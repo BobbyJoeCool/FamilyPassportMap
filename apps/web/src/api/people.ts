@@ -1,15 +1,5 @@
 import type { CreatePersonInput, Person, UpdatePersonInput } from "@familypassportmap/shared";
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    throw new Error(body?.error ?? `Request failed with status ${response.status}`);
-  }
-  if (response.status === 204) {
-    return undefined as T;
-  }
-  return response.json() as Promise<T>;
-}
+import { handleResponse } from "./http";
 
 export function listPeople(): Promise<Person[]> {
   return fetch("/api/people").then((res) => handleResponse<Person[]>(res));

@@ -1,14 +1,21 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { PeoplePage } from "./pages/PeoplePage";
+import { MapPage } from "./pages/MapPage";
 
-// Map/Compare/List routes land in Phases 2-4; navigation between them gets a real
-// pattern in Phase 5. For now People is the only page, so "/" just redirects there.
+// A real nav pattern (responsive, tabs vs. drawer, etc.) is Phase 5's job. This is just
+// enough to reach both pages while there are only two of them.
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/people" replace />} />
-      <Route path="/people" element={<PeoplePage />} />
-    </Routes>
+    <div>
+      <nav>
+        <Link to="/people">People</Link> | <Link to="/map">Map</Link>
+      </nav>
+      <Routes>
+        <Route path="/" element={<Navigate to="/people" replace />} />
+        <Route path="/people" element={<PeoplePage />} />
+        <Route path="/map" element={<MapPage />} />
+      </Routes>
+    </div>
   );
 }
 
