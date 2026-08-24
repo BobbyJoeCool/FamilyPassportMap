@@ -66,6 +66,8 @@ Document these steps clearly for the user, since none of this can be done from w
 
 ## Decisions to carry forward to Phase 7
 
-- **Production `DATA_DIR` path** and the actual Azure resource name/region/resource group — record the real values here once provisioned, for anyone doing ops work later.
-- **Deploy trigger is push-to-`main`** — if a branching strategy is introduced later, it needs to account for this being the deploy trigger.
-- **Live URL** — record it here once known, useful for Phase 7's end-to-end manual testing pass.
+- **Production `DATA_DIR` path**: `/home/data` (set via Azure App Service application settings). The SQLite DB and `uploads/` folder live here. This persists across restarts and redeploys.
+- **Deploy trigger is push-to-`main`** via `.github/workflows/azure-deploy.yml` — uses `azure/webapps-deploy@v3` with publish profile stored as `AZURE_WEBAPP_PUBLISH_PROFILE` secret and app name as `AZURE_WEBAPP_NAME` variable.
+- **Production serving**: Express serves the Vite-built frontend (`apps/web/dist`) as static files for non-API routes when `NODE_ENV=production`. Root `npm start` runs `NODE_ENV=production node apps/server/dist/index.js`.
+- **Manual setup guide**: `Documentation/AZURE-SETUP.md` documents the one-time Azure provisioning steps (App Service creation, env vars, publish profile, startup command).
+- **Live URL**: `https://<app-name>.azurewebsites.net` — record the actual app name here once provisioned by the user.

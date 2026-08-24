@@ -22,8 +22,6 @@ export function MapPage() {
   }, []);
 
   useEffect(() => {
-    // No selection means either "still loading people" or "no people at all" — in both
-    // cases the map isn't rendered below, so there's nothing to fetch or reset here.
     if (!selectedId) return;
     getVisitedStates(selectedId)
       .then(setVisitedStateCodes)
@@ -37,7 +35,6 @@ export function MapPage() {
     setError(null);
     const wasVisited = visitedStateCodes.includes(stateCode);
 
-    // Optimistic update, reconciled by refetching if the request fails.
     setVisitedStateCodes((prev) =>
       wasVisited ? prev.filter((code) => code !== stateCode) : [...prev, stateCode],
     );
@@ -55,35 +52,48 @@ export function MapPage() {
   }
 
   if (loading) {
-    return <p>Loading…</p>;
+    return <p className="text-[var(--color-text-muted)]">Loading…</p>;
   }
 
   if (people.length === 0) {
-    return <p>No one added yet — add a person on the People page first.</p>;
+    return <p className="text-[var(--color-text-muted)]">No one added yet — add a person on the People page first.</p>;
   }
 
   return (
     <div>
-      <h1>Map</h1>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+      <h1 className="text-2xl md:text-3xl font-bold mb-4">Map</h1>
 
-      <label>
-        Person
-        <select value={selectedId ?? ""} onChange={(e) => setSelectedId(e.target.value)}>
-          {people.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      {error && (
+        <div className="mb-4 px-4 py-3 rounded-lg bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="mb-4">
+        <label className="text-sm font-medium">
+          Person
+          <select
+            value={selectedId ?? ""}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="ml-2 px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-base"
+          >
+            {people.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
       {selectedPerson && (
-        <UsMap
-          visitedStateCodes={visitedStateCodes}
-          color={selectedPerson.colorHex}
-          onToggleState={handleToggleState}
-        />
+        <div className="w-full max-w-4xl mx-auto">
+          <UsMap
+            visitedStateCodes={visitedStateCodes}
+            color={selectedPerson.colorHex}
+            onToggleState={handleToggleState}
+          />
+        </div>
       )}
     </div>
   );

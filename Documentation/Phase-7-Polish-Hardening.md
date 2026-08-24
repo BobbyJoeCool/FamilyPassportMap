@@ -58,5 +58,7 @@ Close the gap between "works" and "solid": validation, error states, empty state
 
 ## Decisions to carry forward to v1.0.0
 
-- **Any validation rules/limits finalized here** (exact photo size/type limits, required vs. optional fields) become the permanent contract for anyone touching those forms after v1.0.0 ships.
+- **Validation rules finalized**: Name required (non-empty after trim), colorHex must match `/^#[0-9A-Fa-f]{6}$/`, photo types JPEG/PNG/WebP only, 5 MB max. These are the permanent contract.
+- **Test framework**: Vitest + Supertest for server API tests. Tests run against an isolated temporary SQLite database (migration applied via `prisma migrate deploy`). Run with `npm test`.
+- **Express app refactored**: App setup lives in `apps/server/src/app.ts`; `index.ts` just starts the listener. This split is load-bearing for tests.
 - **v1.0.0 itself is not a new design phase** — it's a stabilization/regression pass confirming Phase 7's acceptance criteria hold up end-to-end, followed by a final sync of `README.md`, `PHASES.md`, and `CHANGELOG.md` to match what actually shipped, and the version bump to `1.0.0`.

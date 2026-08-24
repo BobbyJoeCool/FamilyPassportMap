@@ -49,6 +49,8 @@ Make the app genuinely comfortable to use on phone, tablet, and desktop screens,
 
 ## Decisions to carry forward to Phase 6
 
-- **Navigation pattern chosen for small screens** (record the actual pattern implemented, e.g. "bottom tab bar on <768px, top nav above that") — any page added after v1.0.0 should follow the same pattern rather than introducing a second navigation style.
-- **Styling system is Tailwind CSS** — Phase 6 and 7 (and anything post-v1) should extend styling via Tailwind utility classes rather than introducing a second styling approach (CSS modules, styled-components, etc.).
-- **Compare page's narrow-screen behavior** (stacked vs. scrollable, whichever was chosen) — relevant if Compare view is ever extended (e.g. a future blended view).
+- **Navigation pattern**: bottom tab bar with icons on screens < 768px (`md:` breakpoint), horizontal top nav bar with app title on desktop. Implemented in `App.tsx` using Tailwind responsive classes (`hidden md:flex` / `md:hidden`). Any page added post-v1 should add its entry to the `NAV_ITEMS` array rather than introducing a second nav pattern.
+- **Styling system is Tailwind CSS v4** — installed via `@tailwindcss/vite` plugin. All pages use Tailwind utility classes with CSS custom properties for theme colors (defined in `index.css`). Dark mode via `prefers-color-scheme`. Phase 6, 7, and post-v1 work should extend styling via Tailwind utility classes rather than introducing a second approach.
+- **Compare page on narrow screens**: maps stack vertically (single-column grid at mobile, 2-column at `md:` breakpoint) — no horizontal scroll.
+- **PWA packaging**: `vite-plugin-pwa` with `registerType: "autoUpdate"`, workbox `generateSW` strategy. Manifest: `display: standalone`, theme/bg `#16171d`. Icons: 192px and 512px PNGs generated from `favicon.svg` (map pin on indigo). Service worker caches the app shell; API routes (`/api/*`) are excluded from the navigation fallback.
+- **Default route changed**: `/` now redirects to `/map` (was `/people`) since the map is the app's primary interaction.

@@ -1,5 +1,14 @@
 import { handleResponse } from "./http";
 
+export interface PersonVisits {
+  personId: string;
+  stateCodes: string[];
+}
+
+export function getAllVisits(): Promise<PersonVisits[]> {
+  return fetch("/api/visits").then((res) => handleResponse<PersonVisits[]>(res));
+}
+
 export function getVisitedStates(personId: string): Promise<string[]> {
   return fetch(`/api/people/${personId}/visits`).then((res) => handleResponse<string[]>(res));
 }

@@ -6,7 +6,66 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
-Nothing in progress right now — see [`PHASES.md`](PHASES.md) for what's next (Phase 3: Compare View).
+Nothing in progress — v1.0.0 shipped. See [`PHASES.md`](PHASES.md) for future scope (countries/world map, auth, etc.).
+
+## [1.0.0] — 2026-08-24 — Official Release
+
+Stabilization pass over Phase 7. No new features — confirmed all acceptance criteria hold end-to-end, synced all documentation to match what actually shipped, bumped to v1.0.0.
+
+## [0.7.0] — 2026-08-24 — Polish, Validation & Hardening
+
+The last build phase before v1.0.0 — hardens everything from Phases 1–6 without adding new features.
+
+- **Client-side validation**: Person form validates name (required), color (must be chosen), and photo (type + size) inline before submit, with red borders and specific error messages
+- **Delete confirmation**: Deleting a person now shows an inline confirmation with cascade-delete warning ("Their visited-state history will also be removed") before executing
+- **Empty states**: List page now shows "No one added yet" prompt when no people exist (Map and Compare already had this)
+- **Loading & error states**: All four pages audited — every API call has visible loading and error feedback
+- **API test suite**: 23 automated tests (Vitest + Supertest) covering people CRUD and visits CRUD, including validation failures, 404s, cascade delete, idempotency, and state-code normalization
+- **Refactored**: Express app extracted into `apps/server/src/app.ts` for test importability; `index.ts` is now just the listener
+
+Full scope and acceptance criteria: [`Documentation/Phase-7-Polish-Hardening.md`](Documentation/Phase-7-Polish-Hardening.md)
+
+## [0.6.0] — 2026-08-24 — Azure Deployment Pipeline
+
+Everything needed to deploy the app to Azure App Service's free tier.
+
+- Express serves the Vite-built frontend in production (`NODE_ENV=production`), so one App Service handles both API and web
+- GitHub Actions workflow (`.github/workflows/azure-deploy.yml`): build + deploy to Azure on every push to `main`
+- Root `npm start` script for Azure startup
+- Manual setup guide: [`Documentation/AZURE-SETUP.md`](Documentation/AZURE-SETUP.md) — App Service creation, `DATA_DIR` env var, publish profile secret
+
+Full scope and acceptance criteria: [`Documentation/Phase-6-Azure-Deployment.md`](Documentation/Phase-6-Azure-Deployment.md)
+
+## [0.5.0] — 2026-08-24 — Responsive Design & PWA Packaging
+
+The app now looks and works well on phone, tablet, and desktop, and is installable as a PWA.
+
+- Tailwind CSS v4 added via `@tailwindcss/vite` — all pages restyled with responsive utility classes and CSS custom property theming (light + dark mode)
+- Responsive navigation: bottom tab bar with icons on mobile, horizontal top nav on desktop
+- Compare page stacks maps vertically on mobile, side by side on desktop
+- List page: single column on mobile, 2-column on tablet, 3-column on desktop
+- PWA: `vite-plugin-pwa` with web app manifest, 192/512px icons, service worker for offline shell caching
+- Default route changed from `/people` to `/map`
+
+Full scope and acceptance criteria: [`Documentation/Phase-5-Responsive-PWA.md`](Documentation/Phase-5-Responsive-PWA.md)
+
+## [0.4.0] — 2026-08-23 — List View
+
+All 50 states in one scannable list, with avatar icons showing who's visited each one.
+
+- Web UI: List page — alphabetical table of all 50 US states, each row showing `PersonAvatar` icons for every person who has visited that state (photo if uploaded, colored-circle-with-initials fallback otherwise)
+- No new backend endpoints — reuses `GET /api/visits` (Phase 3) and `GET /api/people` (Phase 1)
+
+Full scope and acceptance criteria: [`Documentation/Phase-4-List-View.md`](Documentation/Phase-4-List-View.md)
+
+## [0.3.0] — 2026-08-23 — Compare View (Side-by-Side)
+
+Select multiple people and see their maps rendered next to each other for easy visual comparison.
+
+- API: `GET /api/visits` — bulk endpoint returning all visited states grouped by person (`{ personId, stateCodes[] }[]`), used by Compare (and later List) views to avoid per-person fetches
+- Web UI: Compare page — multi-select checkboxes for people, side-by-side read-only `UsMap` instances colored per-person, deselect to remove a map
+
+Full scope and acceptance criteria: [`Documentation/Phase-3-Compare-View.md`](Documentation/Phase-3-Compare-View.md)
 
 ## [0.2.0] — 2026-08-13 — Interactive Map (Single-Person View)
 

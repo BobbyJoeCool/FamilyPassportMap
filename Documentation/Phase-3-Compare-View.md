@@ -49,5 +49,6 @@ Add `GET /api/visits` returning every person's visited states in a single respon
 
 ## Decisions to carry forward to Phase 4
 
-- **`GET /api/visits` bulk endpoint shape** — record its actual response shape here once implemented. Phase 4's List view reuses this same endpoint rather than defining a new bulk-fetch API.
-- **`UsMap` now supports a read-only mode** — any future view that displays but doesn't edit visited states (including List view's per-state icons, if it ever needs map context) should use this same flag rather than duplicating logic.
+- **`GET /api/visits` bulk endpoint shape** — returns `{ personId: string, stateCodes: string[] }[]`, one entry per person who has at least one visited state (people with zero visits are omitted from the array). Defined in `bulkVisitsRouter` in `apps/server/src/routes/visits.ts`, mounted at `/api/visits` in `apps/server/src/index.ts`. Phase 4's List view reuses this same endpoint rather than defining a new bulk-fetch API.
+- **`UsMap` already supported read-only mode since Phase 2** — omitting `onToggleState` makes the map non-interactive (default cursor, no hover opacity change). Phase 3 uses this as-is; any future view that displays but doesn't edit visited states should use the same pattern rather than duplicating logic.
+- **Frontend API client** — `getAllVisits()` in `apps/web/src/api/visits.ts` wraps the bulk endpoint and returns `PersonVisits[]` (the `PersonVisits` interface is exported from the same file).

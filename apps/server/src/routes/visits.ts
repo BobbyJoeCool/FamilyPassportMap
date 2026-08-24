@@ -3,7 +3,32 @@ import { Prisma } from "@prisma/client";
 import { US_STATE_CODES } from "@familypassportmap/shared";
 import { prisma } from "../db.js";
 
-// Mounted at /api/people/:id/visits in index.ts, so req.params.id is the personId.
+// --- Bulk visits router: mounted at /api/visits in index.ts ---
+
+export const bulkVisitsRouter = Router();
+
+bulkVisitsRouter.get("/", async (_req, res) => {
+  const rows = await prisma.visitedState.findMany({
+    select: { personId: true, stateCode: true },
+    orderBy: { personId: "asc" },
+  });
+
+  const grouped = new Map<string, string[]>();
+  for (const row of rows) {
+    let codes = grouped.get(row.personId);
+    if (!codes) {
+      codes = [];
+      grouped.set(row.personId, codes);
+    }
+    codes.push(row.stateCode);
+  }
+
+  const result = Array.from(grouped, ([personId, stateCodes]) => ({ personId, stateCodes }));
+  res.json(result);
+});
+
+// --- Per-person visits router: mounted at /api/people/:id/visits in index.ts ---
+
 export const visitsRouter = Router({ mergeParams: true });
 
 async function personExists(id: string): Promise<boolean> {

@@ -42,4 +42,4 @@ A "list mode" view: all 50 states listed, each showing the profile-picture icon 
 
 ## Decisions to carry forward to Phase 5
 
-- **Fallback-avatar approach** for people without an uploaded photo (record the actual approach chosen, e.g. "colored circle with initials, background = `colorHex`") — this same fallback should be reused anywhere a person's icon appears in the app, including any future additions, so it only needs to be built once.
+- **Fallback-avatar approach** — `PersonAvatar` component (`apps/web/src/components/PersonAvatar.tsx`), built in Phase 1 and reused here: if the person has a `profilePicturePath`, renders a circular `<img>`; otherwise renders a colored circle (`backgroundColor: colorHex`) with the person's initials in white. Accepts a `size` prop (default 40px). This component is already used on the People page and List page — any future place that shows a person's icon should reuse it rather than building a new avatar.
