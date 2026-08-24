@@ -15,12 +15,14 @@ Each phase has a matching self-contained design spec in [`Documentation/`](Docum
 | 6 | v0.6.0 | Azure Deployment Pipeline | [Documentation/Phase-6-Azure-Deployment.md](Documentation/Phase-6-Azure-Deployment.md) | **Complete** |
 | 7 | v0.7.0 | Polish, Validation & Hardening | [Documentation/Phase-7-Polish-Hardening.md](Documentation/Phase-7-Polish-Hardening.md) | **Complete** |
 | — | **v1.0.0** | **Official Release** | (no separate spec doc — a stabilization pass over Phase 7's output) | **Complete** |
+| — | v1.1.0 | Visited-State Counter | (no spec doc — small, self-contained addition, by explicit agreement with the user) | **Built, pending verification** |
 
 ## Versioning convention
 
 - **Phase 0** is environment/tooling setup only — no user-facing behavior, so it doesn't get its own `0.x.0` tag.
 - **Phases 1–7** each ship as `0.<phase>.0` when their acceptance criteria are met.
 - **v1.0.0** is not a new phase — it's the point where Phase 7's output has been walked through end-to-end, every spec doc matches what was actually built, and nothing new is being added. No new features get designed under the `1.0.0` label; a `1.1.0`+ would start a new round of phase docs for post-v1 scope (countries/world map, auth, blended compare view, etc.).
+- Not every post-v1.0 addition needs a full Phase-N spec doc — a small, self-contained feature (like the v1.1.0 state counter) can skip straight to a Version/Name/Status row here if the user agrees. Larger scope (countries/world map, auth, blended compare) should still get a proper spec doc in `Documentation/` before it's built.
 
 ## Explicitly out of scope for v1.0.0
 

@@ -3,7 +3,12 @@ import type { Person } from "@familypassportmap/shared";
 import { listPeople } from "../api/people";
 import { getAllVisits, type PersonVisits } from "../api/visits";
 import { UsMap } from "../components/UsMap";
+import { StateCounter } from "../components/StateCounter";
 
+/**
+ * The Compare page: pick two or more people and see their visited-state maps rendered
+ * side by side.
+ */
 export function ComparePage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [visits, setVisits] = useState<PersonVisits[]>([]);
@@ -21,8 +26,13 @@ export function ComparePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  /**
+   * Adds or removes a person from the set of people currently being compared.
+   * @param id - the id of the person whose checkbox was toggled.
+   */
   function togglePerson(id: string) {
     setSelectedIds((prev) => {
+      // Copy rather than mutate the previous Set, so React sees a new reference and re-renders.
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -33,12 +43,19 @@ export function ComparePage() {
     });
   }
 
+  /**
+   * Looks up a person's visited state codes.
+   * @param personId - the person's id.
+   * @returns their visited state codes, or an empty array if they have none on record.
+   */
   function visitsForPerson(personId: string): string[] {
     return visits.find((v) => v.personId === personId)?.stateCodes ?? [];
   }
 
+  // Still waiting on the initial fetch.
   if (loading) return <p className="text-[var(--color-text-muted)]">Loading…</p>;
 
+  // Nothing to compare without at least one person.
   if (people.length === 0) {
     return <p className="text-[var(--color-text-muted)]">No one added yet — add a person on the People page first.</p>;
   }
@@ -81,6 +98,7 @@ export function ComparePage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* One map per selected person, each rendered in that person's own color. */}
         {selectedPeople.map((person) => (
           <div key={person.id}>
             <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
@@ -89,6 +107,7 @@ export function ComparePage() {
                 style={{ backgroundColor: person.colorHex }}
               />
               {person.name}
+              <StateCounter count={visitsForPerson(person.id).length} />
             </h2>
             <UsMap visitedStateCodes={visitsForPerson(person.id)} color={person.colorHex} />
           </div>

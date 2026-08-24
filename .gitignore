@@ -32,6 +32,7 @@ Icon?
 .claude/*.local.json
 CLAUDE.local.md
 .claude/projects/
+.claude/
 
 # ==============================
 # Node / npm

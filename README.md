@@ -6,6 +6,7 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 
 - **Interactive US map** — click a state to mark it as visited.
 - **Family members** — add people (a name, a chosen color, and an optional profile picture) and track each person's visited states independently.
+- **Visited-state counter** — an "n/50 states" badge next to each person on the People, Map, and Compare views.
 - **Compare view** — see two or more family members' maps side by side.
 - **List view** — see all 50 states in a list, with each visited person's profile-picture icon shown next to the states they've been to.
 - **Installable PWA** — works and looks right on phone, tablet, and desktop, and can be installed like a native app.

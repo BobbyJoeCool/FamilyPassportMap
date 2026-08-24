@@ -3,7 +3,12 @@ import type { Person } from "@familypassportmap/shared";
 import { listPeople } from "../api/people";
 import { getVisitedStates, markVisited, unmarkVisited } from "../api/visits";
 import { UsMap } from "../components/UsMap";
+import { StateCounter } from "../components/StateCounter";
 
+/**
+ * The Map page: pick a person, then click states on an interactive US map to mark or
+ * unmark them as visited.
+ */
 export function MapPage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -22,6 +27,7 @@ export function MapPage() {
   }, []);
 
   useEffect(() => {
+    // No one selected yet (e.g. still loading, or no people exist) — nothing to fetch.
     if (!selectedId) return;
     getVisitedStates(selectedId)
       .then(setVisitedStateCodes)
@@ -30,11 +36,17 @@ export function MapPage() {
 
   const selectedPerson = people.find((p) => p.id === selectedId) ?? null;
 
+  /**
+   * Toggles a state's visited status for the currently selected person, updating the
+   * UI immediately and rolling back if the server request fails.
+   * @param stateCode - the USPS code of the clicked state.
+   */
   async function handleToggleState(stateCode: string) {
     if (!selectedId) return;
     setError(null);
     const wasVisited = visitedStateCodes.includes(stateCode);
 
+    // Optimistic update: flip the state locally right away, before the request resolves.
     setVisitedStateCodes((prev) =>
       wasVisited ? prev.filter((code) => code !== stateCode) : [...prev, stateCode],
     );
@@ -46,15 +58,18 @@ export function MapPage() {
         await markVisited(selectedId, stateCode);
       }
     } catch (err) {
+      // The optimistic update was wrong — surface the error and re-fetch the true state.
       setError(err instanceof Error ? err.message : "Failed to update visited state");
       getVisitedStates(selectedId).then(setVisitedStateCodes).catch(() => {});
     }
   }
 
+  // Still waiting on the initial people fetch.
   if (loading) {
     return <p className="text-[var(--color-text-muted)]">Loading…</p>;
   }
 
+  // Nothing to show without at least one person.
   if (people.length === 0) {
     return <p className="text-[var(--color-text-muted)]">No one added yet — add a person on the People page first.</p>;
   }
@@ -69,7 +84,7 @@ export function MapPage() {
         </div>
       )}
 
-      <div className="mb-4">
+      <div className="mb-4 flex items-center gap-3">
         <label className="text-sm font-medium">
           Person
           <select
@@ -84,6 +99,7 @@ export function MapPage() {
             ))}
           </select>
         </label>
+        <StateCounter count={visitedStateCodes.length} />
       </div>
 
       {selectedPerson && (

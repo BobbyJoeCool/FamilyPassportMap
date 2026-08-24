@@ -19,10 +19,16 @@ const storage = multer.diskStorage({
   },
 });
 
+/**
+ * Multer middleware for handling a single profile-photo upload. Rejects any file that
+ * isn't an allowed image type or exceeds the configured size limit, before it's saved
+ * to disk. Used by the `POST /api/people/:id/photo` route.
+ */
 export const uploadPhoto = multer({
   storage,
   limits: { fileSize: MAX_PHOTO_SIZE_BYTES },
   fileFilter: (_req, file, callback) => {
+    // Reject unsupported file types before multer writes anything to disk.
     if (!ALLOWED_PHOTO_MIME_TYPES.includes(file.mimetype as (typeof ALLOWED_PHOTO_MIME_TYPES)[number])) {
       callback(new Error("Photo must be JPEG, PNG, or WebP."));
       return;

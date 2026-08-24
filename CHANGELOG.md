@@ -6,7 +6,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
-Nothing in progress — v1.0.0 shipped. See [`PHASES.md`](PHASES.md) for future scope (countries/world map, auth, etc.).
+- **Visited-state counter**: an "n/50 states" badge (`StateCounter` component) next to each person on the People, Map, and Compare views, backed by the existing visits API — no schema or API changes. See `PHASES.md` (v1.1.0 row).
 
 ## [1.0.0] — 2026-08-24 — Official Release
 

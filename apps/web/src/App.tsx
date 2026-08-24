@@ -11,6 +11,13 @@ const NAV_ITEMS = [
   { to: "/list", label: "List", icon: "📋" },
 ] as const;
 
+/**
+ * A single navigation link, styled as active/inactive based on the current route.
+ * @param to - the route path this link navigates to.
+ * @param label - the link's visible text.
+ * @param icon - the emoji shown before the label.
+ * @param active - whether this link corresponds to the currently active route.
+ */
 function NavLink({ to, label, icon, active }: { to: string; label: string; icon: string; active: boolean }) {
   return (
     <Link
@@ -28,6 +35,9 @@ function NavLink({ to, label, icon, active }: { to: string; label: string; icon:
   );
 }
 
+/**
+ * The app shell: top nav (desktop) / bottom tab bar (mobile) plus the routed page content.
+ */
 function App() {
   const location = useLocation();
 
@@ -36,6 +46,7 @@ function App() {
       {/* Desktop top nav */}
       <nav className="hidden md:flex items-center gap-2 px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
         <span className="font-bold text-lg text-[var(--color-text-heading)] mr-4">🗺️ FamilyPassportMap</span>
+        {/* One NavLink per top-level page, active state driven by the current route. */}
         {NAV_ITEMS.map((item) => (
           <NavLink key={item.to} {...item} active={location.pathname === item.to} />
         ))}
@@ -44,6 +55,7 @@ function App() {
       {/* Page content */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 md:px-6 md:py-8">
         <Routes>
+          {/* Default route: no page owns "/", so redirect straight to Map. */}
           <Route path="/" element={<Navigate to="/map" replace />} />
           <Route path="/people" element={<PeoplePage />} />
           <Route path="/map" element={<MapPage />} />

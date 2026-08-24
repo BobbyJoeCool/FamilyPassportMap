@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
 import type { Person } from "@familypassportmap/shared";
 import { createPerson, deletePerson, listPeople, updatePerson, uploadPersonPhoto } from "../api/people";
+import { getAllVisits, type PersonVisits } from "../api/visits";
 import { PersonAvatar } from "../components/PersonAvatar";
+import { StateCounter } from "../components/StateCounter";
 
 const DEFAULT_COLOR = "#3366cc";
 
+/**
+ * The People page: add, edit, and delete family members, each shown with their avatar,
+ * name, and visited-state count.
+ */
 export function PeoplePage() {
   const [people, setPeople] = useState<Person[]>([]);
+  const [visits, setVisits] = useState<PersonVisits[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,11 +35,14 @@ export function PeoplePage() {
     refresh();
   }, []);
 
+  /** Reloads the people list and their visit counts from the server. */
   async function refresh() {
     setLoading(true);
     setError(null);
     try {
-      setPeople(await listPeople());
+      const [loadedPeople, loadedVisits] = await Promise.all([listPeople(), getAllVisits()]);
+      setPeople(loadedPeople);
+      setVisits(loadedVisits);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load people");
     } finally {
@@ -40,11 +50,28 @@ export function PeoplePage() {
     }
   }
 
+  /**
+   * Looks up how many states a person has visited.
+   * @param personId - the person's id.
+   * @returns the number of states on record for them, or 0 if they have none.
+   */
+  function stateCountFor(personId: string): number {
+    return visits.find((v) => v.personId === personId)?.stateCodes.length ?? 0;
+  }
+
+  /**
+   * Validates the "Add a person" form before submit.
+   * @returns true if the form is valid; otherwise populates `formErrors` and returns false.
+   */
   function validateAddForm(): boolean {
     const errors: Record<string, string> = {};
+    // Name is required.
     if (!newName.trim()) errors.name = "Name is required.";
+    // A color must have been explicitly picked, not just left at the default.
     if (!newColorTouched) errors.color = "Please choose a color.";
+    // Photo is optional, but if provided it must fit the size limit.
     if (newPhoto && newPhoto.size > 5 * 1024 * 1024) errors.photo = "Photo must be under 5 MB.";
+    // ...and be one of the allowed image types.
     if (newPhoto && !["image/jpeg", "image/png", "image/webp"].includes(newPhoto.type)) {
       errors.photo = "Photo must be JPEG, PNG, or WebP.";
     }
@@ -52,6 +79,11 @@ export function PeoplePage() {
     return Object.keys(errors).length === 0;
   }
 
+  /**
+   * Submits the "Add a person" form: creates the person, then uploads their photo if one
+   * was chosen.
+   * @param event - the form submit event.
+   */
   async function handleAdd(event: React.FormEvent) {
     event.preventDefault();
     if (!validateAddForm()) return;
@@ -60,6 +92,7 @@ export function PeoplePage() {
     setError(null);
     try {
       const person = await createPerson({ name: newName.trim(), colorHex: newColor });
+      // Photo upload is a separate request, only made if a photo was actually chosen.
       if (newPhoto) {
         await uploadPersonPhoto(person.id, newPhoto);
       }
@@ -76,12 +109,20 @@ export function PeoplePage() {
     }
   }
 
+  /**
+   * Switches a person's row into edit mode, seeding the edit form with their current values.
+   * @param person - the person to edit.
+   */
   function startEdit(person: Person) {
     setEditingId(person.id);
     setEditName(person.name);
     setEditColor(person.colorHex);
   }
 
+  /**
+   * Saves an in-progress edit for a person.
+   * @param id - the id of the person being edited.
+   */
   async function handleSaveEdit(id: string) {
     if (!editName.trim()) {
       setError("Name cannot be empty.");
@@ -100,6 +141,11 @@ export function PeoplePage() {
     }
   }
 
+  /**
+   * Uploads a replacement photo for a person while editing.
+   * @param id - the id of the person whose photo is being replaced.
+   * @param file - the newly chosen photo file.
+   */
   async function handleEditPhoto(id: string, file: File) {
     setError(null);
     try {
@@ -110,6 +156,10 @@ export function PeoplePage() {
     }
   }
 
+  /**
+   * Deletes a person after their inline delete confirmation is accepted.
+   * @param id - the id of the person to delete.
+   */
   async function handleDelete(id: string) {
     setError(null);
     try {
@@ -191,6 +241,8 @@ export function PeoplePage() {
               className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]"
             >
               <PersonAvatar person={person} />
+              {/* Each row renders one of three mutually exclusive states: editing this
+                  person, confirming their deletion, or the normal read-only view. */}
               {editingId === person.id ? (
                 <div className="flex flex-col sm:flex-row gap-2 flex-1 min-w-0 items-start sm:items-center">
                   <input
@@ -249,7 +301,10 @@ export function PeoplePage() {
                 </div>
               ) : (
                 <>
-                  <span className="font-medium flex-1 min-w-0 truncate">{person.name}</span>
+                  <span className="font-medium flex-1 min-w-0 truncate flex items-center gap-2">
+                    {person.name}
+                    <StateCounter count={stateCountFor(person.id)} />
+                  </span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => startEdit(person)}

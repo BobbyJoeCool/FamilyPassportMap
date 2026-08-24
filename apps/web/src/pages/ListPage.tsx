@@ -5,6 +5,10 @@ import { listPeople } from "../api/people";
 import { getAllVisits, type PersonVisits } from "../api/visits";
 import { PersonAvatar } from "../components/PersonAvatar";
 
+/**
+ * The List page: every one of the 50 states, with each visited person's avatar shown
+ * next to the states they've been to.
+ */
 export function ListPage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [visits, setVisits] = useState<PersonVisits[]>([]);
@@ -21,15 +25,24 @@ export function ListPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  /**
+   * Finds every person who has visited a given state.
+   * @param stateCode - the USPS state code to look up.
+   * @returns the people whose visited-state list includes that state.
+   */
   function visitorsForState(stateCode: string): Person[] {
+    // Reduce each person's full visits record down to just the ids of people who've
+    // visited this particular state, then resolve those ids back to Person objects.
     const visitorIds = visits
       .filter((v) => v.stateCodes.includes(stateCode))
       .map((v) => v.personId);
     return people.filter((p) => visitorIds.includes(p.id));
   }
 
+  // Still waiting on the initial fetch.
   if (loading) return <p className="text-[var(--color-text-muted)]">Loading…</p>;
 
+  // No one to show states for yet.
   if (people.length === 0) {
     return (
       <div>
@@ -50,6 +63,7 @@ export function ListPage() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {/* One row per US state, listing whichever people have visited it. */}
         {US_STATES.map((state) => {
           const visitors = visitorsForState(state.code);
           return (

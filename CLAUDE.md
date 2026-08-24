@@ -5,9 +5,11 @@
 - [Purpose of This File](#purpose-of-this-file)
 - [Bias Toward Asking Questions](#bias-toward-asking-questions)
 - [Permission Rules](#permission-rules)
+- [Code Documentation Standards](#code-documentation-standards)
 - [Note-Taking Requirements](#note-taking-requirements)
 - [Documentation Sync Requirements](#documentation-sync-requirements)
 - [Diagram Sync Requirements](#diagram-sync-requirements)
+- [Deployment and Testing Rules](#deployment-and-testing-rules)
 - [Quick Reference — End of Phase Checklist](#quick-reference--end-of-phase-checklist)
 
 ## Purpose of This File
@@ -50,6 +52,17 @@ When in doubt, ask. Silence in the spec is not permission to improvise — it's 
 - Editing or creating code files (`.ts`, `.tsx`, `.js`, `.jsx`, `schema.prisma`, SQL, etc.) — **unless** the current instruction explicitly asks for something to be implemented or built. If asked to complete a phase, a feature, or a step that involves writing code, that instruction itself is the permission — don't ask again before touching the code it covers.
 
 In short: ask before code changes that weren't explicitly requested. Don't ask for anything else.
+
+## Code Documentation Standards
+
+This project documents code more heavily than is typical — this is a deliberate, standing choice for this repo, not a one-off request. Apply it every time code is written or edited here, on both the server (`apps/server`, TypeScript) and the client (`apps/web`, React/TSX), not just when explicitly asked to "add documentation."
+
+- **Every function** — exported or internal, a route handler, a React component, a hook, a plain helper — gets a JSDoc comment above it: what it does, `@param` for each parameter, `@returns` where it returns something meaningful.
+- **Conditionals** (`if`/`else`/`switch`/ternaries) get a short comment explaining what case is being handled and why, unless the condition is truly self-evident (e.g. a simple loading/error/empty guard clause).
+- **Loops and iteration** (`for`, `while`, `.map`/`.filter`/`.reduce`/`.find` chains doing non-trivial work) get a comment describing what's being iterated and what the result is used for.
+- **Variable definitions do not need their own comments.** Well-named variables (including React state) are self-explanatory — don't add a line describing what a variable holds just because it's a variable. But an individual line that *manipulates* a variable in a way that's confusing or ambiguous out of context (a mutation, a non-obvious reassignment, a side effect buried in an expression) still gets a short comment explaining what's happening and why.
+
+Write the documentation as part of writing the code, not as an afterthought pass at the end.
 
 ## Note-Taking Requirements
 
@@ -96,6 +109,10 @@ Diagrams used in this project (update this list as new ones are added):
 - `Documentation/diagrams/ERD.mmd` — the master ER diagram for the Prisma schema (`Person`, `VisitedState`, and any models added in later phases). Until Phase 1 actually implements the schema in code, it documents the *planned* schema from `Documentation/Phase-1-Data-Layer-People.md`, clearly marked as such.
 
 Do these updates as part of the same work that caused the change, not as a deferred cleanup step. Note each diagram update per the Note-Taking Requirements above.
+
+## Deployment and Testing Rules
+
+**All testing must be done locally.** Never start the application, run dev servers, or perform live testing against the Azure deployment. The deployed instance on Azure is production-only — do not attempt to connect to it, run it, or verify behavior against it. Use local dev servers (`npm run dev`, etc.) for all verification and testing.
 
 ## Quick Reference — End of Phase Checklist
 
