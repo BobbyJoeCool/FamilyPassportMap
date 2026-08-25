@@ -20,8 +20,35 @@ jobs:
 
       - run: npm run build
 
+      # Swap build script to a no-op so Oryx only runs `npm install` on Azure
+      # (compiling native modules like better-sqlite3 for the App Service
+      # environment) without attempting the TS/Vite build — the zip already
+      # ships pre-built dist/ directories.
+      - name: Create deployment zip
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.scripts.build = 'echo Build skipped - pre-built artifacts in zip';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          zip -r deploy.zip . \
+            -x "*/node_modules/*" \
+            -x "node_modules/*" \
+            -x ".git/*" \
+            -x "DevNotes/*" \
+            -x ".DS_Store" \
+            -x ".claude/*" \
+            -x ".vscode/*" \
+            -x "*.env" \
+            -x "apps/server/data/*" \
+            -x "apps/server/prisma/*.db*" \
+            > /dev/null
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: deploy.zip
+          startup-command: bash startup.sh
