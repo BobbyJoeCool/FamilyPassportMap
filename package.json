@@ -1,9 +1,9 @@
 {
   "name": "familypassportmap",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
-  "description": "Track which US states you and your family have visited.",
+  "description": "Track which US states and countries you and your family have visited.",
   "engines": {
     "node": ">=20"
   },

@@ -6,6 +6,55 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-09-16 — World Release
+
+Stabilization pass over Phase 11, completing the World round (Phases 8–11). No new features. Walked every US and World page end to end locally (desktop and phone widths, light and dark), confirmed each phase's acceptance criteria still hold, and synced all documentation to match what shipped.
+
+- **Countries on a world map**, alongside the existing US states: a 🌍 World section with Map (continent zoom, click to mark), Compare (side by side, shared continent view), and List (grouped by continent) — covering all 195 UN member and observer states, tracked independently of US states.
+- **Docs**: README intro, feature list, and project-structure links updated for countries (including the `CLAUDE.md` link, which now points into `.claude/`); `PHASES.md` versioning convention covers the World round.
+
+## [1.5.0] — 2026-09-16 — World Polish & Hardening (Phase 11)
+
+- **Every country is now clickable**: 29 micro-states and scattered archipelagos (too small to click as polygons in their continent view, plus Tuvalu, which has no polygon at all) get a dot at their capital when the map is zoomed to their continent. Dots follow the same hover, click, and read-only rules as polygons and fill with the person's color when visited. The seven Lesser Antilles dots fan out into a column with connector lines so they don't overlap.
+- **Code-splitting**: the World pages are lazy-loaded, so the world topology no longer weighs down the US pages (main JS chunk 1,330 kB → 556 kB).
+- **Copy**: the PWA manifest and package descriptions now mention countries.
+
+Full scope and acceptance criteria: [`Documentation/Phase-11-World-Polish-Hardening.md`](Documentation/Phase-11-World-Polish-Hardening.md)
+
+## [1.4.0] — 2026-09-16 — World Compare & World List (Phase 10)
+
+- **World Compare** (`/world/compare`): pick people to see their world maps side by side, read-only, each in their own color with an "n/195 countries" counter. One shared continent selector zooms every card together.
+- **World List** (`/world/list`): all 195 countries in six continent sections (with per-section counts), alphabetical within each, with visitor avatars on each row.
+- **World sub-tabs** now show Map / Compare / List.
+- **People page**: each person shows both "n/50 states" and "n/195 countries" badges. The delete confirmation now mentions that visited countries are removed too.
+
+Full scope and acceptance criteria: [`Documentation/Phase-10-World-Compare-List.md`](Documentation/Phase-10-World-Compare-List.md)
+
+## [1.3.0] — 2026-09-16 — World Map (Phase 9)
+
+The first World UI: a new **World 🌍** section with an interactive world map, zoomable by continent.
+
+- **Navigation**: a 5th top-level nav item, World (`/world` → `/world/map`), highlighted on every `/world/*` route, plus a World-section sub-tab strip (`WorldTabs`).
+- **`WorldMap` component**: `world-atlas` 50m countries on an Equal Earth projection. Seven fixed views: the World overview (view-only) and one per continent. Each continent view uses its own rotated, fitted projection, so Oceania stays contiguous across the antimeridian. Tracked countries show a hover name pill; untracked territories render as inert gray.
+- **`WorldMapPage`**: person selector, "n/195 countries" counter, `ContinentSelector` (World + 6 continents), click-to-toggle with optimistic update and rollback.
+- **Reuse**: `StateCounter` gained `label` and `total` props for the countries variant; new `api/countries.ts` client.
+- **Dependency**: `world-atlas@2.0.2`.
+
+Full scope and acceptance criteria: [`Documentation/Phase-9-World-Map.md`](Documentation/Phase-9-World-Map.md)
+
+## [1.2.0] — 2026-09-16 — World Data Layer & Countries API (Phase 8)
+
+First of four phases adding country tracking on a world map (→ v2.0.0). Backend and shared data only — no UI yet.
+
+- **Schema**: new `VisitedCountry` model (migration `20260916173026_add_visited_country`), a parallel copy of `VisitedState` keyed by ISO 3166-1 alpha-2 code, cascade-deleted with its `Person`. Purely additive; existing data is untouched. Country and state tracking are fully independent.
+- **Shared data**: `packages/shared/src/countries.ts` — 195 countries (193 UN members + Vatican City and Palestine), each with alpha-2 code, ISO numeric code, name, and one of 6 continents; plus `CONTINENTS`, `COUNTRY_CODES`, `ISO_NUMERIC_TO_ALPHA2` (derived), and `countriesByContinent()`. Verified against the `world-atlas` 50m topology.
+- **API**: `GET/PUT/DELETE /api/people/:id/countries[/:countryCode]` and bulk `GET /api/countries`, mirroring the visits endpoints.
+- **Tests**: 19 new tests (42 total), including country/state independence and cascade delete.
+
+Full scope and acceptance criteria: [`Documentation/Phase-8-World-Data-Layer.md`](Documentation/Phase-8-World-Data-Layer.md)
+
+## [1.1.0] — 2026-09-16 — Visited-State Counter
+
 - **Visited-state counter**: an "n/50 states" badge (`StateCounter` component) next to each person on the People, Map, and Compare views, backed by the existing visits API — no schema or API changes. See `PHASES.md` (v1.1.0 row).
 
 ## [1.0.0] — 2026-08-24 — Official Release

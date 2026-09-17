@@ -1,6 +1,7 @@
 import path from "node:path";
 import express from "express";
 import { UPLOADS_DIR } from "./env.js";
+import { bulkCountriesRouter, countriesRouter } from "./routes/countries.js";
 import { peopleRouter } from "./routes/people.js";
 import { bulkVisitsRouter, visitsRouter } from "./routes/visits.js";
 
@@ -21,6 +22,8 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/people", peopleRouter);
 app.use("/api/people/:id/visits", visitsRouter);
 app.use("/api/visits", bulkVisitsRouter);
+app.use("/api/people/:id/countries", countriesRouter);
+app.use("/api/countries", bulkCountriesRouter);
 app.use("/uploads", express.static(UPLOADS_DIR));
 
 // In production, the same Express process also serves the built frontend, so one

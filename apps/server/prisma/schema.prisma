@@ -17,12 +17,13 @@ datasource db {
 }
 
 model Person {
-  id                 String         @id @default(cuid())
+  id                 String           @id @default(cuid())
   name               String
   colorHex           String
   profilePicturePath String?
-  createdAt          DateTime       @default(now())
+  createdAt          DateTime         @default(now())
   visitedStates      VisitedState[]
+  visitedCountries   VisitedCountry[]
 }
 
 model VisitedState {
@@ -33,4 +34,17 @@ model VisitedState {
   visitedAt DateTime @default(now())
 
   @@unique([personId, stateCode])
+}
+
+// Country visits are deliberately a separate, parallel model to VisitedState rather than a
+// shared "visited place" table — country tracking and state tracking are fully independent
+// features that share nothing but Person. See Documentation/Phase-8-World-Data-Layer.md.
+model VisitedCountry {
+  id          String   @id @default(cuid())
+  personId    String
+  person      Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  countryCode String // ISO 3166-1 alpha-2 code, e.g. "FR"
+  visitedAt   DateTime @default(now())
+
+  @@unique([personId, countryCode])
 }

@@ -13,7 +13,7 @@ export default defineConfig({
       manifest: {
         name: "FamilyPassportMap",
         short_name: "PassportMap",
-        description: "Track which US states you and your family have visited.",
+        description: "Track which US states and countries you and your family have visited.",
         theme_color: "#16171d",
         background_color: "#16171d",
         display: "standalone",

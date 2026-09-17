@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import type { Person } from "@familypassportmap/shared";
+import { COUNTRIES } from "@familypassportmap/shared";
 import { createPerson, deletePerson, listPeople, updatePerson, uploadPersonPhoto } from "../api/people";
 import { getAllVisits, type PersonVisits } from "../api/visits";
+import { getAllCountries, type PersonCountries } from "../api/countries";
 import { PersonAvatar } from "../components/PersonAvatar";
 import { StateCounter } from "../components/StateCounter";
 
@@ -9,11 +11,12 @@ const DEFAULT_COLOR = "#3366cc";
 
 /**
  * The People page: add, edit, and delete family members, each shown with their avatar,
- * name, and visited-state count.
+ * name, and visited-state and visited-country counts.
  */
 export function PeoplePage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [visits, setVisits] = useState<PersonVisits[]>([]);
+  const [countries, setCountries] = useState<PersonCountries[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,14 +38,19 @@ export function PeoplePage() {
     refresh();
   }, []);
 
-  /** Reloads the people list and their visit counts from the server. */
+  /** Reloads the people list and their visited-state and visited-country counts from the server. */
   async function refresh() {
     setLoading(true);
     setError(null);
     try {
-      const [loadedPeople, loadedVisits] = await Promise.all([listPeople(), getAllVisits()]);
+      const [loadedPeople, loadedVisits, loadedCountries] = await Promise.all([
+        listPeople(),
+        getAllVisits(),
+        getAllCountries(),
+      ]);
       setPeople(loadedPeople);
       setVisits(loadedVisits);
+      setCountries(loadedCountries);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load people");
     } finally {
@@ -57,6 +65,15 @@ export function PeoplePage() {
    */
   function stateCountFor(personId: string): number {
     return visits.find((v) => v.personId === personId)?.stateCodes.length ?? 0;
+  }
+
+  /**
+   * Looks up how many countries a person has visited.
+   * @param personId - the person's id.
+   * @returns the number of countries on record for them, or 0 if they have none.
+   */
+  function countryCountFor(personId: string): number {
+    return countries.find((c) => c.personId === personId)?.countryCodes.length ?? 0;
   }
 
   /**
@@ -283,7 +300,7 @@ export function PeoplePage() {
                 </div>
               ) : deletingId === person.id ? (
                 <div className="flex flex-col sm:flex-row gap-2 flex-1 min-w-0 items-start sm:items-center">
-                  <span className="text-sm">Delete <strong>{person.name}</strong>? Their visited-state history will also be removed.</span>
+                  <span className="text-sm">Delete <strong>{person.name}</strong>? Their visited states and countries will also be removed.</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleDelete(person.id)}
@@ -301,9 +318,12 @@ export function PeoplePage() {
                 </div>
               ) : (
                 <>
-                  <span className="font-medium flex-1 min-w-0 truncate flex items-center gap-2">
-                    {person.name}
-                    <StateCounter count={stateCountFor(person.id)} />
+                  <span className="font-medium flex-1 min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="truncate max-w-full">{person.name}</span>
+                    <span className="flex flex-wrap gap-1">
+                      <StateCounter count={stateCountFor(person.id)} />
+                      <StateCounter count={countryCountFor(person.id)} total={COUNTRIES.length} label="countries" />
+                    </span>
                   </span>
                   <div className="flex gap-2">
                     <button

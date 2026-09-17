@@ -30,6 +30,7 @@ async function getPrisma() {
 beforeEach(async () => {
   const prisma = await getPrisma();
   await prisma.visitedState.deleteMany();
+  await prisma.visitedCountry.deleteMany();
   await prisma.person.deleteMany();
 });
 
