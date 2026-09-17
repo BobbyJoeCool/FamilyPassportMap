@@ -46,17 +46,18 @@ Run these once from the repo root, after `az login` and `gh auth login`. The ste
 3. Let it deploy to this one web app (Website Contributor, scoped to the app only).
 4. Give the workflow the non-secret IDs as repository variables.
 
+The federated credential's `subject` must match **exactly** what GitHub puts in the token. This repo's tokens use GitHub's immutable-ID format, `repo:<owner>@<owner-id>/<repo>@<repo-id>:ref:refs/heads/main`, not the older `repo:<owner>/<repo>:ref:…`. A mismatch fails the login with `AADSTS700213: No matching federated identity record found`, and the error message shows the subject GitHub actually sent.
+
 The block has no comment lines on purpose: interactive zsh treats `#` literally, and apostrophes in comments break its quoting.
 
 ```bash
 APP=family-passport-map
 RG=family_passport_app_rg
-REPO=BobbyJoeCool/FamilyPassportMap
 
 CLIENT_ID=$(az ad app create --display-name "FamilyPassportMap GitHub Deploy" --query appId -o tsv)
 az ad sp create --id "$CLIENT_ID"
 
-az ad app federated-credential create --id "$CLIENT_ID" --parameters '{"name": "github-main-branch", "issuer": "https://token.actions.githubusercontent.com", "subject": "repo:'"$REPO"':ref:refs/heads/main", "audiences": ["api://AzureADTokenExchange"]}'
+az ad app federated-credential create --id "$CLIENT_ID" --parameters '{"name": "github-main-branch", "issuer": "https://token.actions.githubusercontent.com", "subject": "repo:BobbyJoeCool@225921535/FamilyPassportMap@1331524503:ref:refs/heads/main", "audiences": ["api://AzureADTokenExchange"]}'
 
 az role assignment create --assignee "$CLIENT_ID" --role "Website Contributor" --scope "$(az webapp show -n $APP -g $RG --query id -o tsv)"
 
