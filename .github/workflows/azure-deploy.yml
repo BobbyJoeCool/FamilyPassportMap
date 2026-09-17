@@ -7,8 +7,27 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # OIDC login: GitHub issues a short-lived token that Azure trusts through a federated
+    # credential on the "FamilyPassportMap GitHub Deploy" app registration, so no password or
+    # publish profile is stored anywhere. `id-token: write` lets the job request that token.
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
+      # Fail fast with a clear message instead of an opaque login error when the Azure IDs
+      # haven't been added as repository variables (see Documentation/AZURE-SETUP.md).
+      - name: Check deploy configuration
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          if [ -z "$AZURE_CLIENT_ID" ] || [ -z "$AZURE_TENANT_ID" ] || [ -z "$AZURE_SUBSCRIPTION_ID" ]; then
+            echo "::error::Repository variables AZURE_CLIENT_ID, AZURE_TENANT_ID, and AZURE_SUBSCRIPTION_ID must all be set. See Documentation/AZURE-SETUP.md, step 4."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -45,10 +64,17 @@ jobs:
             -x "apps/server/prisma/*.db*" \
             > /dev/null
 
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # Uses the Azure login above. The startup command (`bash startup.sh`) is already set in
+      # the App Service configuration, so it isn't repeated here.
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          app-name: ${{ vars.AZURE_WEBAPP_NAME || 'family-passport-map' }}
           package: deploy.zip
-          startup-command: bash startup.sh

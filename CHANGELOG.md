@@ -6,6 +6,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
+- **Fixed: Azure deploy workflow failed on every run.** The workflow expected an `AZURE_WEBAPP_PUBLISH_PROFILE` secret that was never added, so `azure/webapps-deploy` had no credentials ("No credentials found").
+  - The workflow now signs in with **OIDC** (`azure/login` + a federated credential), so no password or publish profile is stored and SCM basic auth stays off.
+  - It fails fast with a clear message if the `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID` repository variables are missing.
+  - The app name falls back to `family-passport-map`.
+  - Removed `startup-command`, which the action rejects with publish-profile auth; it's already set in the App Service.
+  - `Documentation/AZURE-SETUP.md` gives the correct startup command (`bash startup.sh`, not `npm start`) and the one-time OIDC setup commands.
+
 ## [2.2.0] — 2026-09-16 — Navigation: People / US / World
 
 - **Top menu is now People | US | World.** The US Map / Compare / List pages are no longer top-level items. US and World each have the same **Map / Compare / List** tab strip underneath (`SectionTabs`, which replaces the World-only `WorldTabs`). The top menu and the phone's bottom bar each show three items.
