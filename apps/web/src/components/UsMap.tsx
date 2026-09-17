@@ -3,6 +3,7 @@ import { geoCentroid } from "d3-geo";
 import { ComposableMap, Geographies, Geography, Marker, Annotation } from "react-simple-maps";
 import { FIPS_TO_USPS, US_STATES } from "@familypassportmap/shared";
 import statesTopoJson from "us-atlas/states-10m.json";
+import { MAP_BORDER } from "./mapStyles";
 
 const UNVISITED_FILL = "#e5e5e5";
 const UNMAPPED_FILL = "#f3f3f3"; // DC/territories — out of v1 scope, shown but not interactive
@@ -128,14 +129,14 @@ export function UsMap({ visitedStateCodes, color, onToggleState }: UsMapProps) {
                     style={{
                       default: {
                         fill: visited ? color : UNVISITED_FILL,
-                        stroke: "#fff",
+                        stroke: MAP_BORDER,
                         strokeWidth: 0.5,
                         outline: "none",
                         cursor: onToggleState ? "pointer" : "default",
                       },
                       hover: {
                         fill: visited ? color : UNVISITED_FILL,
-                        stroke: "#fff",
+                        stroke: MAP_BORDER,
                         strokeWidth: 0.5,
                         outline: "none",
                         opacity: onToggleState ? 0.8 : 1,
@@ -143,7 +144,7 @@ export function UsMap({ visitedStateCodes, color, onToggleState }: UsMapProps) {
                       },
                       pressed: {
                         fill: visited ? color : UNVISITED_FILL,
-                        stroke: "#fff",
+                        stroke: MAP_BORDER,
                         strokeWidth: 0.5,
                         outline: "none",
                       },

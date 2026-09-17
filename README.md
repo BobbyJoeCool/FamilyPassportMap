@@ -9,7 +9,7 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 - **Visited counters** — "n/50 states" and "n/195 countries" badges next to each person (People page, and the matching Map/Compare views).
 - **Compare view** — see two or more family members' maps side by side.
 - **List view** — see all 50 states in a list, with each visited person's profile-picture icon shown next to the states they've been to.
-- **World section** — a separate 🌍 World area for tracking countries (195: the UN member and observer states). Its **World Map** zooms to one continent at a time for marking countries (tiny countries like Vatican City or Tuvalu get a clickable dot), **World Compare** shows people's world maps side by side on a shared continent view, and **World List** groups every country by continent. Country and state tracking are fully independent.
+- **World section** — a separate 🌍 World area for tracking countries (195: the UN member and observer states). Its **World Map** zooms to one continent at a time for marking countries (each country is labeled with its three-letter code, and tiny countries like Vatican City or Tuvalu get a clickable dot), **World Compare** shows people's world maps side by side on a shared continent view, and **World List** groups every country by continent. Country and state tracking are fully independent.
 - **Installable PWA** — works and looks right on phone, tablet, and desktop, and can be installed like a native app.
 
 There is no login/account system — it's built as a single-household tool, not a multi-tenant service.

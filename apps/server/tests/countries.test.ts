@@ -22,6 +22,15 @@ describe("Country reference data", () => {
     expect(new Set(COUNTRIES.map((c) => c.numericCode)).size).toBe(195);
   });
 
+  it("gives every country a unique uppercase ISO alpha-3 code for map labels", () => {
+    // Each code must be exactly three uppercase letters (e.g. "FRA").
+    for (const country of COUNTRIES) {
+      expect(country.alpha3).toMatch(/^[A-Z]{3}$/);
+    }
+    expect(new Set(COUNTRIES.map((c) => c.alpha3)).size).toBe(195);
+    expect(COUNTRIES.find((c) => c.code === "DE")?.alpha3).toBe("DEU");
+  });
+
   it("assigns every country to one of the 6 continents", () => {
     for (const country of COUNTRIES) {
       expect(CONTINENTS).toContain(country.continent);

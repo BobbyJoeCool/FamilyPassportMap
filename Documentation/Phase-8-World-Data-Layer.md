@@ -101,6 +101,7 @@ export const CONTINENTS: Continent[];              // the 6 above, alphabetical
 
 export interface Country {
   code: string;         // ISO 3166-1 alpha-2, e.g. "FR"
+  alpha3: string;       // ISO 3166-1 alpha-3, e.g. "FRA" — added in v2.1.0 for world-map labels
   numericCode: string;  // ISO 3166-1 numeric, zero-padded to 3 chars, e.g. "250"
   name: string;         // common English name
   continent: Continent;

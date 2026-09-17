@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { geoEqualEarth, type GeoProjection } from "d3-geo";
-import type { GeoJSON } from "geojson";
+import { geoCentroid, geoEqualEarth, geoPath, type GeoProjection } from "d3-geo";
+import type { Feature, GeoJSON, Geometry, Polygon } from "geojson";
 import { ComposableMap, Geographies, Geography, type ProjectionFunction } from "react-simple-maps";
 import { COUNTRIES, ISO_NUMERIC_TO_ALPHA2, type Continent } from "@familypassportmap/shared";
 import countriesTopoJson from "world-atlas/countries-50m.json";
+import { MAP_BORDER } from "./mapStyles";
 
 /** Which part of the world the map is framed on: the whole-world overview or one continent. */
 export type WorldView = Continent | "World";
@@ -24,6 +25,15 @@ const MARKER_HIT_RADIUS = 8;
 
 /** Lookup from ISO alpha-2 code to the country's display name. */
 const CODE_TO_NAME: Record<string, string> = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.name]));
+
+/** Lookup from ISO alpha-2 code to the country's ISO alpha-3 code, used as its map label. */
+const CODE_TO_ALPHA3: Record<string, string> = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.alpha3]));
+
+/** Label font size in SVG units: very small in the World overview, slightly larger when zoomed. */
+const WORLD_LABEL_SIZE = 6;
+const CONTINENT_LABEL_SIZE = 9;
+/** Label color on unvisited (light-gray) countries; visited ones use a contrast-aware color. */
+const UNVISITED_LABEL_COLOR = "#374151";
 
 /** Lookup from ISO alpha-2 code to the country's continent. */
 const CODE_TO_CONTINENT: Record<string, Continent> = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.continent]));
@@ -152,6 +162,134 @@ const PROJECTIONS = Object.fromEntries(
   (["World", ...Object.keys(VIEWPORTS)] as WorldView[]).map((view) => [view, buildProjection(view)]),
 ) as Record<WorldView, GeoProjection>;
 
+/** Where to draw one country's code in a given view, and at what size. */
+interface CountryLabel {
+  code: string;
+  x: number;
+  y: number;
+  fontSize: number;
+}
+
+/** Label layouts per view, computed on first use — the geometry never changes between renders. */
+const LABEL_CACHE = new Map<WorldView, CountryLabel[]>();
+
+/**
+ * Returns the label font size for a view.
+ * @param view - the current view.
+ * @returns the font size in SVG units.
+ */
+function labelSize(view: WorldView): number {
+  return view === "World" ? WORLD_LABEL_SIZE : CONTINENT_LABEL_SIZE;
+}
+
+/**
+ * Lays out the code labels for a view. Each label sits at the geographic center of the
+ * country's largest polygon as drawn in that view, so countries with far-flung parts (France
+ * with French Guiana, the US with Alaska) are labeled on their main landmass. The spherical
+ * center is projected rather than taking the on-screen centroid: a polygon cut in two at the
+ * edge of a rotated view (Pakistan in the North America view) would otherwise get a centroid
+ * averaged into the middle of the frame.
+ *
+ * Which countries get a label:
+ * - A code "fits" when the polygon's bounding box is wide and tall enough for three letters at
+ *   the view's font size and the polygon has enough area to hold them (long, thin countries like
+ *   Chile have a wide-enough box but no room).
+ * - In a continent view, every country of that continent is labeled, in the World overview's
+ *   small print when its code doesn't fit.
+ * - Everything else (the World overview, and neighboring continents' countries) is labeled only
+ *   where the code fits and doesn't overlap a label already placed, biggest countries first.
+ * - Micro-states showing a dot in this view are skipped; they're labeled beside their dot.
+ * @param view - the view to lay labels out for.
+ * @param geographies - the topology's country features, as react-simple-maps provides them.
+ * @returns the labels to draw, each with its position and font size.
+ */
+function labelsFor(view: WorldView, geographies: Feature<Geometry>[]): CountryLabel[] {
+  const cached = LABEL_CACHE.get(view);
+  // Already computed for this view — reuse it rather than re-measuring every polygon.
+  if (cached) return cached;
+
+  const path = geoPath(PROJECTIONS[view]);
+  const fontSize = labelSize(view);
+  const textWidth = fontSize * 1.9; // three capital letters run roughly 1.9× the font size wide
+
+  // Find each country's largest polygon (by on-screen area) across all its geometries — some
+  // countries span several geometries (id "036") or are MultiPolygons of many islands.
+  const largest = new Map<string, { area: number; polygon: Polygon }>();
+  for (const geo of geographies) {
+    const code = geo.id ? ISO_NUMERIC_TO_ALPHA2[geo.id as string] : undefined;
+    // Untracked shapes get no label, and micro-states showing a dot are labeled at the dot.
+    if (!code || hasMarkerInView(code, view)) continue;
+
+    const { geometry } = geo;
+    // Break a MultiPolygon into its individual polygons; a plain Polygon is its own only part.
+    const polygons: Polygon[] =
+      geometry.type === "MultiPolygon"
+        ? geometry.coordinates.map((coordinates) => ({ type: "Polygon", coordinates }))
+        : geometry.type === "Polygon"
+          ? [geometry]
+          : [];
+    // Keep whichever polygon covers the most screen area for this country so far.
+    for (const polygon of polygons) {
+      const area = path.area(polygon);
+      if (area > (largest.get(code)?.area ?? -1)) largest.set(code, { area, polygon });
+    }
+  }
+
+  // Measure every candidate: where its label would go, and whether the code fits inside.
+  const candidates: (CountryLabel & { area: number; fits: boolean; required: boolean })[] = [];
+  for (const [code, { area, polygon }] of largest) {
+    const point = PROJECTIONS[view](geoCentroid(polygon));
+    // Skip labels that can't be projected or would sit outside the frame.
+    if (!point) continue;
+    const [x, y] = point;
+    if (!(x >= 0 && x <= MAP_WIDTH && y >= 0 && y <= MAP_HEIGHT)) continue;
+
+    const [[x0, y0], [x1, y1]] = path.bounds(polygon);
+    // Needs a box wide and tall enough for the text, and at least ~1.5× the text's own area.
+    const fits =
+      x1 - x0 >= textWidth + 2 && y1 - y0 >= fontSize + 1 && area >= textWidth * fontSize * 1.5;
+    const required = CODE_TO_CONTINENT[code] === view;
+    // Neither focused on nor roomy enough — no label at all.
+    if (!fits && !required) continue;
+    candidates.push({ code, x, y, fontSize: fits ? fontSize : WORLD_LABEL_SIZE, area, fits, required });
+  }
+
+  // Place required labels first, then the rest from the biggest country down, so a small
+  // country never crowds out a big neighbor's code.
+  candidates.sort((a, b) => Number(b.required) - Number(a.required) || b.area - a.area);
+  const labels: CountryLabel[] = [];
+  // Collision boxes are padded wider than the fit estimate: bold capitals render a little wider
+  // than 1.9× the font size, and codes that merely touch are still hard to read.
+  const boxWidth = (size: number) => size * 2.4;
+  for (const candidate of candidates) {
+    const halfWidth = boxWidth(candidate.fontSize) / 2;
+    const halfHeight = candidate.fontSize / 2;
+    // An optional label that would overlap one already placed is dropped instead of colliding.
+    const collides =
+      !candidate.required &&
+      labels.some(
+        (placed) =>
+          Math.abs(placed.x - candidate.x) < halfWidth + boxWidth(placed.fontSize) / 2 &&
+          Math.abs(placed.y - candidate.y) < halfHeight + placed.fontSize / 2,
+      );
+    if (collides) continue;
+    labels.push({ code: candidate.code, x: candidate.x, y: candidate.y, fontSize: candidate.fontSize });
+  }
+
+  LABEL_CACHE.set(view, labels);
+  return labels;
+}
+
+/**
+ * Whether a country is drawn as a micro-state dot in the given view.
+ * @param code - the country's ISO alpha-2 code.
+ * @param view - the current view.
+ * @returns true if the country has a marker and the view is zoomed to its continent.
+ */
+function hasMarkerInView(code: string, view: WorldView): boolean {
+  return code in MICRO_STATE_MARKERS && CODE_TO_CONTINENT[code] === view;
+}
+
 interface WorldMapProps {
   visitedCountryCodes: string[];
   color: string;
@@ -190,7 +328,9 @@ function contrastText(bgHex: string): string {
  * one toggles it, but only when a handler is provided and a continent (not the World
  * overview) is selected. Countries outside the selected continent stay clickable if visible.
  * In a continent view, that continent's micro-states also get a dot at their capital, following
- * the same hover/click rules as polygons.
+ * the same hover/click rules as polygons. Countries are labeled with their ISO alpha-3 code —
+ * in very small print in the World overview (only where the code fits), slightly larger when
+ * zoomed to a continent.
  * @param visitedCountryCodes - the ISO alpha-2 codes to render as visited.
  * @param color - the fill color used for visited countries.
  * @param view - "World" for the overview, or the continent to zoom to.
@@ -224,16 +364,17 @@ export function WorldMap({ visitedCountryCodes, color, view, onToggleCountry }: 
         className="rounded-lg bg-[var(--color-bg-card)]"
       >
         <Geographies geography={countriesTopoJson}>
-          {({ geographies }) =>
-            // One shape per topology geometry. Keyed by rsmKey, since some geometries have no
-            // id and id "036" is shared by two of them.
-            geographies.map((geo) => {
+          {({ geographies }) => (
+            <>
+            {/* Layer 1: one shape per topology geometry. Keyed by rsmKey, since some geometries
+                have no id and id "036" is shared by two of them. */}
+            {geographies.map((geo) => {
               const countryCode = geo.id ? ISO_NUMERIC_TO_ALPHA2[geo.id as string] : undefined;
 
               // Not one of the 195 tracked countries (territory, non-UN state, Antarctica, or a
               // geometry with no id) — render it as inert background.
               if (!countryCode) {
-                const inert = { fill: UNMAPPED_FILL, stroke: "#fff", strokeWidth: 0.5, outline: "none" };
+                const inert = { fill: UNMAPPED_FILL, stroke: MAP_BORDER, strokeWidth: 0.5, outline: "none" };
                 return (
                   <Geography
                     key={geo.rsmKey}
@@ -246,7 +387,7 @@ export function WorldMap({ visitedCountryCodes, color, view, onToggleCountry }: 
               const fill = visitedCountryCodes.includes(countryCode) ? color : UNVISITED_FILL;
               const base = {
                 fill,
-                stroke: "#fff",
+                stroke: MAP_BORDER,
                 strokeWidth: 0.5,
                 outline: "none",
                 cursor: interactive ? "pointer" : "default",
@@ -268,8 +409,32 @@ export function WorldMap({ visitedCountryCodes, color, view, onToggleCountry }: 
                   }}
                 />
               );
-            })
-          }
+            })}
+
+            {/* Layer 2: country codes, drawn after the shapes so they sit on top. Which
+                countries get one, and at what size, is decided per view by labelsFor. */}
+            {labelsFor(view, geographies).map((label) => {
+              const visited = visitedCountryCodes.includes(label.code);
+              return (
+                <text
+                  key={`label-${label.code}`}
+                  x={label.x}
+                  y={label.y}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  style={{
+                    fontSize: label.fontSize,
+                    fontWeight: 600,
+                    fill: visited ? pillTextColor : UNVISITED_LABEL_COLOR,
+                    pointerEvents: "none",
+                  }}
+                >
+                  {CODE_TO_ALPHA3[label.code]}
+                </text>
+              );
+            })}
+            </>
+          )}
         </Geographies>
 
         {/* Micro-state markers for the selected continent, drawn on top of the shapes. None in
@@ -286,6 +451,8 @@ export function WorldMap({ visitedCountryCodes, color, view, onToggleCountry }: 
               const [dx, dy] = MARKER_OFFSETS[countryCode] ?? [0, 0];
               const offset = dx !== 0 || dy !== 0;
               const visited = visitedCountryCodes.includes(countryCode);
+              // Three letters need ~2× the font size; flip the label left if it won't fit on the right.
+              const labelOnLeft = x + dx + MARKER_RADIUS + 2 + CONTINENT_LABEL_SIZE * 2 > MAP_WIDTH;
               return (
                 <g key={`marker-${countryCode}`}>
                   {/* Crowded markers are drawn away from their capital, so show where they belong. */}
@@ -304,6 +471,26 @@ export function WorldMap({ visitedCountryCodes, color, view, onToggleCountry }: 
                     strokeWidth={1}
                     pointerEvents="none"
                   />
+                  {/* The dot's country code, beside it — flipped to the left side if it would
+                      run off the right edge of the frame. A halo in the card color keeps it
+                      legible over land, ocean, and the connector lines alike. */}
+                  <text
+                    x={labelOnLeft ? x + dx - MARKER_RADIUS - 2 : x + dx + MARKER_RADIUS + 2}
+                    y={y + dy}
+                    textAnchor={labelOnLeft ? "end" : "start"}
+                    dominantBaseline="central"
+                    stroke="var(--color-bg-card)"
+                    strokeWidth={2.5}
+                    paintOrder="stroke"
+                    style={{
+                      fontSize: CONTINENT_LABEL_SIZE,
+                      fontWeight: 600,
+                      fill: "var(--color-text)",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {CODE_TO_ALPHA3[countryCode]}
+                  </text>
                   {/* Invisible, larger hit area so the dot is easier to hover and tap. */}
                   <circle
                     cx={x + dx}

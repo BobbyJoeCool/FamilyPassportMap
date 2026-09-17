@@ -28,6 +28,7 @@ A second, parallel tracking system — countries visited, on a world map zoomed 
 | 10 | v1.4.0 | World Compare & World List | [Documentation/Phase-10-World-Compare-List.md](Documentation/Phase-10-World-Compare-List.md) | **Complete (v1.4.0 shipped)** |
 | 11 | v1.5.0 | World Polish & Hardening | [Documentation/Phase-11-World-Polish-Hardening.md](Documentation/Phase-11-World-Polish-Hardening.md) | **Complete (v1.5.0 shipped)** |
 | — | **v2.0.0** | **World Release** | (no separate spec doc — a stabilization pass over Phase 11's output) | **Complete** |
+| — | v2.1.0 | Map Legibility: darker borders + country codes | (no spec doc — small, self-contained addition; details in `CHANGELOG.md`) | **Complete (v2.1.0 shipped)** |
 
 ## Versioning convention
 

@@ -6,6 +6,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-09-16 — Map Legibility
+
+- **Darker borders**: state and country borders on both the US and world maps are now medium gray (`MAP_BORDER` in `apps/web/src/components/mapStyles.ts`) instead of white, so they stand out against the light-gray "not visited" fill.
+- **Country codes on the world map**: every country is labeled with its ISO 3166-1 alpha-3 code (FRA, DEU, USA):
+  - **World overview**: very small print, only on countries big enough to hold their code, with bigger countries winning when codes would overlap.
+  - **Continent view**: slightly larger print on every country of that continent. Countries too small to hold their code get the small print instead. Neighboring countries are labeled only where their code fits without overlapping.
+  - **Micro-states**: the 29 marker dots show their code beside the dot.
+- **Shared data**: `Country` gains an `alpha3` field for all 195 countries, cross-checked against the ISO table's alpha-2 and numeric codes, with a new uniqueness/format test (43 tests total).
+
 ## [2.0.0] — 2026-09-16 — World Release
 
 Stabilization pass over Phase 11, completing the World round (Phases 8–11). No new features. Walked every US and World page end to end locally (desktop and phone widths, light and dark), confirmed each phase's acceptance criteria still hold, and synced all documentation to match what shipped.
