@@ -4,6 +4,8 @@ import { PeoplePage } from "./pages/PeoplePage";
 import { MapPage } from "./pages/MapPage";
 import { ComparePage } from "./pages/ComparePage";
 import { ListPage } from "./pages/ListPage";
+import { SectionTabs } from "./components/SectionTabs";
+import { parseSectionPath } from "./sections";
 
 // The World pages are lazy-loaded so the world topology (world-atlas) ships in its own chunk
 // instead of weighing down the US pages. Each module exports a named component, so it's mapped
@@ -16,9 +18,7 @@ const WorldListPage = lazy(() => import("./pages/WorldListPage").then((m) => ({ 
 
 const NAV_ITEMS = [
   { to: "/people", label: "People", icon: "👤" },
-  { to: "/map", label: "Map", icon: "🗺️" },
-  { to: "/compare", label: "Compare", icon: "⚖️" },
-  { to: "/list", label: "List", icon: "📋" },
+  { to: "/us", label: "US", icon: "🗺️" },
   { to: "/world", label: "World", icon: "🌍" },
 ] as const;
 
@@ -47,16 +47,28 @@ function NavLink({ to, label, icon, active }: { to: string; label: string; icon:
 }
 
 /**
- * Decides whether a nav item should be highlighted for the current route. The World item
- * owns a whole section (/world/map, /world/compare, /world/list), so it matches
- * by prefix; every other item matches its exact path.
+ * Decides whether a nav item should be highlighted for the current route. US and World each
+ * own a whole section (/us/map, /world/list, …), so they match by prefix; People matches exactly.
  * @param to - the nav item's route.
  * @param pathname - the current location's path.
  * @returns true if the nav item should render as active.
  */
 function isNavActive(to: string, pathname: string): boolean {
-  // Section items match any route inside the section; page items match only themselves.
-  return to === "/world" ? pathname.startsWith("/world") : pathname === to;
+  // Section items match any route inside the section; the People page matches only itself.
+  return to === "/people" ? pathname === to : pathname === to || pathname.startsWith(`${to}/`);
+}
+
+/**
+ * Resolves where a nav item should actually link. Switching between US and World keeps the
+ * current sub-tab (US Compare → World Compare); coming from outside both sections lands on Map.
+ * @param to - the nav item's base route.
+ * @param pathname - the current location's path.
+ * @returns the concrete path to link to.
+ */
+function navTarget(to: string, pathname: string): string {
+  // People has no sub-tabs — always link straight to it.
+  if (to === "/people") return to;
+  return `${to}/${parseSectionPath(pathname)?.tab ?? "map"}`;
 }
 
 /**
@@ -64,34 +76,49 @@ function isNavActive(to: string, pathname: string): boolean {
  */
 function App() {
   const location = useLocation();
+  const section = parseSectionPath(location.pathname)?.section;
 
   return (
     <div className="min-h-screen flex flex-col pb-16 md:pb-0">
       {/* Desktop top nav */}
       <nav className="hidden md:flex items-center gap-2 px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
         <span className="font-bold text-lg text-[var(--color-text-heading)] mr-4">🗺️ FamilyPassportMap</span>
-        {/* One NavLink per top-level page, active state driven by the current route. */}
+        {/* One NavLink per top-level item (People, US, World), active state driven by the current route. */}
         {NAV_ITEMS.map((item) => (
-          <NavLink key={item.to} {...item} active={isNavActive(item.to, location.pathname)} />
+          <NavLink
+            key={item.to}
+            {...item}
+            to={navTarget(item.to, location.pathname)}
+            active={isNavActive(item.to, location.pathname)}
+          />
         ))}
       </nav>
 
       {/* Page content */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 md:px-6 md:py-8">
+        {/* US and World pages share one Map / Compare / List tab strip, shown outside the
+            Suspense boundary so it stays put while a lazy World page loads. */}
+        {section && <SectionTabs section={section} />}
+
         {/* Fallback shown while a lazy World page chunk downloads. */}
         <Suspense fallback={<p className="text-[var(--color-text-muted)]">Loading…</p>}>
           <Routes>
-            {/* Default route: no page owns "/", so redirect straight to Map. */}
-            <Route path="/" element={<Navigate to="/map" replace />} />
+            {/* Default route: no page owns "/", so redirect straight to the US map. */}
+            <Route path="/" element={<Navigate to="/us/map" replace />} />
             <Route path="/people" element={<PeoplePage />} />
-            <Route path="/map" element={<MapPage />} />
-            <Route path="/compare" element={<ComparePage />} />
-            <Route path="/list" element={<ListPage />} />
-            {/* The World section has no page of its own at /world — land on its Map tab. */}
+            {/* Neither section has a page of its own at its root — land on its Map tab. */}
+            <Route path="/us" element={<Navigate to="/us/map" replace />} />
+            <Route path="/us/map" element={<MapPage />} />
+            <Route path="/us/compare" element={<ComparePage />} />
+            <Route path="/us/list" element={<ListPage />} />
             <Route path="/world" element={<Navigate to="/world/map" replace />} />
             <Route path="/world/map" element={<WorldMapPage />} />
             <Route path="/world/compare" element={<WorldComparePage />} />
             <Route path="/world/list" element={<WorldListPage />} />
+            {/* Pre-v2.2 US paths (bookmarks, links) redirect to their new /us/ homes. */}
+            <Route path="/map" element={<Navigate to="/us/map" replace />} />
+            <Route path="/compare" element={<Navigate to="/us/compare" replace />} />
+            <Route path="/list" element={<Navigate to="/us/list" replace />} />
           </Routes>
         </Suspense>
       </main>
@@ -101,7 +128,7 @@ function App() {
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.to}
-            to={item.to}
+            to={navTarget(item.to, location.pathname)}
             className={`flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors
               ${isNavActive(item.to, location.pathname)
                 ? "text-[var(--color-primary)]"

@@ -6,7 +6,6 @@ import { getVisitedCountries, markCountryVisited, unmarkCountryVisited } from ".
 import { WorldMap, type WorldView } from "../components/WorldMap";
 import { ContinentSelector } from "../components/ContinentSelector";
 import { StateCounter } from "../components/StateCounter";
-import { WorldTabs } from "../components/WorldTabs";
 
 /**
  * The World Map page: pick a person and a continent, then click countries on the zoomed map
@@ -75,7 +74,6 @@ export function WorldMapPage() {
 
   return (
     <div>
-      <WorldTabs />
       <h1 className="text-2xl md:text-3xl font-bold mb-4">World Map</h1>
 
       {error && (

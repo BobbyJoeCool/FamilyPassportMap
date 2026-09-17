@@ -17,10 +17,10 @@ There is no login/account system — it's built as a single-household tool, not 
 ## How to use it
 
 1. Add yourself and any family members you want to track, each with a name, a color, and (optionally) a profile picture.
-2. Pick a person and click states on the map to mark them visited — the state fills in with that person's color.
-3. Switch to **Compare** view to see two or more people's maps side by side.
-4. Switch to **List** view to see every state at a glance, with icons showing who's visited each one.
-5. Open **World** to do the same for countries: pick a continent, then click countries to mark them. The World section has its own Map / Compare / List tabs.
+2. Open **US** from the top menu, pick a person on the **Map** tab, and click states to mark them visited — the state fills in with that person's color.
+3. Switch to the **Compare** tab to see two or more people's maps side by side.
+4. Switch to the **List** tab to see every state at a glance, with icons showing who's visited each one.
+5. Open **World** to do the same for countries, using the same Map / Compare / List tabs: pick a continent, then click countries to mark them. Switching between US and World keeps you on the same tab.
 
 ## Tech stack
 

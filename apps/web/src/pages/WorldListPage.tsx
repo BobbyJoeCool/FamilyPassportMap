@@ -4,7 +4,6 @@ import { CONTINENTS, countriesByContinent } from "@familypassportmap/shared";
 import { listPeople } from "../api/people";
 import { getAllCountries, type PersonCountries } from "../api/countries";
 import { PersonAvatar } from "../components/PersonAvatar";
-import { WorldTabs } from "../components/WorldTabs";
 
 /**
  * The World List page: all 195 countries, grouped into one section per continent, with each
@@ -43,7 +42,6 @@ export function WorldListPage() {
 
   return (
     <div>
-      <WorldTabs />
       <h1 className="text-2xl md:text-3xl font-bold mb-6">World List</h1>
 
       {error && (

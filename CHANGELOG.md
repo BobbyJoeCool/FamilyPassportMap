@@ -6,6 +6,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-09-16 — Navigation: People / US / World
+
+- **Top menu is now People | US | World.** The US Map / Compare / List pages are no longer top-level items. US and World each have the same **Map / Compare / List** tab strip underneath (`SectionTabs`, which replaces the World-only `WorldTabs`). The top menu and the phone's bottom bar each show three items.
+- **Switching sections keeps your tab**: US Compare → World Compare, World List → US List. Coming from People opens Map.
+- **US pages moved to `/us/map`, `/us/compare`, `/us/list`** to match `/world/*`, and are now titled US Map / US Compare / US List. The old `/map`, `/compare`, `/list` URLs redirect, and `/` still opens the US map.
+
 ## [2.1.0] — 2026-09-16 — Map Legibility
 
 - **Darker borders**: state and country borders on both the US and world maps are now medium gray (`MAP_BORDER` in `apps/web/src/components/mapStyles.ts`) instead of white, so they stand out against the light-gray "not visited" fill.

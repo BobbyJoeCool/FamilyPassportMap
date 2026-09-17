@@ -76,7 +76,7 @@ export function MapPage() {
 
   return (
     <div>
-      <h1 className="text-2xl md:text-3xl font-bold mb-4">Map</h1>
+      <h1 className="text-2xl md:text-3xl font-bold mb-4">US Map</h1>
 
       {error && (
         <div className="mb-4 px-4 py-3 rounded-lg bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-sm">

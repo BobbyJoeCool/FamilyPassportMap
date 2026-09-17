@@ -6,7 +6,6 @@ import { getAllCountries, type PersonCountries } from "../api/countries";
 import { WorldMap, type WorldView } from "../components/WorldMap";
 import { ContinentSelector } from "../components/ContinentSelector";
 import { StateCounter } from "../components/StateCounter";
-import { WorldTabs } from "../components/WorldTabs";
 
 /**
  * The World Compare page: pick two or more people and see their visited-country maps side by
@@ -63,7 +62,6 @@ export function WorldComparePage() {
 
   return (
     <div>
-      <WorldTabs />
       <h1 className="text-2xl md:text-3xl font-bold mb-4">World Compare</h1>
 
       {error && (
