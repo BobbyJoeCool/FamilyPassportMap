@@ -2,6 +2,21 @@
 
 FamilyPassportMap is a personal, family-friendly web app for tracking which places you and your family have visited — the 50 US states on a US map, and 195 countries on a world map you explore one continent at a time.
 
+## Screenshots
+
+*Shown with demo data (fictional family members).*
+
+![US map: one person's visited states filled in with their color](Documentation/screenshots/us-map.png)
+
+| Compare family members side by side | Every state, with who's been there |
+|---|---|
+| ![US Compare view](Documentation/screenshots/us-compare.png) | ![US List view](Documentation/screenshots/us-list.png) |
+| **World map, zoomed to one continent** | **People, with per-person counters** |
+| ![World Map view zoomed to Europe](Documentation/screenshots/world-map.png) | ![People page](Documentation/screenshots/people.png) |
+
+<p align="center"><img src="Documentation/screenshots/mobile.png" alt="The app at phone width with bottom navigation" width="260"></p>
+<p align="center"><em>The same app on a phone, with mobile bottom navigation.</em></p>
+
 ## What it does
 
 - **Interactive US map** — click a state to mark it as visited.
