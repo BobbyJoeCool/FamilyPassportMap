@@ -4,6 +4,7 @@ import { PeoplePage } from "./pages/PeoplePage";
 import { MapPage } from "./pages/MapPage";
 import { ComparePage } from "./pages/ComparePage";
 import { ListPage } from "./pages/ListPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
 import { SectionTabs } from "./components/SectionTabs";
 import { parseSectionPath } from "./sections";
 
@@ -106,6 +107,7 @@ function App() {
             {/* Default route: no page owns "/", so redirect straight to the US map. */}
             <Route path="/" element={<Navigate to="/us/map" replace />} />
             <Route path="/people" element={<PeoplePage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
             {/* Neither section has a page of its own at its root — land on its Map tab. */}
             <Route path="/us" element={<Navigate to="/us/map" replace />} />
             <Route path="/us/map" element={<MapPage />} />
