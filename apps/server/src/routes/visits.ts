@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { Prisma } from "@prisma/client";
 import { US_STATE_CODES } from "@familypassportmap/shared";
+import { actorOf, findEditablePerson, findViewablePerson, viewablePeopleWhere } from "../access.js";
 import { prisma } from "../db.js";
 
 // --- Bulk visits router: mounted at /api/visits in index.ts ---
@@ -12,8 +12,10 @@ export const bulkVisitsRouter = Router();
  * `GET /api/visits` — every person's visited states in one response, used by the
  * Compare and List views so they don't have to make one request per person.
  */
-bulkVisitsRouter.get("/", async (_req, res) => {
+bulkVisitsRouter.get("/", async (req, res) => {
   const rows = await prisma.visitedState.findMany({
+    // Only rows belonging to People the actor may view.
+    where: { person: viewablePeopleWhere(actorOf(req)) },
     select: { personId: true, stateCode: true },
     orderBy: { personId: "asc" },
   });
@@ -41,21 +43,12 @@ bulkVisitsRouter.get("/", async (_req, res) => {
 /** Router for `/api/people/:id/visits` — one person's visited states. */
 export const visitsRouter = Router({ mergeParams: true });
 
-/**
- * Checks whether a person with the given id exists.
- * @param id - the person's id.
- * @returns true if a matching person row exists.
- */
-async function personExists(id: string): Promise<boolean> {
-  const person = await prisma.person.findUnique({ where: { id }, select: { id: true } });
-  return person !== null;
-}
-
 /** `GET /api/people/:id/visits` — list one person's visited state codes. */
 visitsRouter.get("/", async (req, res) => {
   const { id } = req.params as { id: string };
-  // Distinguish "no visits" from "no such person" — the latter is a 404, not an empty list.
-  if (!(await personExists(id))) {
+  // Distinguish "no visits" from "no such (or not viewable) person" — the latter is a 404,
+  // not an empty list.
+  if (!(await findViewablePerson(actorOf(req), id))) {
     res.status(404).json({ error: "Person not found" });
     return;
   }
@@ -77,29 +70,27 @@ visitsRouter.put("/:stateCode", async (req, res) => {
     return;
   }
 
-  try {
-    // Idempotent: upsert so calling this twice for the same state is a no-op, not an error.
-    await prisma.visitedState.upsert({
-      where: { personId_stateCode: { personId: id, stateCode: normalized } },
-      create: { personId: id, stateCode: normalized },
-      update: {},
-    });
-    res.status(204).end();
-  } catch (error) {
-    // P2003 = foreign key violation — the referenced person doesn't exist.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
-      res.status(404).json({ error: "Person not found" });
-      return;
-    }
-    throw error;
+  // Missing and not-editable People look the same to the caller: 404.
+  if (!(await findEditablePerson(actorOf(req), id))) {
+    res.status(404).json({ error: "Person not found" });
+    return;
   }
+
+  // Idempotent: upsert so calling this twice for the same state is a no-op, not an error.
+  await prisma.visitedState.upsert({
+    where: { personId_stateCode: { personId: id, stateCode: normalized } },
+    create: { personId: id, stateCode: normalized },
+    update: {},
+  });
+  res.status(204).end();
 });
 
 /** `DELETE /api/people/:id/visits/:stateCode` — unmark a state as visited for a person. */
 visitsRouter.delete("/:stateCode", async (req, res) => {
   const { id, stateCode } = req.params as { id: string; stateCode: string };
-  // Distinguish "no such person" (404) from "state wasn't marked visited" (still a no-op 204).
-  if (!(await personExists(id))) {
+  // Distinguish "no such (or not editable) person" (404) from "state wasn't marked visited"
+  // (still a no-op 204).
+  if (!(await findEditablePerson(actorOf(req), id))) {
     res.status(404).json({ error: "Person not found" });
     return;
   }

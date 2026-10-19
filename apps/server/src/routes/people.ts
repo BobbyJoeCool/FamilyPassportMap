@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { Prisma } from "@prisma/client";
 import { createPersonSchema, updatePersonSchema, type Person } from "@familypassportmap/shared";
+import { actorOf, findEditablePerson, listViewablePeople } from "../access.js";
 import { prisma } from "../db.js";
 import { uploadPhoto } from "../uploads.js";
 
@@ -29,8 +29,8 @@ function toPerson(row: {
 }
 
 /** `GET /api/people` — list every person, oldest-added first. */
-peopleRouter.get("/", async (_req, res) => {
-  const people = await prisma.person.findMany({ orderBy: { createdAt: "asc" } });
+peopleRouter.get("/", async (req, res) => {
+  const people = await listViewablePeople(actorOf(req));
   res.json(people.map(toPerson));
 });
 
@@ -55,41 +55,42 @@ peopleRouter.patch("/:id", async (req, res) => {
     return;
   }
 
-  try {
-    const person = await prisma.person.update({ where: { id: req.params.id }, data: parsed.data });
-    res.json(toPerson(person));
-  } catch (error) {
-    // P2025 = "record to update not found" — translate Prisma's error into a 404.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-      res.status(404).json({ error: "Person not found" });
-      return;
-    }
-    throw error;
+  // Missing and not-editable People look the same to the caller: 404.
+  if (!(await findEditablePerson(actorOf(req), req.params.id))) {
+    res.status(404).json({ error: "Person not found" });
+    return;
   }
+
+  const person = await prisma.person.update({ where: { id: req.params.id }, data: parsed.data });
+  res.json(toPerson(person));
 });
 
 /** `DELETE /api/people/:id` — remove a person (their visited states cascade-delete with them). */
 peopleRouter.delete("/:id", async (req, res) => {
-  try {
-    await prisma.person.delete({ where: { id: req.params.id } });
-    res.status(204).end();
-  } catch (error) {
-    // P2025 = "record to delete not found" — translate Prisma's error into a 404.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-      res.status(404).json({ error: "Person not found" });
-      return;
-    }
-    throw error;
+  // Missing and not-editable People look the same to the caller: 404.
+  if (!(await findEditablePerson(actorOf(req), req.params.id))) {
+    res.status(404).json({ error: "Person not found" });
+    return;
   }
+
+  await prisma.person.delete({ where: { id: req.params.id } });
+  res.status(204).end();
 });
 
 /**
  * `POST /api/people/:id/photo` — upload/replace a person's profile picture.
- * Runs the `uploadPhoto` multer middleware manually (rather than as a normal middleware
- * argument) so multer's own errors (bad type, too large) can be turned into a JSON 400
- * instead of Express's default error page.
+ * The Person is checked BEFORE the upload is accepted, so nothing is written to disk for a
+ * missing or not-editable Person. Then the `uploadPhoto` multer middleware runs manually
+ * (rather than as a normal middleware argument) so multer's own errors (bad type, too large)
+ * can be turned into a JSON 400 instead of Express's default error page.
  */
-peopleRouter.post("/:id/photo", (req, res, next) => {
+peopleRouter.post("/:id/photo", async (req, res, next) => {
+  // Missing and not-editable People look the same to the caller: 404.
+  if (!(await findEditablePerson(actorOf(req), req.params.id))) {
+    res.status(404).json({ error: "Person not found" });
+    return;
+  }
+
   uploadPhoto.single("photo")(req, res, async (err) => {
     // Multer failed the upload (wrong type, too large) before a file was saved.
     if (err) {
@@ -103,7 +104,7 @@ peopleRouter.post("/:id/photo", (req, res, next) => {
     }
 
     try {
-      // Relative to the server root — must match the "/uploads" static mount in app.ts.
+      // Relative to the server root — must match the "/uploads" mount in app.ts.
       const profilePicturePath = `uploads/${req.file.filename}`;
       const person = await prisma.person.update({
         where: { id: req.params.id },
@@ -111,11 +112,6 @@ peopleRouter.post("/:id/photo", (req, res, next) => {
       });
       res.json(toPerson(person));
     } catch (error) {
-      // P2025 = "record to update not found" — translate Prisma's error into a 404.
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-        res.status(404).json({ error: "Person not found" });
-        return;
-      }
       next(error);
     }
   });
