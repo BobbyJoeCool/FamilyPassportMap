@@ -5,6 +5,11 @@
  * @returns the parsed JSON body, typed as `T`.
  */
 export async function handleResponse<T>(response: Response): Promise<T> {
+  // The session expired (or was ended elsewhere) mid-use: go sign in, then come back here.
+  if (response.status === 401) {
+    redirectToSignIn();
+    throw new Error("Not signed in");
+  }
   // Request failed — try to pull a server-provided error message, falling back to the
   // HTTP status if the body isn't JSON (e.g. a network-layer error page).
   if (!response.ok) {
@@ -16,4 +21,13 @@ export async function handleResponse<T>(response: Response): Promise<T> {
     return undefined as T;
   }
   return response.json() as Promise<T>;
+}
+
+/**
+ * Sends the browser to the sign-in page with the current page as the place to come back to.
+ * A full page load (not a router navigation) so nothing from the old session stays in memory.
+ */
+export function redirectToSignIn(): void {
+  const here = window.location.pathname + window.location.search;
+  window.location.assign(`/signin?returnTo=${encodeURIComponent(here)}`);
 }

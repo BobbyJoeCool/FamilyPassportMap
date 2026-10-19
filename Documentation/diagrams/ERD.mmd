@@ -1,12 +1,14 @@
 %% FamilyPassportMap — Master Entity-Relationship Diagram
 %% This is the single source of truth for the database schema. It must always match
 %% apps/server/prisma/schema.prisma exactly — see CLAUDE.md's "Diagram Sync Requirements".
-%% Implemented as of Phase 8 (migrations 20260812220505_add_person_and_visited_state,
-%% 20260916173026_add_visited_country).
+%% Implemented as of Phase 12 ticket #4 (migrations 20260812220505_add_person_and_visited_state,
+%% 20260916173026_add_visited_country, 20261019212746_add_user_and_session).
+%% USER is not yet related to PERSON — ownership (Person.ownerId) arrives with Phase 12 ticket #5.
 
 erDiagram
     PERSON ||--o{ VISITED_STATE : "visits"
     PERSON ||--o{ VISITED_COUNTRY : "visits"
+    USER ||--o{ SESSION : "signed in as"
 
     PERSON {
         string id PK "cuid"
@@ -30,6 +32,25 @@ erDiagram
         datetime visitedAt
     }
 
+    USER {
+        string id PK "cuid"
+        string authProvider "e.g. google"
+        string authSubject "provider's user id (Google sub)"
+        string email
+        string displayName
+        string avatarUrl "nullable, provider picture URL"
+        datetime createdAt
+    }
+
+    SESSION {
+        string id PK "SHA-256 hex of the cookie token"
+        string userId FK "-> User.id, onDelete Cascade"
+        datetime expiresAt "slides forward with use"
+        datetime createdAt
+    }
+
+    %% USER (authProvider, authSubject) is unique — one User per provider identity.
+    %% Deleting a User cascade-deletes their Sessions.
     %% Unique constraints: VISITED_STATE (personId, stateCode) and
     %% VISITED_COUNTRY (personId, countryCode) — a person can only have one row per
     %% state, and one row per country.

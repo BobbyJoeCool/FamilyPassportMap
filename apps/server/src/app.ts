@@ -1,7 +1,11 @@
 import path from "node:path";
+import cookieParser from "cookie-parser";
 import express from "express";
+import { loadUser, requireUser } from "./auth/middleware.js";
+import { authRouter } from "./auth/routes.js";
 import { UPLOADS_DIR } from "./env.js";
 import { bulkCountriesRouter, countriesRouter } from "./routes/countries.js";
+import { meRouter } from "./routes/me.js";
 import { peopleRouter } from "./routes/people.js";
 import { bulkVisitsRouter, visitsRouter } from "./routes/visits.js";
 
@@ -13,12 +17,20 @@ import { bulkVisitsRouter, visitsRouter } from "./routes/visits.js";
 export const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
+// Attach the signed-in User (if any) to API and photo requests. Not run for the static
+// frontend, which needs no session and would otherwise cost a database lookup per asset.
+app.use(["/api", "/uploads"], loadUser);
 
 /** Liveness/readiness check — used by deployment tooling to confirm the server is up. */
 app.get("/api/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
+app.use("/api/auth", authRouter);
+// Everything below under /api requires a signed-in User (health and auth are above, public).
+app.use("/api", requireUser);
+app.use("/api/me", meRouter);
 app.use("/api/people", peopleRouter);
 app.use("/api/people/:id/visits", visitsRouter);
 app.use("/api/visits", bulkVisitsRouter);

@@ -14,11 +14,11 @@ export interface Actor {
 
 /**
  * Resolves the acting User for a request.
- * @param _req - the incoming request.
- * @returns the acting User, or null when nobody is signed in (always null until login exists).
+ * @param req - the incoming request (after the auth middleware).
+ * @returns the acting User, or null when nobody is signed in.
  */
-export function actorOf(_req: Request): Actor | null {
-  return null;
+export function actorOf(req: Request): Actor | null {
+  return req.user ? { userId: req.user.id } : null;
 }
 
 /**
@@ -27,6 +27,7 @@ export function actorOf(_req: Request): Actor | null {
  * @param _actor - the acting User.
  * @returns a `where` clause for `person` queries.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used once ownership lands (ticket #5)
 export function viewablePeopleWhere(_actor: Actor | null): Prisma.PersonWhereInput {
   return {};
 }
@@ -36,6 +37,7 @@ export function viewablePeopleWhere(_actor: Actor | null): Prisma.PersonWhereInp
  * @param _actor - the acting User.
  * @returns a `where` clause for `person` queries.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used once ownership lands (ticket #5)
 function editablePeopleWhere(_actor: Actor | null): Prisma.PersonWhereInput {
   return {};
 }

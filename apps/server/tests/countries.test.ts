@@ -1,17 +1,23 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import request from "supertest";
 import {
   COUNTRIES,
   COUNTRY_CODES,
   CONTINENTS,
   ISO_NUMERIC_TO_ALPHA2,
 } from "@familypassportmap/shared";
-import { app } from "../src/app.js";
+import { signIn, type TestAgent } from "./helpers.js";
+
+let api: TestAgent;
+
+// Every test runs as a signed-in User (the database is wiped before each test).
+beforeEach(async () => {
+  api = await signIn("alice");
+});
 
 let personId: string;
 
 beforeEach(async () => {
-  const res = await request(app).post("/api/people").send({ name: "Alice", colorHex: "#3366cc" });
+  const res = await api.post("/api/people").send({ name: "Alice", colorHex: "#3366cc" });
   personId = res.body.id;
 });
 
@@ -48,117 +54,117 @@ describe("Country reference data", () => {
 
 describe("Per-person countries", () => {
   it("GET /api/people/:id/countries returns empty array initially", async () => {
-    const res = await request(app).get(`/api/people/${personId}/countries`);
+    const res = await api.get(`/api/people/${personId}/countries`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
 
   it("PUT /api/people/:id/countries/:countryCode marks a country visited", async () => {
-    const put = await request(app).put(`/api/people/${personId}/countries/FR`);
+    const put = await api.put(`/api/people/${personId}/countries/FR`);
     expect(put.status).toBe(204);
 
-    const get = await request(app).get(`/api/people/${personId}/countries`);
+    const get = await api.get(`/api/people/${personId}/countries`);
     expect(get.body).toEqual(["FR"]);
   });
 
   it("PUT is idempotent — marking the same country twice succeeds", async () => {
-    await request(app).put(`/api/people/${personId}/countries/JP`);
-    const res = await request(app).put(`/api/people/${personId}/countries/JP`);
+    await api.put(`/api/people/${personId}/countries/JP`);
+    const res = await api.put(`/api/people/${personId}/countries/JP`);
     expect(res.status).toBe(204);
 
-    const get = await request(app).get(`/api/people/${personId}/countries`);
+    const get = await api.get(`/api/people/${personId}/countries`);
     expect(get.body).toEqual(["JP"]);
   });
 
   it("PUT normalizes country code to uppercase", async () => {
-    const res = await request(app).put(`/api/people/${personId}/countries/fr`);
+    const res = await api.put(`/api/people/${personId}/countries/fr`);
     expect(res.status).toBe(204);
 
-    const get = await request(app).get(`/api/people/${personId}/countries`);
+    const get = await api.get(`/api/people/${personId}/countries`);
     expect(get.body).toEqual(["FR"]);
   });
 
   it("PUT rejects invalid country code", async () => {
-    const res = await request(app).put(`/api/people/${personId}/countries/ZZ`);
+    const res = await api.put(`/api/people/${personId}/countries/ZZ`);
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/unknown country/i);
   });
 
   it("PUT rejects a real but untracked territory code", async () => {
-    const res = await request(app).put(`/api/people/${personId}/countries/PR`);
+    const res = await api.put(`/api/people/${personId}/countries/PR`);
     expect(res.status).toBe(400);
   });
 
   it("PUT returns 404 for nonexistent person", async () => {
-    const res = await request(app).put("/api/people/nonexistent/countries/FR");
+    const res = await api.put("/api/people/nonexistent/countries/FR");
     expect(res.status).toBe(404);
   });
 
   it("DELETE /api/people/:id/countries/:countryCode unmarks a country", async () => {
-    await request(app).put(`/api/people/${personId}/countries/FR`);
+    await api.put(`/api/people/${personId}/countries/FR`);
 
-    const del = await request(app).delete(`/api/people/${personId}/countries/FR`);
+    const del = await api.delete(`/api/people/${personId}/countries/FR`);
     expect(del.status).toBe(204);
 
-    const get = await request(app).get(`/api/people/${personId}/countries`);
+    const get = await api.get(`/api/people/${personId}/countries`);
     expect(get.body).toEqual([]);
   });
 
   it("DELETE is idempotent — removing an unvisited country succeeds", async () => {
-    const res = await request(app).delete(`/api/people/${personId}/countries/BR`);
+    const res = await api.delete(`/api/people/${personId}/countries/BR`);
     expect(res.status).toBe(204);
   });
 
   it("DELETE returns 404 for nonexistent person", async () => {
-    const res = await request(app).delete("/api/people/nonexistent/countries/FR");
+    const res = await api.delete("/api/people/nonexistent/countries/FR");
     expect(res.status).toBe(404);
   });
 
   it("GET returns 404 for nonexistent person", async () => {
-    const res = await request(app).get("/api/people/nonexistent/countries");
+    const res = await api.get("/api/people/nonexistent/countries");
     expect(res.status).toBe(404);
   });
 
   it("deleting a person cascade-deletes their visited countries", async () => {
-    await request(app).put(`/api/people/${personId}/countries/FR`);
-    await request(app).delete(`/api/people/${personId}`);
+    await api.put(`/api/people/${personId}/countries/FR`);
+    await api.delete(`/api/people/${personId}`);
 
-    const res = await request(app).get("/api/countries");
+    const res = await api.get("/api/countries");
     expect(res.body).toEqual([]);
   });
 });
 
 describe("Countries and states are independent", () => {
   it("marking the US as a visited country does not mark any states", async () => {
-    await request(app).put(`/api/people/${personId}/countries/US`);
+    await api.put(`/api/people/${personId}/countries/US`);
 
-    const states = await request(app).get(`/api/people/${personId}/visits`);
+    const states = await api.get(`/api/people/${personId}/visits`);
     expect(states.body).toEqual([]);
   });
 
   it("marking a state does not mark the US as a visited country", async () => {
-    await request(app).put(`/api/people/${personId}/visits/CA`);
+    await api.put(`/api/people/${personId}/visits/CA`);
 
-    const countries = await request(app).get(`/api/people/${personId}/countries`);
+    const countries = await api.get(`/api/people/${personId}/countries`);
     expect(countries.body).toEqual([]);
   });
 });
 
 describe("Bulk countries", () => {
   it("GET /api/countries returns empty array with no visits", async () => {
-    const res = await request(app).get("/api/countries");
+    const res = await api.get("/api/countries");
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
 
   it("GET /api/countries groups visited countries by person", async () => {
-    const bob = await request(app).post("/api/people").send({ name: "Bob", colorHex: "#00ff00" });
+    const bob = await api.post("/api/people").send({ name: "Bob", colorHex: "#00ff00" });
 
-    await request(app).put(`/api/people/${personId}/countries/FR`);
-    await request(app).put(`/api/people/${personId}/countries/JP`);
-    await request(app).put(`/api/people/${bob.body.id}/countries/BR`);
+    await api.put(`/api/people/${personId}/countries/FR`);
+    await api.put(`/api/people/${personId}/countries/JP`);
+    await api.put(`/api/people/${bob.body.id}/countries/BR`);
 
-    const res = await request(app).get("/api/countries");
+    const res = await api.get("/api/countries");
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(2);
 

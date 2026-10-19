@@ -1,11 +1,17 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, it, expect } from "vitest";
-import request from "supertest";
+import { describe, it, expect, beforeEach } from "vitest";
 import sharp from "sharp";
-import { app } from "../src/app.js";
 import { shrinkOversizedPhotos } from "../src/photos.js";
+import { signIn, type TestAgent } from "./helpers.js";
+
+let api: TestAgent;
+
+// Every test runs as a signed-in User (the database is wiped before each test).
+beforeEach(async () => {
+  api = await signIn("alice");
+});
 
 /**
  * Builds a solid-color test image.
@@ -27,8 +33,8 @@ function makeImage(width: number, height: number, format: "jpeg" | "png" | "webp
  * @returns the upload response.
  */
 async function uploadFor(image: Buffer, filename: string) {
-  const person = await request(app).post("/api/people").send({ name: "Alice", colorHex: "#ff0000" });
-  return request(app).post(`/api/people/${person.body.id}/photo`).attach("photo", image, filename);
+  const person = await api.post("/api/people").send({ name: "Alice", colorHex: "#ff0000" });
+  return api.post(`/api/people/${person.body.id}/photo`).attach("photo", image, filename);
 }
 
 describe("Photo upload shrinking", () => {
@@ -36,7 +42,7 @@ describe("Photo upload shrinking", () => {
     const res = await uploadFor(await makeImage(1200, 800, "jpeg"), "big.jpg");
     expect(res.status).toBe(200);
 
-    const served = await request(app).get(`/${res.body.profilePicturePath}`).responseType("blob");
+    const served = await api.get(`/${res.body.profilePicturePath}`).responseType("blob");
     expect(served.status).toBe(200);
     const meta = await sharp(served.body as Buffer).metadata();
     expect(meta).toMatchObject({ width: 256, height: 256, format: "jpeg" });
@@ -50,7 +56,7 @@ describe("Photo upload shrinking", () => {
     expect(res.status).toBe(200);
     expect(res.body.profilePicturePath).toMatch(new RegExp(`\\.${format}$`));
 
-    const served = await request(app).get(`/${res.body.profilePicturePath}`).responseType("blob");
+    const served = await api.get(`/${res.body.profilePicturePath}`).responseType("blob");
     const meta = await sharp(served.body as Buffer).metadata();
     expect(meta).toMatchObject({ width: 256, height: 256, format });
   });

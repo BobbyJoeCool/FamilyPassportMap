@@ -5,7 +5,11 @@ import { MapPage } from "./pages/MapPage";
 import { ComparePage } from "./pages/ComparePage";
 import { ListPage } from "./pages/ListPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
+import { AccountMenu } from "./components/AccountMenu";
 import { SectionTabs } from "./components/SectionTabs";
+import { SignInPage } from "./pages/SignInPage";
+import { useMe } from "./auth/useMe";
+import type { Me } from "@familypassportmap/shared";
 import { parseSectionPath } from "./sections";
 
 // The World pages are lazy-loaded so the world topology (world-atlas) ships in its own chunk
@@ -73,9 +77,11 @@ function navTarget(to: string, pathname: string): string {
 }
 
 /**
- * The app shell: top nav (desktop) / bottom tab bar (mobile) plus the routed page content.
+ * The signed-in app shell: top nav (desktop) / bottom tab bar (mobile) plus the routed page
+ * content, with the account menu in the header.
+ * @param me - the signed-in User.
  */
-function App() {
+function AppShell({ me }: { me: Me }) {
   const location = useLocation();
   const section = parseSectionPath(location.pathname)?.section;
 
@@ -93,7 +99,16 @@ function App() {
             active={isNavActive(item.to, location.pathname)}
           />
         ))}
+        <div className="ml-auto">
+          <AccountMenu user={me.user} />
+        </div>
       </nav>
+
+      {/* Mobile top bar: the bottom tab bar has no room for the account menu. */}
+      <header className="md:hidden flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+        <span className="font-bold text-[var(--color-text-heading)]">🗺️ FamilyPassportMap</span>
+        <AccountMenu user={me.user} />
+      </header>
 
       {/* Page content */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 md:px-6 md:py-8">
@@ -144,6 +159,51 @@ function App() {
       </nav>
     </div>
   );
+}
+
+/**
+ * The sign-in gate. Finds out who's signed in, then shows the sign-in page, the public privacy
+ * page, or the full app. Every other signed-out visit is sent to /signin, remembering where it was
+ * headed so sign-in can come back to it.
+ */
+function App() {
+  const location = useLocation();
+  const meState = useMe();
+
+  // The sign-in page never shows app chrome. Someone already signed in skips past it.
+  if (location.pathname === "/signin") {
+    if (meState.status === "ready") {
+      const returnTo = new URLSearchParams(location.search).get("returnTo");
+      return <Navigate to={returnTo?.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/us/map"} replace />;
+    }
+    return <SignInPage />;
+  }
+
+  // Signed in: the whole app, including /privacy inside the normal shell.
+  if (meState.status === "ready") return <AppShell me={meState.me} />;
+
+  // The privacy page is public: it renders on its own while signed out (or still checking).
+  if (location.pathname === "/privacy") {
+    return (
+      <main className="max-w-6xl w-full mx-auto px-4 py-6 md:px-6 md:py-8">
+        <PrivacyPage />
+      </main>
+    );
+  }
+
+  // Still finding out who's signed in.
+  if (meState.status === "loading") {
+    return <p className="p-6 text-[var(--color-text-muted)]">Loading…</p>;
+  }
+
+  // The server couldn't be reached — don't pretend the visitor is signed out.
+  if (meState.status === "error") {
+    return <p className="p-6 text-[var(--color-danger)]">Couldn't reach the server: {meState.message}</p>;
+  }
+
+  // Signed out on a protected page: go sign in, then come back here.
+  const returnTo = location.pathname + location.search;
+  return <Navigate to={`/signin?returnTo=${encodeURIComponent(returnTo)}`} replace />;
 }
 
 export default App;

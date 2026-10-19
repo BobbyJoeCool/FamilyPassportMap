@@ -48,3 +48,31 @@ model VisitedCountry {
 
   @@unique([personId, countryCode])
 }
+
+// Someone who signs in (Phase 12). Keyed by sign-in provider + that provider's stable user id,
+// so adding another provider later needs no data change. email/displayName/avatarUrl are
+// refreshed from the provider on every sign-in.
+model User {
+  id           String    @id @default(cuid())
+  authProvider String // "google"
+  authSubject  String // the provider's user id (Google's "sub")
+  email        String
+  displayName  String
+  avatarUrl    String? // provider's profile-picture URL; shown in the header only
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+
+  @@unique([authProvider, authSubject])
+}
+
+// A signed-in browser. The cookie carries a random token; only its SHA-256 hash is stored
+// here, so a leaked database can't be used to sign in. Expiry slides forward with use.
+model Session {
+  id        String   @id // SHA-256 hex of the cookie token
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
