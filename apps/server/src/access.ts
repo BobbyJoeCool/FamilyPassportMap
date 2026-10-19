@@ -1,4 +1,4 @@
-import type { Request } from "express";
+import type { NextFunction, Request, Response } from "express";
 import type { Person, Prisma } from "@prisma/client";
 import { prisma } from "./db.js";
 
@@ -72,3 +72,26 @@ export function findViewablePerson(actor: Actor | null, personId: string): Promi
 export function findEditablePerson(actor: Actor | null, personId: string): Promise<Person | null> {
   return prisma.person.findFirst({ where: { AND: [{ id: personId }, editablePeopleWhere(actor)] } });
 }
+
+/**
+ * Builds a route guard that answers `404 { error: "Person not found" }` unless the actor may
+ * access the Person named by the route's `:id` parameter.
+ * @param find - the access check to apply (view or edit).
+ * @returns Express middleware.
+ */
+function personGuard(find: (actor: Actor | null, personId: string) => Promise<Person | null>) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    // Missing and not-allowed People look the same to the caller: 404.
+    if (!(await find(actorOf(req), req.params.id as string))) {
+      res.status(404).json({ error: "Person not found" });
+      return;
+    }
+    next();
+  };
+}
+
+/** Route guard: continue only if the actor may view the Person in `:id`; otherwise 404. */
+export const requireViewablePerson = personGuard(findViewablePerson);
+
+/** Route guard: continue only if the actor may edit the Person in `:id`; otherwise 404. */
+export const requireEditablePerson = personGuard(findEditablePerson);

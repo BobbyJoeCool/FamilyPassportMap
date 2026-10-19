@@ -1,20 +1,32 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import type { SignedInUser } from "@familypassportmap/shared";
 import { signOut } from "../api/auth";
 
 /**
- * The signed-in User's avatar and name, opening a small menu with Sign out.
+ * The signed-in User's avatar (and name, on wide screens), opening a small menu with their
+ * name and email, the privacy page, and Sign out.
  * @param user - the signed-in User.
  */
-export function AccountMenu({ user }: { user: SignedInUser }) {
+export function UserMenu({ user }: { user: SignedInUser }) {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
 
-  /** Ends the session, then reloads onto the sign-in page so no data stays in memory. */
+  /**
+   * Ends the session, then reloads onto the sign-in page so no data stays in memory. If the
+   * server can't be reached, stays put and says so — the session may still be live.
+   */
   async function handleSignOut() {
     setSigningOut(true);
-    await signOut();
-    window.location.assign("/signin");
+    setSignOutError(null);
+    try {
+      await signOut();
+      window.location.assign("/signin");
+    } catch {
+      setSigningOut(false);
+      setSignOutError("Couldn't sign out. Check your connection and try again.");
+    }
   }
 
   return (
@@ -44,7 +56,19 @@ export function AccountMenu({ user }: { user: SignedInUser }) {
           role="menu"
           className="absolute right-0 mt-2 w-48 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] shadow-lg z-50"
         >
-          <p className="px-3 py-2 text-xs text-[var(--color-text-muted)] truncate">{user.email}</p>
+          {/* The name is hidden next to the avatar on phones, so the menu always shows it. */}
+          <div className="px-3 py-2">
+            <p className="text-sm text-[var(--color-text-heading)] truncate">{user.displayName}</p>
+            <p className="text-xs text-[var(--color-text-muted)] truncate">{user.email}</p>
+          </div>
+          <Link
+            to="/privacy"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="block px-3 py-2 text-sm hover:bg-[var(--color-bg-card)]"
+          >
+            Privacy
+          </Link>
           <button
             type="button"
             role="menuitem"
@@ -54,6 +78,12 @@ export function AccountMenu({ user }: { user: SignedInUser }) {
           >
             {signingOut ? "Signing out…" : "Sign out"}
           </button>
+          {/* Only after a failed sign-out attempt. */}
+          {signOutError && (
+            <p role="alert" className="px-3 py-2 text-xs text-[var(--color-danger)]">
+              {signOutError}
+            </p>
+          )}
         </div>
       )}
     </div>

@@ -1,3 +1,5 @@
+import { signInPath } from "../auth/signInPath";
+
 /**
  * Shared response handler for every API call: parses a successful JSON body, or throws
  * an `Error` carrying the server's message for a failed one.
@@ -28,6 +30,5 @@ export async function handleResponse<T>(response: Response): Promise<T> {
  * A full page load (not a router navigation) so nothing from the old session stays in memory.
  */
 export function redirectToSignIn(): void {
-  const here = window.location.pathname + window.location.search;
-  window.location.assign(`/signin?returnTo=${encodeURIComponent(here)}`);
+  window.location.assign(signInPath(window.location.pathname + window.location.search));
 }

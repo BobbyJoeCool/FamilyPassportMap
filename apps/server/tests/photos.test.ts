@@ -61,6 +61,16 @@ describe("Photo upload shrinking", () => {
     expect(meta).toMatchObject({ width: 256, height: 256, format });
   });
 
+  it("stores a photo in the format its extension says, even if the bytes are another format", async () => {
+    // PNG bytes sent as image/jpeg: the stored file is named .jpg, so it must be a real JPEG.
+    const res = await uploadFor(await makeImage(600, 600, "png"), "mislabelled.jpg");
+    expect(res.status).toBe(200);
+    expect(res.body.profilePicturePath).toMatch(/\.jpg$/);
+
+    const served = await api.get(`/${res.body.profilePicturePath}`).responseType("blob");
+    expect(await sharp(served.body as Buffer).metadata()).toMatchObject({ width: 256, height: 256, format: "jpeg" });
+  });
+
   it("still rejects a non-image upload", async () => {
     const res = await uploadFor(Buffer.from("not an image"), "notes.txt");
     expect(res.status).toBe(400);

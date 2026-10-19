@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { Router } from "express";
 import { createPersonSchema, updatePersonSchema, type Person } from "@familypassportmap/shared";
-import { actorOf, findEditablePerson, listViewablePeople } from "../access.js";
+import { actorOf, listViewablePeople, requireEditablePerson } from "../access.js";
 import { prisma } from "../db.js";
 import { shrinkPhoto } from "../photos.js";
 import { uploadPhoto } from "../uploads.js";
@@ -50,49 +50,34 @@ peopleRouter.post("/", async (req, res) => {
 });
 
 /** `PATCH /api/people/:id` — partially update a person's name and/or color. */
-peopleRouter.patch("/:id", async (req, res) => {
+peopleRouter.patch("/:id", requireEditablePerson, async (req, res) => {
   const parsed = updatePersonSchema.safeParse(req.body);
+  // Reject a body that fails validation (empty name, bad color) before touching the Person.
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues.map((issue) => issue.message).join(", ") });
     return;
   }
 
-  // Missing and not-editable People look the same to the caller: 404.
-  if (!(await findEditablePerson(actorOf(req), req.params.id))) {
-    res.status(404).json({ error: "Person not found" });
-    return;
-  }
-
-  const person = await prisma.person.update({ where: { id: req.params.id }, data: parsed.data });
+  const { id } = req.params as { id: string };
+  const person = await prisma.person.update({ where: { id }, data: parsed.data });
   res.json(toPerson(person));
 });
 
 /** `DELETE /api/people/:id` — remove a person (their visited states cascade-delete with them). */
-peopleRouter.delete("/:id", async (req, res) => {
-  // Missing and not-editable People look the same to the caller: 404.
-  if (!(await findEditablePerson(actorOf(req), req.params.id))) {
-    res.status(404).json({ error: "Person not found" });
-    return;
-  }
-
-  await prisma.person.delete({ where: { id: req.params.id } });
+peopleRouter.delete("/:id", requireEditablePerson, async (req, res) => {
+  const { id } = req.params as { id: string };
+  await prisma.person.delete({ where: { id } });
   res.status(204).end();
 });
 
 /**
  * `POST /api/people/:id/photo` — upload/replace a person's profile picture.
- * The Person is checked BEFORE the upload is accepted, so nothing is written to disk for a
- * missing or not-editable Person. Then the `uploadPhoto` multer middleware runs manually
+ * `requireEditablePerson` runs BEFORE the upload is accepted, so nothing is written to disk
+ * for a missing or not-editable Person. Then the `uploadPhoto` multer middleware runs manually
  * (rather than as a normal middleware argument) so multer's own errors (bad type, too large)
  * can be turned into a JSON 400 instead of Express's default error page.
  */
-peopleRouter.post("/:id/photo", async (req, res, next) => {
-  // Missing and not-editable People look the same to the caller: 404.
-  if (!(await findEditablePerson(actorOf(req), req.params.id))) {
-    res.status(404).json({ error: "Person not found" });
-    return;
-  }
-
+peopleRouter.post("/:id/photo", requireEditablePerson, (req, res, next) => {
   uploadPhoto.single("photo")(req, res, async (err) => {
     // Multer failed the upload (wrong type, too large) before a file was saved.
     if (err) {
@@ -117,8 +102,9 @@ peopleRouter.post("/:id/photo", async (req, res, next) => {
     try {
       // Relative to the server root — must match the "/uploads" mount in app.ts.
       const profilePicturePath = `uploads/${req.file.filename}`;
+      const { id } = req.params as { id: string };
       const person = await prisma.person.update({
-        where: { id: req.params.id },
+        where: { id },
         data: { profilePicturePath },
       });
       res.json(toPerson(person));

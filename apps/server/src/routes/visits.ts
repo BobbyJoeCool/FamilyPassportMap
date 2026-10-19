@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { US_STATE_CODES } from "@familypassportmap/shared";
-import { actorOf, findEditablePerson, findViewablePerson, viewablePeopleWhere } from "../access.js";
+import { actorOf, requireEditablePerson, requireViewablePerson, viewablePeopleWhere } from "../access.js";
 import { prisma } from "../db.js";
 
 // --- Bulk visits router: mounted at /api/visits in index.ts ---
@@ -44,14 +44,8 @@ bulkVisitsRouter.get("/", async (req, res) => {
 export const visitsRouter = Router({ mergeParams: true });
 
 /** `GET /api/people/:id/visits` — list one person's visited state codes. */
-visitsRouter.get("/", async (req, res) => {
+visitsRouter.get("/", requireViewablePerson, async (req, res) => {
   const { id } = req.params as { id: string };
-  // Distinguish "no visits" from "no such (or not viewable) person" — the latter is a 404,
-  // not an empty list.
-  if (!(await findViewablePerson(actorOf(req), id))) {
-    res.status(404).json({ error: "Person not found" });
-    return;
-  }
 
   const rows = await prisma.visitedState.findMany({
     where: { personId: id },
@@ -61,18 +55,12 @@ visitsRouter.get("/", async (req, res) => {
 });
 
 /** `PUT /api/people/:id/visits/:stateCode` — mark a state visited for a person. */
-visitsRouter.put("/:stateCode", async (req, res) => {
+visitsRouter.put("/:stateCode", requireEditablePerson, async (req, res) => {
   const { id, stateCode } = req.params as { id: string; stateCode: string };
   const normalized = stateCode.toUpperCase();
   // Reject anything that isn't one of the 50 known USPS state codes.
   if (!US_STATE_CODES.includes(normalized)) {
     res.status(400).json({ error: "Unknown state code" });
-    return;
-  }
-
-  // Missing and not-editable People look the same to the caller: 404.
-  if (!(await findEditablePerson(actorOf(req), id))) {
-    res.status(404).json({ error: "Person not found" });
     return;
   }
 
@@ -86,14 +74,8 @@ visitsRouter.put("/:stateCode", async (req, res) => {
 });
 
 /** `DELETE /api/people/:id/visits/:stateCode` — unmark a state as visited for a person. */
-visitsRouter.delete("/:stateCode", async (req, res) => {
+visitsRouter.delete("/:stateCode", requireEditablePerson, async (req, res) => {
   const { id, stateCode } = req.params as { id: string; stateCode: string };
-  // Distinguish "no such (or not editable) person" (404) from "state wasn't marked visited"
-  // (still a no-op 204).
-  if (!(await findEditablePerson(actorOf(req), id))) {
-    res.status(404).json({ error: "Person not found" });
-    return;
-  }
 
   await prisma.visitedState.deleteMany({
     where: { personId: id, stateCode: stateCode.toUpperCase() },

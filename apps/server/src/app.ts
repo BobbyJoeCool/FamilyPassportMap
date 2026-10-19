@@ -1,11 +1,12 @@
 import path from "node:path";
 import cookieParser from "cookie-parser";
-import express from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
+import { Prisma } from "@prisma/client";
 import { loadUser, requireUser } from "./auth/middleware.js";
 import { authRouter } from "./auth/routes.js";
 import { UPLOADS_DIR } from "./env.js";
 import { bulkCountriesRouter, countriesRouter } from "./routes/countries.js";
-import { meRouter } from "./routes/me.js";
+import { currentUserRouter } from "./routes/currentUser.js";
 import { peopleRouter } from "./routes/people.js";
 import { bulkVisitsRouter, visitsRouter } from "./routes/visits.js";
 
@@ -30,13 +31,34 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRouter);
 // Everything below under /api requires a signed-in User (health and auth are above, public).
 app.use("/api", requireUser);
-app.use("/api/me", meRouter);
+app.use("/api/me", currentUserRouter);
 app.use("/api/people", peopleRouter);
 app.use("/api/people/:id/visits", visitsRouter);
 app.use("/api/visits", bulkVisitsRouter);
 app.use("/api/people/:id/countries", countriesRouter);
 app.use("/api/countries", bulkCountriesRouter);
 app.use("/uploads", express.static(UPLOADS_DIR));
+
+/**
+ * Last-resort error handler for the API. A Person can be deleted between a route's access
+ * check and its write (e.g. in another tab); Prisma then reports the vanished row as P2025
+ * ("record not found") or P2003 (foreign key — a visit for a Person who no longer exists).
+ * Both mean "Person not found", not a server error. Everything else falls through to
+ * Express's default 500 handling.
+ * @param error - whatever a route threw.
+ * @param _req - the request (unused).
+ * @param res - the response.
+ * @param next - passes unrecognized errors on.
+ */
+function handlePersonVanished(error: unknown, _req: Request, res: Response, next: NextFunction): void {
+  // Only the two "row is gone" codes are translated; anything else is a real failure.
+  if (error instanceof Prisma.PrismaClientKnownRequestError && (error.code === "P2025" || error.code === "P2003")) {
+    res.status(404).json({ error: "Person not found" });
+    return;
+  }
+  next(error);
+}
+app.use("/api", handlePersonVanished);
 
 // In production, the same Express process also serves the built frontend, so one
 // deployment (Azure App Service) covers both the API and the web app.

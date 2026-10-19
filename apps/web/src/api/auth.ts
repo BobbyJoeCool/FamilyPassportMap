@@ -1,4 +1,4 @@
-import type { Me } from "@familypassportmap/shared";
+import type { CurrentUserResponse } from "@familypassportmap/shared";
 import { handleResponse } from "./http";
 
 /**
@@ -6,16 +6,21 @@ import { handleResponse } from "./http";
  * answer ("nobody"), not an expired session, so it doesn't trigger the sign-in redirect.
  * @returns the signed-in User, or null when signed out.
  */
-export async function fetchMe(): Promise<Me | null> {
+export async function fetchCurrentUser(): Promise<CurrentUserResponse | null> {
   const res = await fetch("/api/me");
   // Signed out is a normal state at startup.
   if (res.status === 401) return null;
-  return handleResponse<Me>(res);
+  return handleResponse<CurrentUserResponse>(res);
 }
 
-/** Ends this browser's session on the server (the cookie is cleared by the response). */
+/**
+ * Ends this browser's session on the server (the cookie is cleared by the response).
+ * @throws if the server couldn't be reached or refused.
+ */
 export async function signOut(): Promise<void> {
-  await fetch("/api/auth/signout", { method: "POST" });
+  const res = await fetch("/api/auth/signout", { method: "POST" });
+  // Anything but success means the session may still be live — the caller must not pretend.
+  if (!res.ok) throw new Error(`Sign out failed with status ${res.status}`);
 }
 
 /**

@@ -9,7 +9,7 @@ export interface SignedInUser {
   avatarUrl: string | null;
 }
 
-/** Response of `GET /api/me`. */
-export interface Me {
+/** Response of `GET /api/me`: who is signed in. */
+export interface CurrentUserResponse {
   user: SignedInUser;
 }

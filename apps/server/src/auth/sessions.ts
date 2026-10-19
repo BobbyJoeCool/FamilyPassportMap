@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type { CookieOptions } from "express";
+import type { CookieOptions, Request } from "express";
 import type { User } from "@prisma/client";
 import { prisma } from "../db.js";
 
@@ -35,6 +35,16 @@ export function sessionCookieOptions(): CookieOptions {
     path: "/",
     maxAge: SESSION_LIFETIME_MS,
   };
+}
+
+/**
+ * Reads the session token from the request's cookie.
+ * @param req - the incoming request (after cookie-parser).
+ * @returns the token, or null when there's no (non-empty) session cookie.
+ */
+export function readSessionToken(req: Request): string | null {
+  const token: unknown = req.cookies?.[SESSION_COOKIE];
+  return typeof token === "string" && token !== "" ? token : null;
 }
 
 /**

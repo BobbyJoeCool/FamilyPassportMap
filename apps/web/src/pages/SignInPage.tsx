@@ -1,8 +1,9 @@
 import { Link, useSearchParams } from "react-router-dom";
+import { DEFAULT_LANDING_PATH, SIGN_IN_ERRORS, type SignInError } from "@familypassportmap/shared";
 import { googleSignInUrl } from "../api/auth";
 
 /** What to tell the visitor for each way sign-in can fail (the `error` query value). */
-const ERROR_MESSAGES: Record<string, string> = {
+const ERROR_MESSAGES: Record<SignInError, string> = {
   cancelled: "Sign-in was cancelled.",
   failed: "Sign-in didn't work. Please try again.",
   unverified: "Your Google email isn't verified, so we can't sign you in.",
@@ -14,9 +15,11 @@ const ERROR_MESSAGES: Record<string, string> = {
  */
 export function SignInPage() {
   const [params] = useSearchParams();
-  const returnTo = params.get("returnTo") ?? "/us/map";
+  const returnTo = params.get("returnTo") ?? DEFAULT_LANDING_PATH;
   const error = params.get("error");
-  const errorMessage = error ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.failed) : null;
+  // No error → no message. An error code we don't recognize still gets the generic message.
+  const errorMessage =
+    error === null ? null : ERROR_MESSAGES[SIGN_IN_ERRORS.find((known) => known === error) ?? "failed"];
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">

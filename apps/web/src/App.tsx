@@ -5,11 +5,12 @@ import { MapPage } from "./pages/MapPage";
 import { ComparePage } from "./pages/ComparePage";
 import { ListPage } from "./pages/ListPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
-import { AccountMenu } from "./components/AccountMenu";
+import { UserMenu } from "./components/UserMenu";
 import { SectionTabs } from "./components/SectionTabs";
 import { SignInPage } from "./pages/SignInPage";
-import { useMe } from "./auth/useMe";
-import type { Me } from "@familypassportmap/shared";
+import { signInPath } from "./auth/signInPath";
+import { useCurrentUser } from "./auth/useCurrentUser";
+import { safeReturnTo, type CurrentUserResponse } from "@familypassportmap/shared";
 import { parseSectionPath } from "./sections";
 
 // The World pages are lazy-loaded so the world topology (world-atlas) ships in its own chunk
@@ -78,10 +79,10 @@ function navTarget(to: string, pathname: string): string {
 
 /**
  * The signed-in app shell: top nav (desktop) / bottom tab bar (mobile) plus the routed page
- * content, with the account menu in the header.
- * @param me - the signed-in User.
+ * content, with the user menu in the header.
+ * @param currentUser - who is signed in.
  */
-function AppShell({ me }: { me: Me }) {
+function AppShell({ currentUser }: { currentUser: CurrentUserResponse }) {
   const location = useLocation();
   const section = parseSectionPath(location.pathname)?.section;
 
@@ -100,14 +101,14 @@ function AppShell({ me }: { me: Me }) {
           />
         ))}
         <div className="ml-auto">
-          <AccountMenu user={me.user} />
+          <UserMenu user={currentUser.user} />
         </div>
       </nav>
 
-      {/* Mobile top bar: the bottom tab bar has no room for the account menu. */}
+      {/* Mobile top bar: the bottom tab bar has no room for the user menu. */}
       <header className="md:hidden flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
         <span className="font-bold text-[var(--color-text-heading)]">🗺️ FamilyPassportMap</span>
-        <AccountMenu user={me.user} />
+        <UserMenu user={currentUser.user} />
       </header>
 
       {/* Page content */}
@@ -168,19 +169,19 @@ function AppShell({ me }: { me: Me }) {
  */
 function App() {
   const location = useLocation();
-  const meState = useMe();
+  const currentUserState = useCurrentUser();
 
   // The sign-in page never shows app chrome. Someone already signed in skips past it.
   if (location.pathname === "/signin") {
-    if (meState.status === "ready") {
-      const returnTo = new URLSearchParams(location.search).get("returnTo");
-      return <Navigate to={returnTo?.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/us/map"} replace />;
+    if (currentUserState.status === "ready") {
+      // Same rule the server applies: only paths inside this app.
+      return <Navigate to={safeReturnTo(new URLSearchParams(location.search).get("returnTo"))} replace />;
     }
     return <SignInPage />;
   }
 
   // Signed in: the whole app, including /privacy inside the normal shell.
-  if (meState.status === "ready") return <AppShell me={meState.me} />;
+  if (currentUserState.status === "ready") return <AppShell currentUser={currentUserState.currentUser} />;
 
   // The privacy page is public: it renders on its own while signed out (or still checking).
   if (location.pathname === "/privacy") {
@@ -192,18 +193,17 @@ function App() {
   }
 
   // Still finding out who's signed in.
-  if (meState.status === "loading") {
+  if (currentUserState.status === "loading") {
     return <p className="p-6 text-[var(--color-text-muted)]">Loading…</p>;
   }
 
   // The server couldn't be reached — don't pretend the visitor is signed out.
-  if (meState.status === "error") {
-    return <p className="p-6 text-[var(--color-danger)]">Couldn't reach the server: {meState.message}</p>;
+  if (currentUserState.status === "error") {
+    return <p className="p-6 text-[var(--color-danger)]">Couldn't reach the server: {currentUserState.message}</p>;
   }
 
   // Signed out on a protected page: go sign in, then come back here.
-  const returnTo = location.pathname + location.search;
-  return <Navigate to={`/signin?returnTo=${encodeURIComponent(returnTo)}`} replace />;
+  return <Navigate to={signInPath(location.pathname + location.search)} replace />;
 }
 
 export default App;

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { COUNTRY_CODES } from "@familypassportmap/shared";
-import { actorOf, findEditablePerson, findViewablePerson, viewablePeopleWhere } from "../access.js";
+import { actorOf, requireEditablePerson, requireViewablePerson, viewablePeopleWhere } from "../access.js";
 import { prisma } from "../db.js";
 
 // Mirrors routes/visits.ts endpoint-for-endpoint, for countries instead of US states. The two
@@ -47,14 +47,8 @@ bulkCountriesRouter.get("/", async (req, res) => {
 export const countriesRouter = Router({ mergeParams: true });
 
 /** `GET /api/people/:id/countries` — list one person's visited country codes. */
-countriesRouter.get("/", async (req, res) => {
+countriesRouter.get("/", requireViewablePerson, async (req, res) => {
   const { id } = req.params as { id: string };
-  // Distinguish "no countries" from "no such (or not viewable) person" — the latter is a 404,
-  // not an empty list.
-  if (!(await findViewablePerson(actorOf(req), id))) {
-    res.status(404).json({ error: "Person not found" });
-    return;
-  }
 
   const rows = await prisma.visitedCountry.findMany({
     where: { personId: id },
@@ -64,19 +58,13 @@ countriesRouter.get("/", async (req, res) => {
 });
 
 /** `PUT /api/people/:id/countries/:countryCode` — mark a country visited for a person. */
-countriesRouter.put("/:countryCode", async (req, res) => {
+countriesRouter.put("/:countryCode", requireEditablePerson, async (req, res) => {
   const { id, countryCode } = req.params as { id: string; countryCode: string };
   const normalized = countryCode.toUpperCase();
   // Reject anything that isn't one of the 195 tracked ISO 3166-1 alpha-2 codes — this also
   // rejects real-but-untracked codes like dependent territories ("PR", "GL").
   if (!COUNTRY_CODES.includes(normalized)) {
     res.status(400).json({ error: "Unknown country code" });
-    return;
-  }
-
-  // Missing and not-editable People look the same to the caller: 404.
-  if (!(await findEditablePerson(actorOf(req), id))) {
-    res.status(404).json({ error: "Person not found" });
     return;
   }
 
@@ -90,14 +78,8 @@ countriesRouter.put("/:countryCode", async (req, res) => {
 });
 
 /** `DELETE /api/people/:id/countries/:countryCode` — unmark a country as visited for a person. */
-countriesRouter.delete("/:countryCode", async (req, res) => {
+countriesRouter.delete("/:countryCode", requireEditablePerson, async (req, res) => {
   const { id, countryCode } = req.params as { id: string; countryCode: string };
-  // Distinguish "no such (or not editable) person" (404) from "country wasn't marked visited"
-  // (still a no-op 204).
-  if (!(await findEditablePerson(actorOf(req), id))) {
-    res.status(404).json({ error: "Person not found" });
-    return;
-  }
 
   await prisma.visitedCountry.deleteMany({
     where: { personId: id, countryCode: countryCode.toUpperCase() },

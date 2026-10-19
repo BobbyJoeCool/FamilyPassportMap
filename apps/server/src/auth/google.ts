@@ -18,7 +18,7 @@ export interface GoogleIdentity {
  * Builds an OAuth client from the current config.
  * @returns a configured Google OAuth client.
  */
-function client(): OAuth2Client {
+function oauthClient(): OAuth2Client {
   const { clientId, clientSecret, redirectUri } = googleConfig();
   return new OAuth2Client({ clientId, clientSecret, redirectUri });
 }
@@ -29,7 +29,7 @@ function client(): OAuth2Client {
  * @returns the URL to redirect to.
  */
 export function googleAuthorizationUrl(state: string): string {
-  return client().generateAuthUrl({
+  return oauthClient().generateAuthUrl({
     scope: ["openid", "email", "profile"],
     state,
     // Always show the account chooser, so a shared device doesn't silently reuse an account.
@@ -45,7 +45,7 @@ export function googleAuthorizationUrl(state: string): string {
  * @throws if the exchange or verification fails.
  */
 export async function googleIdentityFromCode(code: string): Promise<GoogleIdentity> {
-  const oauth = client();
+  const oauth = oauthClient();
   const { tokens } = await oauth.getToken(code);
   // An authorization-code exchange with the openid scope always includes an ID token.
   if (!tokens.id_token) {

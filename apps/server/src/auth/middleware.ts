@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import type { User } from "@prisma/client";
-import { resolveSession, SESSION_COOKIE, sessionCookieOptions } from "./sessions.js";
+import { readSessionToken, resolveSession, SESSION_COOKIE, sessionCookieOptions } from "./sessions.js";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -20,14 +20,15 @@ declare global {
  * @param next - continues to the next handler.
  */
 export async function loadUser(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const token: unknown = req.cookies?.[SESSION_COOKIE];
+  const token = readSessionToken(req);
   // No session cookie at all — the request is simply signed out.
-  if (typeof token !== "string" || token === "") {
+  if (!token) {
     next();
     return;
   }
 
   const session = await resolveSession(token);
+  // A valid session signs the request in; an unknown or expired one leaves it signed out.
   if (session) {
     req.user = session.user;
     // The server-side expiry just moved forward; move the cookie's Max-Age with it.

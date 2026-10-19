@@ -2,6 +2,7 @@ import { afterEach, describe, it, expect, vi } from "vitest";
 import request from "supertest";
 import { app } from "../src/app.js";
 import { missingAuthSettings } from "../src/auth/config.js";
+import { prisma } from "../src/db.js";
 import { completeSignIn, fakeCode, identityFor, newAgent, signIn } from "./helpers.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -62,6 +63,13 @@ describe("Sign-in outcomes", () => {
     const res = await completeSignIn(agent, fakeCode(identityFor("alice", { emailVerified: false })));
     expect(res.headers.location).toBe("/signin?error=unverified");
     expect((await agent.get("/api/me")).status).toBe(401);
+  });
+
+  it("an unverified Google email creates no User", async () => {
+    await completeSignIn(newAgent(), fakeCode(identityFor("alice", { emailVerified: false })));
+    // Whether a User row exists isn't visible through the API (nothing lists Users), so this
+    // one check reads the database directly.
+    expect(await prisma.user.count()).toBe(0);
   });
 
   it("cancelling at Google returns to the sign-in page with a cancelled message", async () => {
