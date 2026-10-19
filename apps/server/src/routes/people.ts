@@ -1,7 +1,9 @@
+import fs from "node:fs/promises";
 import { Router } from "express";
 import { createPersonSchema, updatePersonSchema, type Person } from "@familypassportmap/shared";
 import { actorOf, findEditablePerson, listViewablePeople } from "../access.js";
 import { prisma } from "../db.js";
+import { shrinkPhoto } from "../photos.js";
 import { uploadPhoto } from "../uploads.js";
 
 /** Router for `/api/people` — CRUD for family members plus profile-photo upload. */
@@ -100,6 +102,15 @@ peopleRouter.post("/:id/photo", async (req, res, next) => {
     // No file field was present in the multipart body at all.
     if (!req.file) {
       res.status(400).json({ error: "No photo uploaded" });
+      return;
+    }
+
+    try {
+      await shrinkPhoto(req.file.path);
+    } catch {
+      // The bytes claimed an image type but sharp couldn't decode them — discard the file.
+      await fs.rm(req.file.path, { force: true });
+      res.status(400).json({ error: "Photo couldn't be read as an image." });
       return;
     }
 
