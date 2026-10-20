@@ -7,6 +7,16 @@ import { completeSignIn, fakeCode, identityFor, newAgent, signIn } from "./helpe
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Signs a User in and completes their welcome step, so later sign-ins go to `returnTo`
+ * rather than to /welcome.
+ * @param name - a short lowercase name ("alice").
+ */
+async function finishWelcome(name: string): Promise<void> {
+  const agent = await signIn(name);
+  await agent.post("/api/me/primary-person").send({ name, colorHex: "#123456" });
+}
+
 describe("Signing in", () => {
   it("GET /api/me is 401 when signed out", async () => {
     const res = await request(app).get("/api/me");
@@ -45,6 +55,7 @@ describe("Sign-in outcomes", () => {
   });
 
   it("a successful sign-in redirects to the requested page", async () => {
+    await finishWelcome("alice");
     const res = await completeSignIn(newAgent(), fakeCode(identityFor("alice")), "/world/list");
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe("/world/list");
@@ -53,6 +64,7 @@ describe("Sign-in outcomes", () => {
   it.each(["https://evil.example.com/", "//evil.example.com/", "/\\evil.example.com", "javascript:alert(1)"])(
     "an outside returnTo (%s) falls back to the US map",
     async (returnTo) => {
+      await finishWelcome("alice");
       const res = await completeSignIn(newAgent(), fakeCode(identityFor("alice")), returnTo);
       expect(res.headers.location).toBe("/us/map");
     },
@@ -142,6 +154,7 @@ describe("Protected routes", () => {
   it.each([
     ["get", "/api/people"],
     ["get", "/api/people/allowance"],
+    ["post", "/api/me/primary-person"],
     ["post", "/api/people"],
     ["patch", "/api/people/some-id"],
     ["delete", "/api/people/some-id"],

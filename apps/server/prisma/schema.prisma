@@ -21,13 +21,15 @@ model Person {
   // The User this Person belongs to (Phase 12). Nullable ONLY for Legacy People (recorded
   // before login) until they're Adopted; every new Person is created with an Owner.
   ownerId            String?
-  owner              User?            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner              User?            @relation("PersonOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   name               String
   colorHex           String
   profilePicturePath String?
   createdAt          DateTime         @default(now())
   visitedStates      VisitedState[]
   visitedCountries   VisitedCountry[]
+  // The User this Person IS (their Primary Person), if any. Back-relation only.
+  primaryOf          User?            @relation("PrimaryPerson")
 
   @@index([ownerId])
 }
@@ -59,15 +61,19 @@ model VisitedCountry {
 // so adding another provider later needs no data change. email/displayName/avatarUrl are
 // refreshed from the provider on every sign-in.
 model User {
-  id           String    @id @default(cuid())
-  authProvider String // "google"
-  authSubject  String // the provider's user id (Google's "sub")
-  email        String
-  displayName  String
-  avatarUrl    String? // provider's profile-picture URL; shown in the header only
-  createdAt    DateTime  @default(now())
-  sessions     Session[]
-  people       Person[]
+  id              String    @id @default(cuid())
+  authProvider    String // "google"
+  authSubject     String // the provider's user id (Google's "sub")
+  email           String
+  displayName     String
+  avatarUrl       String? // provider's profile-picture URL; shown in the header only
+  // The Person who IS this User. Null only between first sign-in and finishing the welcome
+  // step. Set back to null if that Person is ever deleted (in practice only Claim replaces it).
+  primaryPersonId String?   @unique
+  primaryPerson   Person?   @relation("PrimaryPerson", fields: [primaryPersonId], references: [id], onDelete: SetNull)
+  createdAt       DateTime  @default(now())
+  sessions        Session[]
+  people          Person[]  @relation("PersonOwner")
 
   @@unique([authProvider, authSubject])
 }

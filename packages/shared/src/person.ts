@@ -23,6 +23,8 @@ export interface Person {
   colorHex: string;
   profilePicturePath: string | null;
   createdAt: string;
+  /** True when this Person is the signed-in User's own Primary Person ("You"). */
+  isPrimary: boolean;
 }
 
 export const ALLOWED_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;

@@ -1,15 +1,15 @@
 import fs from "node:fs/promises";
-import { Router } from "express";
+import { Router, type Request } from "express";
 import {
   createPersonSchema,
   MAX_PEOPLE_PER_USER,
   PEOPLE_CAP_MESSAGE,
   updatePersonSchema,
   type PeopleAllowance,
-  type Person,
 } from "@familypassportmap/shared";
 import { actorOf, countOwnedPeople, createOwnedPerson, listViewablePeople, requireEditablePerson } from "../access.js";
 import { prisma } from "../db.js";
+import { toPersonResponse } from "../personResponse.js";
 import { shrinkPhoto } from "../photos.js";
 import { uploadPhoto } from "../uploads.js";
 
@@ -17,30 +17,18 @@ import { uploadPhoto } from "../uploads.js";
 export const peopleRouter = Router();
 
 /**
- * Converts a Prisma `Person` row into the API's `Person` shape.
- * @param row - the raw row as returned by Prisma.
- * @returns the same person, with `createdAt` serialized to an ISO 8601 string for the wire.
+ * The signed-in User's Primary Person id, for marking "You" in responses.
+ * @param req - the request (after requireUser).
+ * @returns the id, or null before the welcome step.
  */
-function toPerson(row: {
-  id: string;
-  name: string;
-  colorHex: string;
-  profilePicturePath: string | null;
-  createdAt: Date;
-}): Person {
-  return {
-    id: row.id,
-    name: row.name,
-    colorHex: row.colorHex,
-    profilePicturePath: row.profilePicturePath,
-    createdAt: row.createdAt.toISOString(),
-  };
+function primaryPersonIdOf(req: Request): string | null {
+  return req.user?.primaryPersonId ?? null;
 }
 
 /** `GET /api/people` — list every person, oldest-added first. */
 peopleRouter.get("/", async (req, res) => {
   const people = await listViewablePeople(actorOf(req));
-  res.json(people.map(toPerson));
+  res.json(people.map((person) => toPersonResponse(person, primaryPersonIdOf(req))));
 });
 
 /**
@@ -68,7 +56,7 @@ peopleRouter.post("/", async (req, res) => {
     res.status(409).json({ error: PEOPLE_CAP_MESSAGE });
     return;
   }
-  res.status(201).json(toPerson(person));
+  res.status(201).json(toPersonResponse(person, primaryPersonIdOf(req)));
 });
 
 /** `PATCH /api/people/:id` — partially update a person's name and/or color. */
@@ -82,12 +70,18 @@ peopleRouter.patch("/:id", requireEditablePerson, async (req, res) => {
 
   const { id } = req.params as { id: string };
   const person = await prisma.person.update({ where: { id }, data: parsed.data });
-  res.json(toPerson(person));
+  res.json(toPersonResponse(person, primaryPersonIdOf(req)));
 });
 
 /** `DELETE /api/people/:id` — remove a person (their visited states cascade-delete with them). */
 peopleRouter.delete("/:id", requireEditablePerson, async (req, res) => {
   const { id } = req.params as { id: string };
+  // A User's Primary Person is them: it only goes when the whole account is deleted.
+  if (id === primaryPersonIdOf(req)) {
+    res.status(409).json({ error: "This is you, so it can't be deleted. To remove it, delete your account." });
+    return;
+  }
+
   await prisma.person.delete({ where: { id } });
   res.status(204).end();
 });
@@ -129,7 +123,7 @@ peopleRouter.post("/:id/photo", requireEditablePerson, (req, res, next) => {
         where: { id },
         data: { profilePicturePath },
       });
-      res.json(toPerson(person));
+      res.json(toPersonResponse(person, primaryPersonIdOf(req)));
     } catch (error) {
       next(error);
     }

@@ -12,4 +12,6 @@ export interface SignedInUser {
 /** Response of `GET /api/me`: who is signed in. */
 export interface CurrentUserResponse {
   user: SignedInUser;
+  /** The Person who is this User; null until they finish the welcome step. */
+  primaryPersonId: string | null;
 }

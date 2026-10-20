@@ -8,9 +8,10 @@ import { PrivacyPage } from "./pages/PrivacyPage";
 import { UserMenu } from "./components/UserMenu";
 import { SectionTabs } from "./components/SectionTabs";
 import { SignInPage } from "./pages/SignInPage";
+import { WelcomePage } from "./pages/WelcomePage";
 import { signInPath } from "./auth/signInPath";
 import { useCurrentUser } from "./auth/useCurrentUser";
-import { safeReturnTo, type CurrentUserResponse } from "@familypassportmap/shared";
+import { DEFAULT_LANDING_PATH, safeReturnTo, type CurrentUserResponse } from "@familypassportmap/shared";
 import { parseSectionPath } from "./sections";
 
 // The World pages are lazy-loaded so the world topology (world-atlas) ships in its own chunk
@@ -180,8 +181,20 @@ function App() {
     return <SignInPage />;
   }
 
-  // Signed in: the whole app, including /privacy inside the normal shell.
-  if (currentUserState.status === "ready") return <AppShell currentUser={currentUserState.currentUser} />;
+  if (currentUserState.status === "ready") {
+    const { currentUser } = currentUserState;
+    // No Primary Person yet: the welcome step comes before anything else (the privacy page
+    // stays reachable below). Leaving and coming back lands here again until it's done.
+    if (currentUser.primaryPersonId === null && location.pathname !== "/privacy") {
+      // Always show the welcome step at its own address.
+      if (location.pathname !== "/welcome") return <Navigate to="/welcome" replace />;
+      return <WelcomePage suggestedName={currentUser.user.displayName} />;
+    }
+    // Welcome already done: /welcome has nothing left to do.
+    if (location.pathname === "/welcome") return <Navigate to={DEFAULT_LANDING_PATH} replace />;
+    // Signed in: the whole app, including /privacy inside the normal shell.
+    return <AppShell currentUser={currentUser} />;
+  }
 
   // The privacy page is public: it renders on its own while signed out (or still checking).
   if (location.pathname === "/privacy") {

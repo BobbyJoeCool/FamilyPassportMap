@@ -8,6 +8,9 @@ import { createSession, deleteSession, readSessionToken, SESSION_COOKIE, session
 /** Router for `/api/auth` — Google sign-in and sign-out. Public (no session required). */
 export const authRouter = Router();
 
+/** Where a User with no Primary Person yet is sent after signing in. */
+const WELCOME_PATH = "/welcome";
+
 /** The `User.authProvider` value for Google sign-ins. */
 const GOOGLE_AUTH_PROVIDER = "google";
 
@@ -104,6 +107,7 @@ authRouter.get("/google/callback", async (req, res) => {
   }
 
   let token: string;
+  let primaryPersonId: string | null;
   try {
     // Same Google account → same User; name, email and picture are refreshed every sign-in.
     const providerDetails = { email: identity.email, displayName: identity.name, avatarUrl: identity.pictureUrl };
@@ -113,6 +117,7 @@ authRouter.get("/google/callback", async (req, res) => {
       update: providerDetails,
     });
     token = await createSession(user.id);
+    primaryPersonId = user.primaryPersonId;
   } catch (error) {
     // A database failure here still ends on the sign-in page, not a raw error page.
     console.error("Saving the signed-in User failed:", error);
@@ -121,7 +126,8 @@ authRouter.get("/google/callback", async (req, res) => {
   }
 
   res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
-  res.redirect(pending.returnTo);
+  // No Primary Person yet: the welcome step comes first, whatever page was asked for.
+  res.redirect(primaryPersonId ? pending.returnTo : WELCOME_PATH);
 });
 
 /** `POST /api/auth/signout` — end this browser's session. Safe to call when signed out. */

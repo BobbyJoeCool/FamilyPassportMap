@@ -340,6 +340,12 @@ export function PeoplePage() {
                 <>
                   <span className="font-medium flex-1 min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="truncate max-w-full">{person.name}</span>
+                    {/* The signed-in User's own Person. */}
+                    {person.isPrimary && (
+                      <span className="px-2 py-0.5 rounded-full bg-[var(--color-primary)] text-white text-xs font-medium">
+                        You
+                      </span>
+                    )}
                     <span className="flex flex-wrap gap-1">
                       <StateCounter count={stateCountFor(person.id)} />
                       <StateCounter count={countryCountFor(person.id)} total={COUNTRIES.length} label="countries" />
@@ -352,12 +358,15 @@ export function PeoplePage() {
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={() => setDeletingId(person.id)}
-                      className="px-3 py-1 rounded border border-[var(--color-danger)] text-[var(--color-danger)] text-sm hover:bg-[var(--color-danger)] hover:text-white transition-colors"
-                    >
-                      Delete
-                    </button>
+                    {/* Your Primary Person can't be deleted on its own (only with the account). */}
+                    {!person.isPrimary && (
+                      <button
+                        onClick={() => setDeletingId(person.id)}
+                        className="px-3 py-1 rounded border border-[var(--color-danger)] text-[var(--color-danger)] text-sm hover:bg-[var(--color-danger)] hover:text-white transition-colors"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </>
               )}

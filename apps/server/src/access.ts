@@ -96,6 +96,31 @@ export async function createOwnedPerson(
 }
 
 /**
+ * Creates the actor's Primary Person (the welcome step). Not limited by the per-User cap, so
+ * a User who already owns 10 People (e.g. after Adopting Legacy People) can still finish
+ * welcome. Runs in one transaction so a double-submit can't create two.
+ * @param actor - the acting User, who becomes the Owner and whose Primary Person this is.
+ * @param data - the validated name and color.
+ * @returns the new Primary Person, or null if the actor already has one.
+ * @throws if nobody is signed in.
+ */
+export async function createPrimaryPerson(
+  actor: Actor | null,
+  data: { name: string; colorHex: string },
+): Promise<Person | null> {
+  // Only a signed-in User can have a Primary Person; reaching here without one is a wiring bug.
+  if (!actor) throw new Error("createPrimaryPerson needs a signed-in User");
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUniqueOrThrow({ where: { id: actor.userId } });
+    // Already done the welcome step — there's exactly one Primary Person per User.
+    if (user.primaryPersonId) return null;
+    const person = await tx.person.create({ data: { ...data, ownerId: actor.userId } });
+    await tx.user.update({ where: { id: actor.userId }, data: { primaryPersonId: person.id } });
+    return person;
+  });
+}
+
+/**
  * Fetches one Person if the actor may view it. A Person that exists but isn't viewable is
  * indistinguishable from one that doesn't exist — callers answer 404 for both.
  * @param actor - the acting User.

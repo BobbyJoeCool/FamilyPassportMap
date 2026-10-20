@@ -1,4 +1,4 @@
-import type { CurrentUserResponse } from "@familypassportmap/shared";
+import type { CreatePersonInput, CurrentUserResponse, Person } from "@familypassportmap/shared";
 import { handleResponse } from "./http";
 
 /**
@@ -11,6 +11,19 @@ export async function fetchCurrentUser(): Promise<CurrentUserResponse | null> {
   // Signed out is a normal state at startup.
   if (res.status === 401) return null;
   return handleResponse<CurrentUserResponse>(res);
+}
+
+/**
+ * The welcome step: creates the Person who is the signed-in User.
+ * @param input - their name and chosen color.
+ * @returns the new Primary Person.
+ */
+export function createPrimaryPerson(input: CreatePersonInput): Promise<Person> {
+  return fetch("/api/me/primary-person", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  }).then((res) => handleResponse<Person>(res));
 }
 
 /**
