@@ -401,23 +401,23 @@ export function PeoplePage() {
                     >
                       Edit
                     </button>
-                    {/* "Set as me" only makes sense on someone who isn't already you. */}
+                    {/* Only for People who aren't you: "Set as me" would do nothing, and your
+                        Primary Person can't be deleted on its own (only with the account). */}
                     {!person.isPrimary && (
-                      <button
-                        onClick={() => setClaimingId(person.id)}
-                        className="px-3 py-1 rounded border border-[var(--color-border)] text-sm hover:bg-[var(--color-bg-card)] transition-colors"
-                      >
-                        Set as me
-                      </button>
-                    )}
-                    {/* Your Primary Person can't be deleted on its own (only with the account). */}
-                    {!person.isPrimary && (
-                      <button
-                        onClick={() => setDeletingId(person.id)}
-                        className="px-3 py-1 rounded border border-[var(--color-danger)] text-[var(--color-danger)] text-sm hover:bg-[var(--color-danger)] hover:text-white transition-colors"
-                      >
-                        Delete
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setClaimingId(person.id)}
+                          className="px-3 py-1 rounded border border-[var(--color-border)] text-sm hover:bg-[var(--color-bg-card)] transition-colors"
+                        >
+                          Set as me
+                        </button>
+                        <button
+                          onClick={() => setDeletingId(person.id)}
+                          className="px-3 py-1 rounded border border-[var(--color-danger)] text-[var(--color-danger)] text-sm hover:bg-[var(--color-danger)] hover:text-white transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </>
                     )}
                   </div>
                 </>

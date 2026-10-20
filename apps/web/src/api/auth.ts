@@ -16,14 +16,18 @@ export async function fetchCurrentUser(): Promise<CurrentUserResponse | null> {
 /**
  * The welcome step: creates the Person who is the signed-in User.
  * @param input - their name and chosen color.
- * @returns the new Primary Person.
+ * @returns the new Primary Person, or null if the User already has one (e.g. the welcome
+ *   step was finished in another tab) — either way, welcome is done.
  */
-export function createPrimaryPerson(input: CreatePersonInput): Promise<Person> {
-  return fetch("/api/me/primary-person", {
+export async function createPrimaryPerson(input: CreatePersonInput): Promise<Person | null> {
+  const res = await fetch("/api/me/primary-person", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
-  }).then((res) => handleResponse<Person>(res));
+  });
+  // 409 = already has a Primary Person: not an error from the User's point of view.
+  if (res.status === 409) return null;
+  return handleResponse<Person>(res);
 }
 
 /**

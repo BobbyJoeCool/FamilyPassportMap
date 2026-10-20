@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { createPersonSchema, type CurrentUserResponse } from "@familypassportmap/shared";
-import { actorOf, createPrimaryPerson } from "../access.js";
+import { actorOf } from "../access.js";
+import { createPrimaryPerson } from "../primaryPerson.js";
 import { toPersonResponse } from "../personResponse.js";
 
 /** Router for `/api/me` — the signed-in User. Mounted behind `requireUser`. */

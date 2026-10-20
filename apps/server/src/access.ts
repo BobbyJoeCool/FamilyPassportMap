@@ -1,17 +1,24 @@
 import type { NextFunction, Request, Response } from "express";
 import type { Person, Prisma } from "@prisma/client";
-import { MAX_PEOPLE_PER_USER } from "@familypassportmap/shared";
+import { MAX_PEOPLE_PER_USER, type CreatePersonInput } from "@familypassportmap/shared";
 import { prisma } from "./db.js";
 
-// The access policy: the ONE place that decides which People a User may view or edit.
-// Every route that touches a Person, its visits, or its photo asks this module — no route
-// filters Person queries on its own. Link and Join (later phases) change only the rules
-// in here. See docs/adr/0002-people-have-one-owner-families-group-users.md.
+// The access policy: the ONE place that decides which People a User may view, edit, or own,
+// and the one place a Person is given an Owner. Every route or operation that touches a
+// Person, its visits, or its photo asks this module — nothing else builds Person ownership
+// or visibility filters. Link and Join (later phases) change only the rules in here.
+// See docs/adr/0002-people-have-one-owner-families-group-users.md.
 
 /** Who is making the request, as far as the access policy is concerned. */
 export interface Actor {
   userId: string;
 }
+
+/**
+ * A database handle: the shared client, or the client inside a `prisma.$transaction`. Helpers
+ * take one so an operation can run its access checks inside its own transaction.
+ */
+export type Db = Prisma.TransactionClient;
 
 /**
  * Resolves the acting User for a request.
@@ -20,6 +27,19 @@ export interface Actor {
  */
 export function actorOf(req: Request): Actor | null {
   return req.user ? { userId: req.user.id } : null;
+}
+
+/**
+ * Asserts there is a signed-in actor, for operations that only make sense for one.
+ * @param actor - the acting User, if any.
+ * @param operation - the operation's name, for the error message.
+ * @returns the actor.
+ * @throws if nobody is signed in — the route was wired without `requireUser`, a bug.
+ */
+export function signedInActor(actor: Actor | null, operation: string): Actor {
+  // Every caller sits behind requireUser, so a missing actor means a wiring mistake.
+  if (!actor) throw new Error(`${operation} needs a signed-in User`);
+  return actor;
 }
 
 /**
@@ -45,12 +65,11 @@ function editablePeopleWhere(actor: Actor | null): Prisma.PersonWhereInput {
 
 /**
  * The Prisma filter for People owned by the actor. Legacy People (no Owner until Adopted)
- * never match, and nobody signed in matches nothing. Exported for operations that must run
- * their ownership check inside their own transaction (e.g. Claim).
+ * never match, and nobody signed in matches nothing.
  * @param actor - the acting User.
  * @returns a `where` clause for `person` queries.
  */
-export function ownedPeopleWhere(actor: Actor | null): Prisma.PersonWhereInput {
+function ownedPeopleWhere(actor: Actor | null): Prisma.PersonWhereInput {
   // No actor can own anything — an always-false filter rather than "no filter".
   return actor ? { ownerId: actor.userId } : { id: { in: [] } };
 }
@@ -68,10 +87,23 @@ export function listViewablePeople(actor: Actor | null): Promise<Person[]> {
  * Counts the People the actor owns — what the per-User cap limits. Ownership, not
  * visibility: Linked or Joined People (later phases) never count toward it.
  * @param actor - the acting User.
+ * @param db - the database handle (a transaction's, to count inside it).
  * @returns how many People the actor owns.
  */
-export function countOwnedPeople(actor: Actor | null): Promise<number> {
-  return prisma.person.count({ where: ownedPeopleWhere(actor) });
+export function countOwnedPeople(actor: Actor | null, db: Db = prisma): Promise<number> {
+  return db.person.count({ where: ownedPeopleWhere(actor) });
+}
+
+/**
+ * Inserts a Person owned by the actor — the one place a Person is given an Owner. No cap
+ * check: callers decide whether one applies.
+ * @param db - the database handle (normally a transaction's).
+ * @param actor - the acting User, who becomes the Owner.
+ * @param data - the new Person's validated name and color.
+ * @returns the new Person.
+ */
+export function insertOwnedPerson(db: Db, actor: Actor, data: CreatePersonInput): Promise<Person> {
+  return db.person.create({ data: { ...data, ownerId: actor.userId } });
 }
 
 /**
@@ -83,41 +115,12 @@ export function countOwnedPeople(actor: Actor | null): Promise<number> {
  * @returns the new Person, or null when the actor is already at the cap.
  * @throws if nobody is signed in (routes using this sit behind requireUser).
  */
-export async function createOwnedPerson(
-  actor: Actor | null,
-  data: { name: string; colorHex: string },
-): Promise<Person | null> {
-  // Only a signed-in User can own a Person; reaching here without one is a wiring bug.
-  if (!actor) throw new Error("createOwnedPerson needs a signed-in User");
+export async function createOwnedPerson(actor: Actor | null, data: CreatePersonInput): Promise<Person | null> {
+  const owner = signedInActor(actor, "createOwnedPerson");
   return prisma.$transaction(async (tx) => {
     // At the cap: refuse inside the transaction, so the count can't go stale before the insert.
-    if ((await tx.person.count({ where: ownedPeopleWhere(actor) })) >= MAX_PEOPLE_PER_USER) return null;
-    return tx.person.create({ data: { ...data, ownerId: actor.userId } });
-  });
-}
-
-/**
- * Creates the actor's Primary Person (the welcome step). Not limited by the per-User cap, so
- * a User who already owns 10 People (e.g. after Adopting Legacy People) can still finish
- * welcome. Runs in one transaction so a double-submit can't create two.
- * @param actor - the acting User, who becomes the Owner and whose Primary Person this is.
- * @param data - the validated name and color.
- * @returns the new Primary Person, or null if the actor already has one.
- * @throws if nobody is signed in.
- */
-export async function createPrimaryPerson(
-  actor: Actor | null,
-  data: { name: string; colorHex: string },
-): Promise<Person | null> {
-  // Only a signed-in User can have a Primary Person; reaching here without one is a wiring bug.
-  if (!actor) throw new Error("createPrimaryPerson needs a signed-in User");
-  return prisma.$transaction(async (tx) => {
-    const user = await tx.user.findUniqueOrThrow({ where: { id: actor.userId } });
-    // Already done the welcome step — there's exactly one Primary Person per User.
-    if (user.primaryPersonId) return null;
-    const person = await tx.person.create({ data: { ...data, ownerId: actor.userId } });
-    await tx.user.update({ where: { id: actor.userId }, data: { primaryPersonId: person.id } });
-    return person;
+    if ((await countOwnedPeople(owner, tx)) >= MAX_PEOPLE_PER_USER) return null;
+    return insertOwnedPerson(tx, owner, data);
   });
 }
 
@@ -137,16 +140,29 @@ export function findViewablePerson(actor: Actor | null, personId: string): Promi
  * visits). Same not-found semantics as `findViewablePerson`.
  * @param actor - the acting User.
  * @param personId - the Person's id.
+ * @param db - the database handle (a transaction's, to check inside it).
  * @returns the Person, or null if missing or not editable.
  */
-export function findEditablePerson(actor: Actor | null, personId: string): Promise<Person | null> {
-  return prisma.person.findFirst({ where: { AND: [{ id: personId }, editablePeopleWhere(actor)] } });
+export function findEditablePerson(actor: Actor | null, personId: string, db: Db = prisma): Promise<Person | null> {
+  return db.person.findFirst({ where: { AND: [{ id: personId }, editablePeopleWhere(actor)] } });
+}
+
+/**
+ * Fetches one Person if the actor OWNS it — stricter than edit once Join exists (a Joined
+ * User may edit People they don't own, but only the Owner may Claim them without approval).
+ * @param actor - the acting User.
+ * @param personId - the Person's id.
+ * @param db - the database handle (a transaction's, to check inside it).
+ * @returns the Person, or null if missing or not owned.
+ */
+export function findOwnedPerson(actor: Actor | null, personId: string, db: Db = prisma): Promise<Person | null> {
+  return db.person.findFirst({ where: { AND: [{ id: personId }, ownedPeopleWhere(actor)] } });
 }
 
 /**
  * Builds a route guard that answers `404 { error: "Person not found" }` unless the actor may
  * access the Person named by the route's `:id` parameter.
- * @param find - the access check to apply (view or edit).
+ * @param find - the access check to apply (view, edit, or own).
  * @returns Express middleware.
  */
 function personGuard(find: (actor: Actor | null, personId: string) => Promise<Person | null>) {
@@ -164,18 +180,7 @@ function personGuard(find: (actor: Actor | null, personId: string) => Promise<Pe
 export const requireViewablePerson = personGuard(findViewablePerson);
 
 /** Route guard: continue only if the actor may edit the Person in `:id`; otherwise 404. */
-export const requireEditablePerson = personGuard(findEditablePerson);
-
-/**
- * Fetches one Person if the actor OWNS it — stricter than edit once Join exists (a Joined
- * User may edit People they don't own, but only the Owner may Claim them without approval).
- * @param actor - the acting User.
- * @param personId - the Person's id.
- * @returns the Person, or null if missing or not owned.
- */
-export function findOwnedPerson(actor: Actor | null, personId: string): Promise<Person | null> {
-  return prisma.person.findFirst({ where: { AND: [{ id: personId }, ownedPeopleWhere(actor)] } });
-}
+export const requireEditablePerson = personGuard((actor, personId) => findEditablePerson(actor, personId));
 
 /** Route guard: continue only if the actor owns the Person in `:id`; otherwise 404. */
-export const requireOwnedPerson = personGuard(findOwnedPerson);
+export const requireOwnedPerson = personGuard((actor, personId) => findOwnedPerson(actor, personId));

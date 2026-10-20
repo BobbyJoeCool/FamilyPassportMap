@@ -207,7 +207,7 @@ The existing family's data is attached to the site owner's account on their firs
 ### API changes
 
 - `GET /api/me` → `{ user: { id, email, displayName, avatarUrl }, primaryPersonId: string | null }`, or `401`.
-- `POST /api/me/primary-person` with `{ name, colorHex }` (the same rules as creating a Person) creates the Primary Person and returns it. It returns `409` if the User already has one. This endpoint does not count against the 10-People cap, so the legacy owner can always finish the welcome step.
+- `POST /api/me/primary-person` with `{ name, colorHex }` (the same rules as creating a Person) creates the Primary Person and returns it. It returns `409 { error: "You already have a Primary Person." }` if the User already has one (the web app treats that as "welcome is done"). This endpoint does not count against the 10-People cap, so the legacy owner can always finish the welcome step.
 - `DELETE /api/me` permanently deletes the User and everything they own: People, visits, photo files and sessions. It clears the cookie and returns `204`.
 - `POST /api/people` returns `409 { error: "You can have up to 10 people, including yourself." }` when the User already owns 10. The count and the insert run in one transaction, so simultaneous adds can't exceed the cap.
 - `GET /api/people/allowance` → `{ owned, max }`: how many People the User **owns**, against the cap. The People page uses it rather than the length of the People list, because once Link exists the list will include People the User doesn't own.
@@ -216,8 +216,8 @@ The existing family's data is attached to the site owner's account on their firs
   2. sets the target as the Primary Person;
   3. deletes the old Primary Person and its photo file.
 
-  It returns the updated Person.
-- `DELETE /api/people/:id` on the User's Primary Person returns `409 { error: "This is you, so it can't be deleted. To remove it, delete your account." }`.
+  It returns the updated Person. Claiming your current Primary Person returns `409 { error: "This is already you." }`. A User with no Primary Person yet (before the welcome step) can Claim directly: there's nothing to merge, and it completes the welcome step for them. The photo file is removed after the transaction commits; if that fails it's logged, not reported, since the Claim itself already succeeded.
+- `DELETE /api/people/:id` on the User's Primary Person returns `409 { error: "This is you, so it can't be deleted. To remove it, delete your account." }`. The check runs in the same transaction as the delete, so a Claim landing in between can't let the new Primary Person be deleted.
 - The `Person` API shape gains `isPrimary: boolean`.
 - All other People, visit and country endpoints keep their current contracts, now scoped through the access policy.
 
@@ -246,7 +246,7 @@ The existing family's data is attached to the site owner's account on their firs
   - `cancelled`: "Sign-in was cancelled."
   - `failed`: "Sign-in didn't work. Please try again."
   - `unverified`: "Your Google email isn't verified, so we can't sign you in."
-- **Welcome page:** a name field prefilled from Google, the existing color picker (required) and Continue. It creates the Primary Person, then goes to `/us/map`.
+- **Welcome page:** a name field prefilled from Google, the existing color picker (required) and Continue. It creates the Primary Person, then goes to `/us/map`. It also has a **Sign out** link, since it shows before the app header and its user menu.
 - **Privacy page:** plain language covering:
   - what is stored (Google name, email and picture URL; your People, their visits and photos);
   - who can see it (only you, while signed in);

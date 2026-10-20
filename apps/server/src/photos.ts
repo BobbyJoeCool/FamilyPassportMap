@@ -69,12 +69,19 @@ export async function shrinkOversizedPhotos(dir: string): Promise<number> {
 }
 
 /**
- * Deletes a Person's stored photo file, if they had one. A file that's already gone is fine.
+ * Deletes a Person's stored photo file, if they had one. Best-effort cleanup that never throws:
+ * it runs after the database change is already committed, so a failure here is logged rather
+ * than reported as if the whole operation failed. A file that's already gone is fine.
  * @param profilePicturePath - the Person's stored path ("uploads/<file>"), or null.
  */
 export async function deletePhotoFile(profilePicturePath: string | null): Promise<void> {
   // No photo on record: nothing to delete.
   if (!profilePicturePath) return;
   // Only the file name is trusted, so a stored path can never point outside the uploads folder.
-  await fs.rm(path.join(UPLOADS_DIR, path.basename(profilePicturePath)), { force: true });
+  const filePath = path.join(UPLOADS_DIR, path.basename(profilePicturePath));
+  try {
+    await fs.rm(filePath, { force: true });
+  } catch (error) {
+    console.error(`Couldn't delete photo file ${filePath}:`, error);
+  }
 }

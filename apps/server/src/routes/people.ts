@@ -15,7 +15,7 @@ import {
   requireEditablePerson,
   requireOwnedPerson,
 } from "../access.js";
-import { claimPerson } from "../claim.js";
+import { claimPerson, deletePersonUnlessPrimary } from "../primaryPerson.js";
 import { prisma } from "../db.js";
 import { toPersonResponse } from "../personResponse.js";
 import { shrinkPhoto } from "../photos.js";
@@ -84,13 +84,17 @@ peopleRouter.patch("/:id", requireEditablePerson, async (req, res) => {
 /** `DELETE /api/people/:id` — remove a person (their visited states cascade-delete with them). */
 peopleRouter.delete("/:id", requireEditablePerson, async (req, res) => {
   const { id } = req.params as { id: string };
+  const outcome = await deletePersonUnlessPrimary(actorOf(req), id);
   // A User's Primary Person is them: it only goes when the whole account is deleted.
-  if (id === primaryPersonIdOf(req)) {
+  if (outcome === "isPrimary") {
     res.status(409).json({ error: "This is you, so it can't be deleted. To remove it, delete your account." });
     return;
   }
-
-  await prisma.person.delete({ where: { id } });
+  // Gone between the route guard and the transaction (e.g. deleted in another tab).
+  if (outcome === "notFound") {
+    res.status(404).json({ error: "Person not found" });
+    return;
+  }
   res.status(204).end();
 });
 
