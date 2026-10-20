@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Person } from "@familypassportmap/shared";
-import { COUNTRIES } from "@familypassportmap/shared";
+import { COUNTRIES, MAX_PEOPLE_PER_USER, PEOPLE_CAP_MESSAGE } from "@familypassportmap/shared";
 import { createPerson, deletePerson, listPeople, updatePerson, uploadPersonPhoto } from "../api/people";
 import { getAllVisits, type PersonVisits } from "../api/visits";
 import { getAllCountries, type PersonCountries } from "../api/countries";
@@ -188,6 +188,9 @@ export function PeoplePage() {
     }
   }
 
+  // The list holds exactly the People this User owns, so its length is what the cap limits.
+  const atPeopleCap = people.length >= MAX_PEOPLE_PER_USER;
+
   return (
     <div>
       <h1 className="text-2xl md:text-3xl font-bold mb-6">People</h1>
@@ -200,7 +203,10 @@ export function PeoplePage() {
 
       <form onSubmit={handleAdd} className="mb-8 p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
         <h2 className="text-lg font-semibold mb-3">Add a person</h2>
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+        {/* At the cap, explain why the form below is disabled. */}
+        {atPeopleCap && <p className="mb-3 text-sm text-[var(--color-text-muted)]">{PEOPLE_CAP_MESSAGE}</p>}
+        {/* A disabled fieldset turns off every input and the button at once. */}
+        <fieldset disabled={atPeopleCap} className="flex flex-col sm:flex-row gap-3 items-start sm:items-end disabled:opacity-50">
           <label className="flex flex-col gap-1 text-sm font-medium flex-1 min-w-0">
             Name
             <input
@@ -242,7 +248,7 @@ export function PeoplePage() {
           >
             {submitting ? "Adding…" : "Add person"}
           </button>
-        </div>
+        </fieldset>
       </form>
 
       <h2 className="text-lg font-semibold mb-3">Family</h2>

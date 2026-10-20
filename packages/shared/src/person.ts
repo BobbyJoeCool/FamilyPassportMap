@@ -27,3 +27,8 @@ export interface Person {
 
 export const ALLOWED_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 export const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024; // 5MB, per Documentation/Phase-1-Data-Layer-People.md
+
+/** Most People one User may own, counting their own Primary Person. */
+export const MAX_PEOPLE_PER_USER = 10;
+/** Shown by the server (409) and the People page when a User is at `MAX_PEOPLE_PER_USER`. */
+export const PEOPLE_CAP_MESSAGE = `You can have up to ${MAX_PEOPLE_PER_USER} people, including yourself.`;

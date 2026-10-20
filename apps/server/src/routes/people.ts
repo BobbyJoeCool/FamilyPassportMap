@@ -1,7 +1,13 @@
 import fs from "node:fs/promises";
 import { Router } from "express";
-import { createPersonSchema, updatePersonSchema, type Person } from "@familypassportmap/shared";
-import { actorOf, listViewablePeople, requireEditablePerson } from "../access.js";
+import {
+  createPersonSchema,
+  MAX_PEOPLE_PER_USER,
+  PEOPLE_CAP_MESSAGE,
+  updatePersonSchema,
+  type Person,
+} from "@familypassportmap/shared";
+import { actorOf, countOwnedPeople, listViewablePeople, requireEditablePerson } from "../access.js";
 import { prisma } from "../db.js";
 import { shrinkPhoto } from "../photos.js";
 import { uploadPhoto } from "../uploads.js";
@@ -45,7 +51,15 @@ peopleRouter.post("/", async (req, res) => {
     return;
   }
 
-  const person = await prisma.person.create({ data: parsed.data });
+  const actor = actorOf(req);
+  // Each User may own at most MAX_PEOPLE_PER_USER People (keeps the free host's disk safe).
+  if ((await countOwnedPeople(actor)) >= MAX_PEOPLE_PER_USER) {
+    res.status(409).json({ error: PEOPLE_CAP_MESSAGE });
+    return;
+  }
+
+  // The signed-in User becomes the new Person's Owner (requireUser guarantees one).
+  const person = await prisma.person.create({ data: { ...parsed.data, ownerId: actor!.userId } });
   res.status(201).json(toPerson(person));
 });
 

@@ -24,22 +24,33 @@ export function actorOf(req: Request): Actor | null {
 /**
  * The Prisma filter selecting every Person the actor may view. Use it for lists and for
  * relation filters (e.g. bulk visit maps) so they agree with the single-Person checks below.
- * @param _actor - the acting User.
+ * Today a User may view exactly the People they own (Link will widen this).
+ * @param actor - the acting User.
  * @returns a `where` clause for `person` queries.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used once ownership lands (ticket #5)
-export function viewablePeopleWhere(_actor: Actor | null): Prisma.PersonWhereInput {
-  return {};
+export function viewablePeopleWhere(actor: Actor | null): Prisma.PersonWhereInput {
+  return ownedBy(actor);
 }
 
 /**
- * The Prisma filter selecting every Person the actor may edit.
- * @param _actor - the acting User.
+ * The Prisma filter selecting every Person the actor may edit. Today: exactly the People they
+ * own (Join will widen this).
+ * @param actor - the acting User.
  * @returns a `where` clause for `person` queries.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used once ownership lands (ticket #5)
-function editablePeopleWhere(_actor: Actor | null): Prisma.PersonWhereInput {
-  return {};
+function editablePeopleWhere(actor: Actor | null): Prisma.PersonWhereInput {
+  return ownedBy(actor);
+}
+
+/**
+ * The Prisma filter for People owned by the actor. People with no Owner (pre-login data not
+ * yet adopted) never match, and nobody signed in matches nothing.
+ * @param actor - the acting User.
+ * @returns a `where` clause for `person` queries.
+ */
+function ownedBy(actor: Actor | null): Prisma.PersonWhereInput {
+  // No actor can own anything — an always-false filter rather than "no filter".
+  return actor ? { ownerId: actor.userId } : { id: { in: [] } };
 }
 
 /**
@@ -49,6 +60,16 @@ function editablePeopleWhere(_actor: Actor | null): Prisma.PersonWhereInput {
  */
 export function listViewablePeople(actor: Actor | null): Promise<Person[]> {
   return prisma.person.findMany({ where: viewablePeopleWhere(actor), orderBy: { createdAt: "asc" } });
+}
+
+/**
+ * Counts the People the actor owns — what the per-User cap limits. Ownership, not
+ * visibility: Linked or Joined People (later phases) never count toward it.
+ * @param actor - the acting User.
+ * @returns how many People the actor owns.
+ */
+export function countOwnedPeople(actor: Actor | null): Promise<number> {
+  return prisma.person.count({ where: ownedBy(actor) });
 }
 
 /**
