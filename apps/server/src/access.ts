@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import type { Person, Prisma } from "@prisma/client";
+import { MAX_PEOPLE_PER_USER } from "@familypassportmap/shared";
 import { prisma } from "./db.js";
 
 // The access policy: the ONE place that decides which People a User may view or edit.
@@ -29,7 +30,7 @@ export function actorOf(req: Request): Actor | null {
  * @returns a `where` clause for `person` queries.
  */
 export function viewablePeopleWhere(actor: Actor | null): Prisma.PersonWhereInput {
-  return ownedBy(actor);
+  return ownedPeopleWhere(actor);
 }
 
 /**
@@ -39,16 +40,16 @@ export function viewablePeopleWhere(actor: Actor | null): Prisma.PersonWhereInpu
  * @returns a `where` clause for `person` queries.
  */
 function editablePeopleWhere(actor: Actor | null): Prisma.PersonWhereInput {
-  return ownedBy(actor);
+  return ownedPeopleWhere(actor);
 }
 
 /**
- * The Prisma filter for People owned by the actor. People with no Owner (pre-login data not
- * yet adopted) never match, and nobody signed in matches nothing.
+ * The Prisma filter for People owned by the actor. Legacy People (no Owner until Adopted)
+ * never match, and nobody signed in matches nothing.
  * @param actor - the acting User.
  * @returns a `where` clause for `person` queries.
  */
-function ownedBy(actor: Actor | null): Prisma.PersonWhereInput {
+function ownedPeopleWhere(actor: Actor | null): Prisma.PersonWhereInput {
   // No actor can own anything — an always-false filter rather than "no filter".
   return actor ? { ownerId: actor.userId } : { id: { in: [] } };
 }
@@ -69,7 +70,29 @@ export function listViewablePeople(actor: Actor | null): Promise<Person[]> {
  * @returns how many People the actor owns.
  */
 export function countOwnedPeople(actor: Actor | null): Promise<number> {
-  return prisma.person.count({ where: ownedBy(actor) });
+  return prisma.person.count({ where: ownedPeopleWhere(actor) });
+}
+
+/**
+ * Creates a Person owned by the actor, unless they already own `MAX_PEOPLE_PER_USER`. The
+ * count and the insert run in one transaction, and this SQLite adapter serializes
+ * transactions, so simultaneous adds can't both take the last place.
+ * @param actor - the acting User, who becomes the Owner.
+ * @param data - the new Person's validated name and color.
+ * @returns the new Person, or null when the actor is already at the cap.
+ * @throws if nobody is signed in (routes using this sit behind requireUser).
+ */
+export async function createOwnedPerson(
+  actor: Actor | null,
+  data: { name: string; colorHex: string },
+): Promise<Person | null> {
+  // Only a signed-in User can own a Person; reaching here without one is a wiring bug.
+  if (!actor) throw new Error("createOwnedPerson needs a signed-in User");
+  return prisma.$transaction(async (tx) => {
+    // At the cap: refuse inside the transaction, so the count can't go stale before the insert.
+    if ((await tx.person.count({ where: ownedPeopleWhere(actor) })) >= MAX_PEOPLE_PER_USER) return null;
+    return tx.person.create({ data: { ...data, ownerId: actor.userId } });
+  });
 }
 
 /**

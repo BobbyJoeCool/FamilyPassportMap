@@ -36,6 +36,14 @@ _Avoid_: Hand off, convert, promote, "make an account from"
 Someone whose travels are tracked. A Person doesn't sign in; a User does. Each Person is its own record, even when it stands for a User.
 _Avoid_: Family member, traveler, profile
 
+**Legacy People**:
+People recorded before sign-in existed, so they have no Owner. Nobody can see them until they're Adopted.
+_Avoid_: Orphaned people, unowned people
+
+**Adopt**:
+Making one designated User the Owner of all Legacy People, which happens when that User signs in.
+_Avoid_: Claim (which is only for a Primary Person), import, migrate
+
 **Primary Person**:
 The Person who is the User themselves. Every User has exactly one, created automatically when they first sign in. It can be replaced but never deleted on its own; it goes only when the account is deleted.
 _Avoid_: Me, self, profile

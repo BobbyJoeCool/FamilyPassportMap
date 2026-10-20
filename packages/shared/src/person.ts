@@ -32,3 +32,9 @@ export const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024; // 5MB, per Documentation/P
 export const MAX_PEOPLE_PER_USER = 10;
 /** Shown by the server (409) and the People page when a User is at `MAX_PEOPLE_PER_USER`. */
 export const PEOPLE_CAP_MESSAGE = `You can have up to ${MAX_PEOPLE_PER_USER} people, including yourself.`;
+
+/** Response of `GET /api/people/allowance`: how many People the User owns, against the cap. */
+export interface PeopleAllowance {
+  owned: number;
+  max: number;
+}

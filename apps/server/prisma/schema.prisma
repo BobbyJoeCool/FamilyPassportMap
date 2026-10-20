@@ -18,8 +18,8 @@ datasource db {
 
 model Person {
   id                 String           @id @default(cuid())
-  // The User this Person belongs to (Phase 12). Nullable ONLY for People that existed before
-  // login, until the legacy owner adopts them; every new Person is created with an Owner.
+  // The User this Person belongs to (Phase 12). Nullable ONLY for Legacy People (recorded
+  // before login) until they're Adopted; every new Person is created with an Owner.
   ownerId            String?
   owner              User?            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name               String

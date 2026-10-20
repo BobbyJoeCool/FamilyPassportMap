@@ -141,6 +141,7 @@ describe("Sessions", () => {
 describe("Protected routes", () => {
   it.each([
     ["get", "/api/people"],
+    ["get", "/api/people/allowance"],
     ["post", "/api/people"],
     ["patch", "/api/people/some-id"],
     ["delete", "/api/people/some-id"],

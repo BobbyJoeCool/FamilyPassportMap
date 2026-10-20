@@ -209,7 +209,8 @@ The existing family's data is attached to the site owner's account on their firs
 - `GET /api/me` → `{ user: { id, email, displayName, avatarUrl }, primaryPersonId: string | null }`, or `401`.
 - `POST /api/me/primary-person` with `{ name, colorHex }` (the same rules as creating a Person) creates the Primary Person and returns it. It returns `409` if the User already has one. This endpoint does not count against the 10-People cap, so the legacy owner can always finish the welcome step.
 - `DELETE /api/me` permanently deletes the User and everything they own: People, visits, photo files and sessions. It clears the cookie and returns `204`.
-- `POST /api/people` returns `409 { error: "You can have up to 10 people, including yourself." }` when the User already owns 10.
+- `POST /api/people` returns `409 { error: "You can have up to 10 people, including yourself." }` when the User already owns 10. The count and the insert run in one transaction, so simultaneous adds can't exceed the cap.
+- `GET /api/people/allowance` → `{ owned, max }`: how many People the User **owns**, against the cap. The People page uses it rather than the length of the People list, because once Link exists the list will include People the User doesn't own.
 - `POST /api/people/:id/claim` performs **Set as me**. It needs a Person the User owns that isn't already their Primary Person. In one transaction it:
   1. copies every state and country on the old Primary Person that the target lacks, keeping the original `visitedAt`;
   2. sets the target as the Primary Person;
@@ -256,7 +257,7 @@ The existing family's data is attached to the site owner's account on their firs
 - **People page:**
   - the Primary Person gets a "You" badge and no delete control;
   - every other Person gets a **Set as me** action with a short confirmation explaining the merge;
-  - at 10 People the add form is disabled and shows the cap message.
+  - at 10 owned People (per `GET /api/people/allowance`) the add form is disabled and shows the cap message.
 
 ## Testing Decisions
 

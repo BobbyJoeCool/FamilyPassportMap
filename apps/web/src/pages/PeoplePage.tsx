@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
-import type { Person } from "@familypassportmap/shared";
-import { COUNTRIES, MAX_PEOPLE_PER_USER, PEOPLE_CAP_MESSAGE } from "@familypassportmap/shared";
-import { createPerson, deletePerson, listPeople, updatePerson, uploadPersonPhoto } from "../api/people";
+import type { PeopleAllowance, Person } from "@familypassportmap/shared";
+import { COUNTRIES, PEOPLE_CAP_MESSAGE } from "@familypassportmap/shared";
+import {
+  createPerson,
+  deletePerson,
+  getPeopleAllowance,
+  listPeople,
+  updatePerson,
+  uploadPersonPhoto,
+} from "../api/people";
 import { getAllVisits, type PersonVisits } from "../api/visits";
 import { getAllCountries, type PersonCountries } from "../api/countries";
 import { PersonAvatar } from "../components/PersonAvatar";
@@ -17,6 +24,7 @@ export function PeoplePage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [visits, setVisits] = useState<PersonVisits[]>([]);
   const [countries, setCountries] = useState<PersonCountries[]>([]);
+  const [allowance, setAllowance] = useState<PeopleAllowance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,19 +46,24 @@ export function PeoplePage() {
     refresh();
   }, []);
 
-  /** Reloads the people list and their visited-state and visited-country counts from the server. */
+  /**
+   * Reloads the people list, their visited-state and visited-country counts, and how many
+   * more People this User may add, from the server.
+   */
   async function refresh() {
     setLoading(true);
     setError(null);
     try {
-      const [loadedPeople, loadedVisits, loadedCountries] = await Promise.all([
+      const [loadedPeople, loadedVisits, loadedCountries, loadedAllowance] = await Promise.all([
         listPeople(),
         getAllVisits(),
         getAllCountries(),
+        getPeopleAllowance(),
       ]);
       setPeople(loadedPeople);
       setVisits(loadedVisits);
       setCountries(loadedCountries);
+      setAllowance(loadedAllowance);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load people");
     } finally {
@@ -188,8 +201,9 @@ export function PeoplePage() {
     }
   }
 
-  // The list holds exactly the People this User owns, so its length is what the cap limits.
-  const atPeopleCap = people.length >= MAX_PEOPLE_PER_USER;
+  // The server counts owned People (not the visible list, which Link will widen). Until it
+  // answers, the form stays enabled; the server enforces the cap regardless.
+  const atPeopleCap = allowance !== null && allowance.owned >= allowance.max;
 
   return (
     <div>

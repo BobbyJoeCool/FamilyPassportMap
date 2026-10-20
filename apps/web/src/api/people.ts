@@ -1,9 +1,14 @@
-import type { CreatePersonInput, Person, UpdatePersonInput } from "@familypassportmap/shared";
+import type { CreatePersonInput, PeopleAllowance, Person, UpdatePersonInput } from "@familypassportmap/shared";
 import { handleResponse } from "./http";
 
 /** Fetches every person. */
 export function listPeople(): Promise<Person[]> {
   return fetch("/api/people").then((res) => handleResponse<Person[]>(res));
+}
+
+/** Fetches how many People the signed-in User owns, against the per-User cap. */
+export function getPeopleAllowance(): Promise<PeopleAllowance> {
+  return fetch("/api/people/allowance").then((res) => handleResponse<PeopleAllowance>(res));
 }
 
 /** Creates a new person with the given name and color. */

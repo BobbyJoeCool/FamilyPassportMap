@@ -5,9 +5,10 @@ import {
   MAX_PEOPLE_PER_USER,
   PEOPLE_CAP_MESSAGE,
   updatePersonSchema,
+  type PeopleAllowance,
   type Person,
 } from "@familypassportmap/shared";
-import { actorOf, countOwnedPeople, listViewablePeople, requireEditablePerson } from "../access.js";
+import { actorOf, countOwnedPeople, createOwnedPerson, listViewablePeople, requireEditablePerson } from "../access.js";
 import { prisma } from "../db.js";
 import { shrinkPhoto } from "../photos.js";
 import { uploadPhoto } from "../uploads.js";
@@ -42,6 +43,16 @@ peopleRouter.get("/", async (req, res) => {
   res.json(people.map(toPerson));
 });
 
+/**
+ * `GET /api/people/allowance` — how many People the User owns, against the per-User cap. The
+ * People page uses it to disable adding at the cap; it counts OWNED People, which the list
+ * above stops matching once Link lets a User see other Users' People.
+ */
+peopleRouter.get("/allowance", async (req, res) => {
+  const allowance: PeopleAllowance = { owned: await countOwnedPeople(actorOf(req)), max: MAX_PEOPLE_PER_USER };
+  res.json(allowance);
+});
+
 /** `POST /api/people` — create a person from a validated `{ name, colorHex }` body. */
 peopleRouter.post("/", async (req, res) => {
   const parsed = createPersonSchema.safeParse(req.body);
@@ -51,15 +62,12 @@ peopleRouter.post("/", async (req, res) => {
     return;
   }
 
-  const actor = actorOf(req);
-  // Each User may own at most MAX_PEOPLE_PER_USER People (keeps the free host's disk safe).
-  if ((await countOwnedPeople(actor)) >= MAX_PEOPLE_PER_USER) {
+  // The signed-in User becomes the Owner, unless they're at the per-User cap (null).
+  const person = await createOwnedPerson(actorOf(req), parsed.data);
+  if (!person) {
     res.status(409).json({ error: PEOPLE_CAP_MESSAGE });
     return;
   }
-
-  // The signed-in User becomes the new Person's Owner (requireUser guarantees one).
-  const person = await prisma.person.create({ data: { ...parsed.data, ownerId: actor!.userId } });
   res.status(201).json(toPerson(person));
 });
 
