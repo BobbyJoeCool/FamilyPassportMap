@@ -42,3 +42,13 @@ export function uploadPersonPhoto(id: string, file: File): Promise<Person> {
     handleResponse<Person>(res),
   );
 }
+
+/**
+ * "Set as me": makes one of your People your Primary Person, merging your old Primary Person's
+ * visits into it (the old one is then removed).
+ * @param id - the Person to Claim.
+ * @returns the Claimed Person, now your Primary Person.
+ */
+export function claimPerson(id: string): Promise<Person> {
+  return fetch(`/api/people/${id}/claim`, { method: "POST" }).then((res) => handleResponse<Person>(res));
+}

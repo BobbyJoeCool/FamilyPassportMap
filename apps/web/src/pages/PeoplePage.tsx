@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { PeopleAllowance, Person } from "@familypassportmap/shared";
 import { COUNTRIES, PEOPLE_CAP_MESSAGE } from "@familypassportmap/shared";
 import {
+  claimPerson,
   createPerson,
   deletePerson,
   getPeopleAllowance,
@@ -41,6 +42,7 @@ export function PeoplePage() {
   const [saving, setSaving] = useState(false);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
 
   useEffect(() => {
     refresh();
@@ -205,6 +207,23 @@ export function PeoplePage() {
   // answers, the form stays enabled; the server enforces the cap regardless.
   const atPeopleCap = allowance !== null && allowance.owned >= allowance.max;
 
+  /**
+   * "Set as me" after its confirmation: makes this Person the User's Primary Person.
+   * @param id - the Person to Claim.
+   */
+  async function handleClaim(id: string) {
+    setError(null);
+    try {
+      await claimPerson(id);
+      setClaimingId(null);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to set as you");
+    }
+  }
+
+  const currentPrimary = people.find((person) => person.isPrimary);
+
   return (
     <div>
       <h1 className="text-2xl md:text-3xl font-bold mb-6">People</h1>
@@ -278,8 +297,8 @@ export function PeoplePage() {
               className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]"
             >
               <PersonAvatar person={person} />
-              {/* Each row renders one of three mutually exclusive states: editing this
-                  person, confirming their deletion, or the normal read-only view. */}
+              {/* Each row renders one of four mutually exclusive states: editing this person,
+                  confirming their deletion, confirming "Set as me", or the normal view. */}
               {editingId === person.id ? (
                 <div className="flex flex-col sm:flex-row gap-2 flex-1 min-w-0 items-start sm:items-center">
                   <input
@@ -336,6 +355,29 @@ export function PeoplePage() {
                     </button>
                   </div>
                 </div>
+              ) : claimingId === person.id ? (
+                <div className="flex flex-col sm:flex-row gap-2 flex-1 min-w-0 items-start sm:items-center">
+                  <span className="text-sm">
+                    Set <strong>{person.name}</strong> as you?
+                    {/* Before the welcome step there's no current "You" to merge. */}
+                    {currentPrimary &&
+                      ` "${currentPrimary.name}" (currently you) will be merged in: its visited states and countries are added to ${person.name}, then it's removed.`}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleClaim(person.id)}
+                      className="px-3 py-1 rounded bg-[var(--color-primary)] text-white text-sm hover:bg-[var(--color-primary-hover)] transition-colors"
+                    >
+                      Set as me
+                    </button>
+                    <button
+                      onClick={() => setClaimingId(null)}
+                      className="px-3 py-1 rounded border border-[var(--color-border)] text-sm hover:bg-[var(--color-bg-card)] transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <>
                   <span className="font-medium flex-1 min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -351,13 +393,23 @@ export function PeoplePage() {
                       <StateCounter count={countryCountFor(person.id)} total={COUNTRIES.length} label="countries" />
                     </span>
                   </span>
-                  <div className="flex gap-2">
+                  {/* Up to three buttons: let them wrap rather than squeeze on phones. */}
+                  <div className="flex flex-wrap justify-end gap-2">
                     <button
                       onClick={() => startEdit(person)}
                       className="px-3 py-1 rounded border border-[var(--color-border)] text-sm hover:bg-[var(--color-bg-card)] transition-colors"
                     >
                       Edit
                     </button>
+                    {/* "Set as me" only makes sense on someone who isn't already you. */}
+                    {!person.isPrimary && (
+                      <button
+                        onClick={() => setClaimingId(person.id)}
+                        className="px-3 py-1 rounded border border-[var(--color-border)] text-sm hover:bg-[var(--color-bg-card)] transition-colors"
+                      >
+                        Set as me
+                      </button>
+                    )}
                     {/* Your Primary Person can't be deleted on its own (only with the account). */}
                     {!person.isPrimary && (
                       <button

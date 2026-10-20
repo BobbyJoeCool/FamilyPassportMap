@@ -45,11 +45,12 @@ function editablePeopleWhere(actor: Actor | null): Prisma.PersonWhereInput {
 
 /**
  * The Prisma filter for People owned by the actor. Legacy People (no Owner until Adopted)
- * never match, and nobody signed in matches nothing.
+ * never match, and nobody signed in matches nothing. Exported for operations that must run
+ * their ownership check inside their own transaction (e.g. Claim).
  * @param actor - the acting User.
  * @returns a `where` clause for `person` queries.
  */
-function ownedPeopleWhere(actor: Actor | null): Prisma.PersonWhereInput {
+export function ownedPeopleWhere(actor: Actor | null): Prisma.PersonWhereInput {
   // No actor can own anything — an always-false filter rather than "no filter".
   return actor ? { ownerId: actor.userId } : { id: { in: [] } };
 }
@@ -164,3 +165,17 @@ export const requireViewablePerson = personGuard(findViewablePerson);
 
 /** Route guard: continue only if the actor may edit the Person in `:id`; otherwise 404. */
 export const requireEditablePerson = personGuard(findEditablePerson);
+
+/**
+ * Fetches one Person if the actor OWNS it — stricter than edit once Join exists (a Joined
+ * User may edit People they don't own, but only the Owner may Claim them without approval).
+ * @param actor - the acting User.
+ * @param personId - the Person's id.
+ * @returns the Person, or null if missing or not owned.
+ */
+export function findOwnedPerson(actor: Actor | null, personId: string): Promise<Person | null> {
+  return prisma.person.findFirst({ where: { AND: [{ id: personId }, ownedPeopleWhere(actor)] } });
+}
+
+/** Route guard: continue only if the actor owns the Person in `:id`; otherwise 404. */
+export const requireOwnedPerson = personGuard(findOwnedPerson);

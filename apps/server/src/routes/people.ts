@@ -7,7 +7,15 @@ import {
   updatePersonSchema,
   type PeopleAllowance,
 } from "@familypassportmap/shared";
-import { actorOf, countOwnedPeople, createOwnedPerson, listViewablePeople, requireEditablePerson } from "../access.js";
+import {
+  actorOf,
+  countOwnedPeople,
+  createOwnedPerson,
+  listViewablePeople,
+  requireEditablePerson,
+  requireOwnedPerson,
+} from "../access.js";
+import { claimPerson } from "../claim.js";
 import { prisma } from "../db.js";
 import { toPersonResponse } from "../personResponse.js";
 import { shrinkPhoto } from "../photos.js";
@@ -128,4 +136,25 @@ peopleRouter.post("/:id/photo", requireEditablePerson, (req, res, next) => {
       next(error);
     }
   });
+});
+
+/**
+ * `POST /api/people/:id/claim` — "Set as me": make one of your own People your Primary
+ * Person, merging your old Primary Person's visits into it (see `claimPerson`).
+ */
+peopleRouter.post("/:id/claim", requireOwnedPerson, async (req, res) => {
+  const { id } = req.params as { id: string };
+  const result = await claimPerson(actorOf(req), id);
+  // Each outcome maps to one response: success, already you, or (raced away) not yours.
+  switch (result.outcome) {
+    case "claimed":
+      res.json(toPersonResponse(result.person, result.person.id));
+      return;
+    case "alreadyPrimary":
+      res.status(409).json({ error: "This is already you." });
+      return;
+    case "notOwned":
+      res.status(404).json({ error: "Person not found" });
+      return;
+  }
 });

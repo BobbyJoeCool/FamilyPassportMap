@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import sharp, { type FormatEnum } from "sharp";
+import { UPLOADS_DIR } from "./env.js";
 
 /** Profile photos are stored as squares of this many pixels per side. */
 export const AVATAR_SIZE_PX = 256;
@@ -65,4 +66,15 @@ export async function shrinkOversizedPhotos(dir: string): Promise<number> {
   }
 
   return shrunk;
+}
+
+/**
+ * Deletes a Person's stored photo file, if they had one. A file that's already gone is fine.
+ * @param profilePicturePath - the Person's stored path ("uploads/<file>"), or null.
+ */
+export async function deletePhotoFile(profilePicturePath: string | null): Promise<void> {
+  // No photo on record: nothing to delete.
+  if (!profilePicturePath) return;
+  // Only the file name is trusted, so a stored path can never point outside the uploads folder.
+  await fs.rm(path.join(UPLOADS_DIR, path.basename(profilePicturePath)), { force: true });
 }
