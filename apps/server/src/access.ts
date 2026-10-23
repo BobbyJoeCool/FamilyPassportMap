@@ -118,6 +118,19 @@ export function insertOwnedPerson(db: Db, actor: Actor, data: CreatePersonInput)
 }
 
 /**
+ * Adopts the Legacy People: makes the actor the Owner of every Person that has no Owner. The
+ * caller decides who may Adopt (only the site owner). Ignores the People cap, and Adopted
+ * People are ordinary People, not anyone's Primary Person. Safe to repeat: once nothing is
+ * ownerless, it changes nothing.
+ * @param actor - the User who becomes the Owner.
+ * @returns how many People were Adopted.
+ */
+export async function adoptLegacyPeople(actor: Actor): Promise<number> {
+  const { count } = await prisma.person.updateMany({ where: { ownerId: null }, data: { ownerId: actor.userId } });
+  return count;
+}
+
+/**
  * Creates a Person owned by the actor, unless they already own `MAX_PEOPLE_PER_USER`. The
  * count and the insert run in one transaction, and this SQLite adapter serializes
  * transactions, so simultaneous adds can't both take the last place.

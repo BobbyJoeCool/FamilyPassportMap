@@ -22,6 +22,7 @@ In the App Service → **Settings** → **Environment variables**, add:
 |------|-------|---------|
 | `DATA_DIR` | `/home/data` | Persistent storage for SQLite DB + uploaded photos |
 | `NODE_ENV` | `production` | Tells Express to serve the built frontend |
+| `LEGACY_DATA_OWNER_EMAIL` | your Google account's email | The site owner. On their sign-in they Adopt the People recorded before login (People with no Owner). Matched case-insensitively. If unset, nobody Adopts them and they stay invisible. |
 
 The `/home` directory persists across restarts and redeploys on Azure App Service. Never use `/tmp` — it's wiped on restart.
 

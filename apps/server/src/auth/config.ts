@@ -36,3 +36,15 @@ export function googleConfig(): GoogleConfig {
     redirectUri: new URL("/api/auth/google/callback", process.env.APP_BASE_URL).toString(),
   };
 }
+
+/**
+ * Whether a signed-in email belongs to the site owner, who Adopts the Legacy People. Compared
+ * case-insensitively against `LEGACY_DATA_OWNER_EMAIL`, read per call (so tests can change it).
+ * Unset or empty means nobody is the site owner, and Legacy People stay invisible.
+ * @param email - the User's verified email.
+ * @returns true when this User should Adopt the Legacy People.
+ */
+export function isLegacyDataOwner(email: string): boolean {
+  const ownerEmail = process.env.LEGACY_DATA_OWNER_EMAIL?.trim().toLowerCase();
+  return !!ownerEmail && email.trim().toLowerCase() === ownerEmail;
+}

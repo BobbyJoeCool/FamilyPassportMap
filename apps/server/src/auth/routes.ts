@@ -1,7 +1,9 @@
 import crypto from "node:crypto";
 import { Router, type CookieOptions } from "express";
 import { safeReturnTo, type SignInError } from "@familypassportmap/shared";
+import { adoptLegacyPeople } from "../access.js";
 import { prisma } from "../db.js";
+import { isLegacyDataOwner } from "./config.js";
 import { googleAuthorizationUrl, googleIdentityFromCode } from "./google.js";
 import { createSession, deleteSession, readSessionToken, SESSION_COOKIE, sessionCookieOptions } from "./sessions.js";
 
@@ -116,6 +118,12 @@ authRouter.get("/google/callback", async (req, res) => {
       create: { authProvider: GOOGLE_AUTH_PROVIDER, authSubject: identity.subject, ...providerDetails },
       update: providerDetails,
     });
+    // The site owner Adopts any Legacy People, on every sign-in (a no-op once none are left).
+    if (isLegacyDataOwner(user.email)) {
+      const adopted = await adoptLegacyPeople({ userId: user.id });
+      // Only worth a log line when something actually changed hands.
+      if (adopted > 0) console.log(`Adopted ${adopted} Legacy People for the site owner`);
+    }
     token = await createSession(user.id);
     primaryPersonId = user.primaryPersonId;
   } catch (error) {
