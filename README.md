@@ -26,7 +26,7 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 - **List view** — see all 50 states in a list, with each visited person's profile-picture icon shown next to the states they've been to.
 - **World section** — a separate 🌍 World area for tracking countries (195: the UN member and observer states). Its **World Map** zooms to one continent at a time for marking countries (each country is labeled with its three-letter code, and tiny countries like Vatican City or Tuvalu get a clickable dot), **World Compare** shows people's world maps side by side on a shared continent view, and **World List** groups every country by continent. Country and state tracking are fully independent.
 - **Installable PWA** — works and looks right on phone, tablet, and desktop, and can be installed like a native app.
-- **Private accounts** — sign in with your Google account. You see and manage only the People you added: nobody else can see them, their maps or their photos. Photos are shrunk to small avatars and served only to you.
+- **Private accounts** — sign in with your Google account. You see and manage only the People you own: nobody else can see them, their maps or their photos. Photos are shrunk to small avatars and served only to you.
 
 ### Accounts
 
@@ -38,7 +38,7 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 ## How to use it
 
 1. Sign in with Google, then pick your name and color on the welcome step.
-2. On **People**, add any family members you want to track, each with a name, a color, and (optionally) a profile picture.
+2. On **People**, add the other People you want to track, each with a name, a color, and (optionally) a profile picture.
 3. Open **US** from the top menu, pick a person on the **Map** tab, and click states to mark them visited — the state fills in with that person's color.
 4. Switch to the **Compare** tab to see two or more people's maps side by side.
 5. Switch to the **List** tab to see every state at a glance, with icons showing who's visited each one.
@@ -62,4 +62,4 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 
 ## Roadmap
 
-v1.0.0 shipped the US-states feature set; v2.0.0 added countries on a world map (Phases 8–11); v2.3.0 added Google sign-in and private accounts (Phase 12). Next up is **Link** and **Join**, so households can see, or share in managing, each other's People. Blended/overlap coloring in Compare is still deliberately deferred. See [`PHASES.md`](PHASES.md).
+v1.0.0 shipped the US-states feature set; v2.0.0 added countries on a world map (Phases 8–11); v2.3.0 added Google sign-in and private accounts (Phase 12). Next up is **Link** and **Join**, so Users can see each other's People, or share in managing them as a Family. Blended/overlap coloring in Compare is still deliberately deferred. See [`PHASES.md`](PHASES.md).

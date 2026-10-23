@@ -164,7 +164,7 @@ The existing family's data is attached to the site owner's account on their firs
 
 ### Sign-in flow
 
-- **Provider:** Google only, using the server-side **authorization code flow** with redirects. Scopes are `openid email profile`. A redirect flow is used instead of a popup or One Tap because popups are unreliable in installed (standalone) PWAs, especially on iOS.
+- **Provider:** Google only, using the server-side **authorization code flow** with redirects. Scopes are `openid email profile`, and Google is asked to show its account chooser every time (`prompt=select_account`), so someone signing in on a shared device can pick their own account. A redirect flow is used instead of a popup or One Tap because popups are unreliable in installed (standalone) PWAs, especially on iOS.
 - **Routes:**
   - `GET /api/auth/google?returnTo=<path>` sends the browser to Google.
   - `GET /api/auth/google/callback` handles Google's response.
@@ -224,7 +224,7 @@ The existing family's data is attached to the site owner's account on their firs
 ### Photos
 
 - **Access:** `/uploads/*` stops being public static hosting. A request is served only if a signed-in User can view the Person whose photo it is (the access policy looks the Person up by its stored `profilePicturePath`). In every other case (signed out, someone else's, a file no Person uses, such as a replaced photo still on disk, a missing file, or any other path under `/uploads`), the response is a bare `404`. A served photo carries `Cache-Control: private, no-cache`, so shared caches never keep it and the browser re-checks access on every view (a cheap `304` when unchanged).
-- **Shrinking on upload:** the 5 MB, JPEG/PNG/WebP upload limit stays. Each upload is center-cropped to a square and resized to **256×256** in **its original format**, so file extensions and stored paths never change. Use `sharp` (it runs on Azure's Linux App Service).
+- **Shrinking on upload:** the 5 MB, JPEG/PNG/WebP upload limit stays. Each upload is rotated upright (per its EXIF orientation), center-cropped to a square and resized to **256×256**. It's re-encoded in **the format its file extension names**, so extensions and stored paths never change and the bytes always match the name (PNG bytes sent as `image/jpeg` are stored as a real `.jpg`). Re-encoding drops all metadata, including any GPS location. A file that claims an image type but can't be decoded is discarded with `400 { error: "Photo couldn't be read as an image." }`. Use `sharp` (it runs on Azure's Linux App Service).
 - **Shrinking existing photos:** a startup step that is safe to run more than once shrinks any photo in the uploads folder larger than 256 px on either side, in place. On later starts it finds nothing to do.
 
 ### Legacy data adoption
@@ -253,7 +253,7 @@ The existing family's data is attached to the site owner's account on their firs
   - who can see it (only you, while signed in);
   - photos being shrunk;
   - how to delete everything (Delete account).
-- **Header account menu:** your Google avatar and name, then **Sign out** and **Delete account**. Delete account opens a confirmation dialog that lists what will be permanently deleted. Its destructive button is labelled "Delete my account".
+- **Header account menu:** your Google avatar (or your initial, if Google has no picture), plus your name on wide screens. It opens a menu with your name and email, a **Privacy** link, **Sign out** and **Delete account**. On phones, a slim top bar holds the app name and this menu, since the bottom tab bar has no room for it. Delete account opens a confirmation dialog that lists what will be permanently deleted. Its destructive button is labelled "Delete my account".
 - **Leaving the app:** both Sign out and Delete account end with a full page load to `/signin`, so nothing from the previous User stays in memory. The service worker keeps caching only the app shell, never `/api/*` or `/uploads/*`, and its navigation fallback skips both, so opening a photo URL always reaches the server.
 - **People page:**
   - the Primary Person gets a "You" badge and no delete control;
@@ -322,9 +322,10 @@ The existing family's data is attached to the site owner's account on their firs
 - **The 10-People cap** applies per Owner, not per Family.
 - **The auth provider is stored as a column**, so adding another provider is a code change only.
 - **Two kinds of access check, and Link/Join widens only one.** In `apps/server/src/access.ts`:
-  - **Visibility:** the People list, the bulk visit maps, single-Person reads and photos (`findViewablePersonByPhoto`) go through `viewablePeopleWhere`. Link widens these, so Linked Users see photos too without touching the photo route.
-  - **Edit:** marking visits, renaming, recoloring, deleting and photo upload go through `editablePeopleWhere`. Join widens these.
-  - **Ownership:** the cap (`countOwnedPeople`), Set as me (`findOwnedPerson`) and Delete account (`listOwnedPeople`, plus the User → Person cascade) go through `ownedPeopleWhere` and must stay ownership-only. Deleting your account must never remove someone else's People that you could merely see or edit.
+  - **Visibility** (the private `viewablePeopleWhere`): the People list, the bulk visit maps, a Person's visit and country reads (`requireViewablePerson`) and photos (`findViewablePersonByPhoto`). Link widens these, so Linked Users see photos too without touching the photo route.
+  - **Edit** (the private `editablePeopleWhere`, reached through `requireEditablePerson` / `findEditablePerson`): marking visits, renaming, recoloring, deleting and photo upload. Join widens these.
+  - **Ownership** (the private `ownedPeopleWhere`): the cap (`countOwnedPeople`), Set as me (`requireOwnedPerson` / `findOwnedPerson`) and Delete account (`listOwnedPeople`, plus the User → Person cascade). These must stay ownership-only. Deleting your account must never remove someone else's People that you could merely see or edit.
+- **Join must protect every User's Primary Person, not just your own.** Today `deletePersonUnlessPrimary` (`apps/server/src/primaryPerson.ts`) refuses only if the Person is the *deleting* User's Primary Person. That's enough while edit means own. Once Join widens edit, a Family member could otherwise delete another User's Primary Person, and `onDelete: SetNull` would leave that User with none, breaking "never deleted on its own". The check must become "is this Person anyone's Primary Person?"
 - **Adoption is a one-time migration path.** Once no Legacy People are left it does nothing on each sign-in, so a later phase can remove it (along with `LEGACY_DATA_OWNER_EMAIL`) after production has been Adopted.
 
 ## Further Notes
