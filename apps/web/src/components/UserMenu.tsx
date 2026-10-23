@@ -2,16 +2,18 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { SignedInUser } from "@familypassportmap/shared";
 import { signOut } from "../api/auth";
+import { DeleteAccountDialog } from "./DeleteAccountDialog";
 
 /**
  * The signed-in User's avatar (and name, on wide screens), opening a small menu with their
- * name and email, the privacy page, and Sign out.
+ * name and email, the privacy page, Sign out, and Delete account.
  * @param user - the signed-in User.
  */
 export function UserMenu({ user }: { user: SignedInUser }) {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   /**
    * Ends the session, then reloads onto the sign-in page so no data stays in memory. If the
@@ -78,6 +80,17 @@ export function UserMenu({ user }: { user: SignedInUser }) {
           >
             {signingOut ? "Signing out…" : "Sign out"}
           </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              setConfirmingDelete(true);
+            }}
+            className="w-full text-left px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-bg-card)]"
+          >
+            Delete account
+          </button>
           {/* Only after a failed sign-out attempt. */}
           {signOutError && (
             <p role="alert" className="px-3 py-2 text-xs text-[var(--color-danger)]">
@@ -86,6 +99,9 @@ export function UserMenu({ user }: { user: SignedInUser }) {
           )}
         </div>
       )}
+
+      {/* The confirmation, opened from the menu's Delete account item. */}
+      {confirmingDelete && <DeleteAccountDialog onClose={() => setConfirmingDelete(false)} />}
     </div>
   );
 }

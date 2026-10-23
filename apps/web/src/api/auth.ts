@@ -49,3 +49,14 @@ export async function signOut(): Promise<void> {
 export function googleSignInUrl(returnTo: string): string {
   return `/api/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
 }
+
+/**
+ * Permanently deletes the signed-in User's account and everything they own (the server also
+ * ends every session and clears the cookie).
+ * @throws if the server couldn't be reached or refused — the account may still exist.
+ */
+export async function deleteAccount(): Promise<void> {
+  const res = await fetch("/api/me", { method: "DELETE" });
+  // Anything but success means nothing can be assumed deleted — the caller must not pretend.
+  if (!res.ok) throw new Error(`Delete account failed with status ${res.status}`);
+}

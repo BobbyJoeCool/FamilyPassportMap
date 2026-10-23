@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { createPersonSchema, type CurrentUserResponse } from "@familypassportmap/shared";
 import { actorOf } from "../access.js";
+import { deleteAccount } from "../account.js";
+import { SESSION_COOKIE, sessionCookieOptions } from "../auth/sessions.js";
 import { createPrimaryPerson } from "../primaryPerson.js";
 import { toPersonResponse } from "../personResponse.js";
 
@@ -36,4 +38,14 @@ currentUserRouter.post("/primary-person", async (req, res) => {
     return;
   }
   res.status(201).json(toPersonResponse(person, person.id));
+});
+
+/**
+ * `DELETE /api/me` — permanently delete the signed-in User's account and everything they own
+ * (see `deleteAccount`). Every session goes with it, so the cookie is cleared too.
+ */
+currentUserRouter.delete("/", async (req, res) => {
+  await deleteAccount(actorOf(req));
+  res.clearCookie(SESSION_COOKIE, sessionCookieOptions());
+  res.status(204).end();
 });

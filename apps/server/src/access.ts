@@ -84,6 +84,17 @@ export function listViewablePeople(actor: Actor | null): Promise<Person[]> {
 }
 
 /**
+ * Lists every Person the actor owns — what deleting their account removes. Ownership, not
+ * visibility: Linked People (later phases) belong to someone else and stay.
+ * @param actor - the acting User.
+ * @param db - the database handle (a transaction's, to read inside it).
+ * @returns the owned People.
+ */
+export function listOwnedPeople(actor: Actor | null, db: Db = prisma): Promise<Person[]> {
+  return db.person.findMany({ where: ownedPeopleWhere(actor) });
+}
+
+/**
  * Counts the People the actor owns — what the per-User cap limits. Ownership, not
  * visibility: Linked or Joined People (later phases) never count toward it.
  * @param actor - the acting User.

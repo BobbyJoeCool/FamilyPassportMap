@@ -155,6 +155,7 @@ describe("Protected routes", () => {
     ["get", "/api/people"],
     ["get", "/api/people/allowance"],
     ["post", "/api/me/primary-person"],
+    ["delete", "/api/me"],
     ["post", "/api/people/some-id/claim"],
     ["post", "/api/people"],
     ["patch", "/api/people/some-id"],
