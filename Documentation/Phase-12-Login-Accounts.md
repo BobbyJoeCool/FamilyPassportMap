@@ -321,6 +321,11 @@ The existing family's data is attached to the site owner's account on their firs
 - **Claim across a Family** reuses this phase's Set as me merge (copy missing visits, delete the old Primary Person, become Owner), and adds a request the current Owner must approve. A Person that is already someone's Primary Person can't be Claimed. Giving a family member their own account = they sign up, Join, then Claim their Person, which makes them its Owner.
 - **The 10-People cap** applies per Owner, not per Family.
 - **The auth provider is stored as a column**, so adding another provider is a code change only.
+- **Two kinds of access check, and Link/Join widens only one.** In `apps/server/src/access.ts`:
+  - **Visibility:** the People list, the bulk visit maps, single-Person reads and photos (`findViewablePersonByPhoto`) go through `viewablePeopleWhere`. Link widens these, so Linked Users see photos too without touching the photo route.
+  - **Edit:** marking visits, renaming, recoloring, deleting and photo upload go through `editablePeopleWhere`. Join widens these.
+  - **Ownership:** the cap (`countOwnedPeople`), Set as me (`findOwnedPerson`) and Delete account (`listOwnedPeople`, plus the User → Person cascade) go through `ownedPeopleWhere` and must stay ownership-only. Deleting your account must never remove someone else's People that you could merely see or edit.
+- **Adoption is a one-time migration path.** Once no Legacy People are left it does nothing on each sign-in, so a later phase can remove it (along with `LEGACY_DATA_OWNER_EMAIL`) after production has been Adopted.
 
 ## Further Notes
 

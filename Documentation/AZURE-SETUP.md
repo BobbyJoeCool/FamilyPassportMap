@@ -22,6 +22,9 @@ In the App Service → **Settings** → **Environment variables**, add:
 |------|-------|---------|
 | `DATA_DIR` | `/home/data` | Persistent storage for SQLite DB + uploaded photos |
 | `NODE_ENV` | `production` | Tells Express to serve the built frontend |
+| `GOOGLE_CLIENT_ID` | from your Google OAuth client | Google sign-in (see step 6). **Required**: the server refuses to start without it |
+| `GOOGLE_CLIENT_SECRET` | from your Google OAuth client | Google sign-in. **Required** |
+| `APP_BASE_URL` | `https://<app-name>.azurewebsites.net` | The address people open the app at, used to build Google's redirect URI. **Required** |
 | `LEGACY_DATA_OWNER_EMAIL` | your Google account's email | The site owner. On their sign-in they Adopt the People recorded before login (People with no Owner). Matched case-insensitively. If unset, nobody Adopts them and they stay invisible. |
 
 The `/home` directory persists across restarts and redeploys on Azure App Service. Never use `/tmp` — it's wiped on restart.
@@ -74,12 +77,27 @@ Then push to `main`, or re-run the latest **Deploy to Azure** run from the repo'
 ### 5. Verify
 
 After the first deploy:
-- Visit `https://<app-name>.azurewebsites.net` — People, and the US and World sections (each with Map / Compare / List), should work.
+- Visit `https://<app-name>.azurewebsites.net`. You should land on the sign-in page. After signing in with Google and finishing the welcome step, People and the US and World sections (each with Map / Compare / List) should work.
 - Add a person and mark some states, then restart the App Service from the Azure portal — data should persist.
 - On Chrome/Edge, the "Install app" prompt should appear (PWA).
 
+### 6. Google sign-in (v2.3.0 and later)
+
+Sign-in uses a Google OAuth client. Set it up once, in the [Google Cloud console](https://console.cloud.google.com/):
+
+1. Create a project, then an **OAuth client ID** of type **Web application**, with these **Authorized redirect URIs**:
+   - `http://localhost:5173/api/auth/google/callback` (local development)
+   - `https://<app-name>.azurewebsites.net/api/auth/google/callback`
+2. On the **OAuth consent screen**:
+   - set the app name and the privacy page URL, `https://<app-name>.azurewebsites.net/privacy`;
+   - use the scopes `openid email profile`;
+   - **publish it to production**. In "Testing" mode only listed test users (up to 100) can sign in. These basic scopes don't need Google's verification review.
+3. Put the client ID and secret in the local `apps/server/.env` (with `APP_BASE_URL=http://localhost:5173`) and in the App Service settings from step 2.
+
+**Deploy order for v2.3.0:** add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_BASE_URL` and `LEGACY_DATA_OWNER_EMAIL` to the App Service **before** pushing the release to `main`. Without the first three, the new server refuses to start (by design). The deploy runs the new migrations on its own. Until the site owner (the `LEGACY_DATA_OWNER_EMAIL` account) first signs in, the People recorded before login exist but nobody can see them. That first sign-in Adopts them, and the owner can then use **Set as me** on the Person who is them.
+
 ## Architecture notes
 
-- **Single App Service** runs one Node.js process that serves both the Express API (`/api/*`, `/uploads/*`) and the Vite-built frontend (all other routes fall through to `index.html` for client-side routing).
+- **Single App Service** runs one Node.js process that serves both the Express API (`/api/*`), the private photos (`/uploads/*`, only to a signed-in User who can view the photo's Person) and the Vite-built frontend (all other routes fall through to `index.html` for client-side routing).
 - **SQLite** is safe because F1 tier is always a single instance — no concurrent writer risk.
 - **No custom domain or SSL** on F1 tier — the default `*.azurewebsites.net` domain with Azure-managed HTTPS is used.

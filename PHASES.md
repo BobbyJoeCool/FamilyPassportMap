@@ -37,7 +37,7 @@ Login, per-User data, and (later) Link/Join between Users. Domain terms are in [
 
 | Phase | Version | Name | Spec doc | Status |
 |---|---|---|---|---|
-| 12 | v2.3.0 | Login & Accounts (Google sign-in, Primary Person, per-User data) | [Documentation/Phase-12-Login-Accounts.md](Documentation/Phase-12-Login-Accounts.md) (tickets: [#1–#12](https://github.com/BobbyJoeCool/FamilyPassportMap/issues)) | Not started |
+| 12 | v2.3.0 | Login & Accounts (Google sign-in, Primary Person, per-User data) | [Documentation/Phase-12-Login-Accounts.md](Documentation/Phase-12-Login-Accounts.md) (tickets: [#1–#12](https://github.com/BobbyJoeCool/FamilyPassportMap/issues)) | **Built, pending verification** (v2.3.0). All tickets are built and the automated tests pass. The spec's manual local checklist runs once the Google OAuth client exists (#11), and then this becomes Complete. |
 
 ## Versioning convention
 
@@ -51,7 +51,7 @@ Login, per-User data, and (later) Link/Join between Users. Domain terms are in [
 
 These came up during initial design and were deliberately deferred, not forgotten:
 - Countries / world map support — **no longer deferred**: picked up as the post-v1.0 round above, starting with Phase 8
-- Login / authentication / multi-household accounts
+- Login / authentication / multi-household accounts — **no longer deferred**: picked up as Phase 12 (v2.3.0). Link/Join between Users comes in a later phase.
 - Blended/overlap coloring in Compare view (v1 renders separate maps side by side)
 - Native desktop packaging (Electron) — v1 is a responsive, installable PWA hosted on Azure instead
 
