@@ -136,6 +136,18 @@ export function findViewablePerson(actor: Actor | null, personId: string): Promi
 }
 
 /**
+ * Fetches the Person whose profile photo is the given stored path, if the actor may view that
+ * Person. A photo is only as visible as its Person: no match (a stray or replaced file, someone
+ * else's Person, or nobody signed in) is null, and callers answer 404 for all of them.
+ * @param actor - the acting User.
+ * @param profilePicturePath - the stored path ("uploads/<file>").
+ * @returns the Person, or null if no viewable Person has this photo.
+ */
+export function findViewablePersonByPhoto(actor: Actor | null, profilePicturePath: string): Promise<Person | null> {
+  return prisma.person.findFirst({ where: { AND: [{ profilePicturePath }, viewablePeopleWhere(actor)] } });
+}
+
+/**
  * Fetches one Person if the actor may edit it (rename, recolor, delete, change photo, or mark
  * visits). Same not-found semantics as `findViewablePerson`.
  * @param actor - the acting User.

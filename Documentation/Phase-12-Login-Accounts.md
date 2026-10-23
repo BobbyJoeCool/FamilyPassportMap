@@ -223,7 +223,7 @@ The existing family's data is attached to the site owner's account on their firs
 
 ### Photos
 
-- **Access:** `/uploads/*` stops being public static hosting. A request is served only if a signed-in User can view the Person whose photo it is. In every other case (signed out, someone else's, missing), the response is `404`.
+- **Access:** `/uploads/*` stops being public static hosting. A request is served only if a signed-in User can view the Person whose photo it is (the access policy looks the Person up by its stored `profilePicturePath`). In every other case (signed out, someone else's, a file no Person uses, such as a replaced photo still on disk, a missing file, or any other path under `/uploads`), the response is a bare `404`. A served photo carries `Cache-Control: private, no-cache`, so shared caches never keep it and the browser re-checks access on every view (a cheap `304` when unchanged).
 - **Shrinking on upload:** the 5 MB, JPEG/PNG/WebP upload limit stays. Each upload is center-cropped to a square and resized to **256×256** in **its original format**, so file extensions and stored paths never change. Use `sharp` (it runs on Azure's Linux App Service).
 - **Shrinking existing photos:** a startup step that is safe to run more than once shrinks any photo in the uploads folder larger than 256 px on either side, in place. On later starts it finds nothing to do.
 
@@ -253,7 +253,7 @@ The existing family's data is attached to the site owner's account on their firs
   - photos being shrunk;
   - how to delete everything (Delete account).
 - **Header account menu:** your Google avatar and name, then **Sign out** and **Delete account**. Delete account opens a confirmation dialog that lists what will be permanently deleted. Its destructive button is labelled "Delete my account".
-- **Leaving the app:** both Sign out and Delete account end with a full page load to `/signin`, so nothing from the previous User stays in memory. The service worker keeps caching only the app shell, never `/api/*` or `/uploads/*`.
+- **Leaving the app:** both Sign out and Delete account end with a full page load to `/signin`, so nothing from the previous User stays in memory. The service worker keeps caching only the app shell, never `/api/*` or `/uploads/*`, and its navigation fallback skips both, so opening a photo URL always reaches the server.
 - **People page:**
   - the Primary Person gets a "You" badge and no delete control;
   - every other Person gets a **Set as me** action with a short confirmation explaining the merge;
