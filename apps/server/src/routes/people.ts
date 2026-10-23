@@ -18,7 +18,7 @@ import {
 import { claimPerson, deletePersonUnlessPrimary } from "../primaryPerson.js";
 import { prisma } from "../db.js";
 import { toPersonResponse } from "../personResponse.js";
-import { shrinkPhoto } from "../photos.js";
+import { shrinkPhoto, storedPhotoPath } from "../photos.js";
 import { uploadPhoto } from "../uploads.js";
 
 /** Router for `/api/people` — CRUD for family members plus profile-photo upload. */
@@ -128,8 +128,7 @@ peopleRouter.post("/:id/photo", requireEditablePerson, (req, res, next) => {
     }
 
     try {
-      // Relative to the server root — must match the "/uploads" mount in app.ts.
-      const profilePicturePath = `uploads/${req.file.filename}`;
+      const profilePicturePath = storedPhotoPath(req.file.filename);
       const { id } = req.params as { id: string };
       const person = await prisma.person.update({
         where: { id },

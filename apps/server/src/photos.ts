@@ -6,6 +6,26 @@ import { UPLOADS_DIR } from "./env.js";
 /** Profile photos are stored as squares of this many pixels per side. */
 export const AVATAR_SIZE_PX = 256;
 
+/**
+ * The stored `profilePicturePath` for a photo file: relative to the server root, so it doubles
+ * as the photo's URL path and must match the "/uploads" mount in app.ts.
+ * @param fileName - the photo's file name inside the uploads folder.
+ * @returns the path to store on the Person ("uploads/<file>").
+ */
+export function storedPhotoPath(fileName: string): string {
+  return `uploads/${fileName}`;
+}
+
+/**
+ * Where a stored photo lives on disk. Only the file name is trusted, so a stored path (or a
+ * requested one) can never point outside the uploads folder.
+ * @param storedPath - a stored path ("uploads/<file>") or a bare file name.
+ * @returns the absolute path inside `UPLOADS_DIR`.
+ */
+export function photoFileOnDisk(storedPath: string): string {
+  return path.join(UPLOADS_DIR, path.basename(storedPath));
+}
+
 /** The image format each stored extension promises (uploads are named by MIME type). */
 const FORMAT_BY_EXTENSION: Record<string, keyof FormatEnum> = {
   ".jpg": "jpeg",
@@ -77,8 +97,7 @@ export async function shrinkOversizedPhotos(dir: string): Promise<number> {
 export async function deletePhotoFile(profilePicturePath: string | null): Promise<void> {
   // No photo on record: nothing to delete.
   if (!profilePicturePath) return;
-  // Only the file name is trusted, so a stored path can never point outside the uploads folder.
-  const filePath = path.join(UPLOADS_DIR, path.basename(profilePicturePath));
+  const filePath = photoFileOnDisk(profilePicturePath);
   try {
     await fs.rm(filePath, { force: true });
   } catch (error) {

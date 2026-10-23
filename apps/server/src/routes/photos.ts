@@ -1,7 +1,6 @@
-import path from "node:path";
 import { Router } from "express";
 import { actorOf, findViewablePersonByPhoto } from "../access.js";
-import { UPLOADS_DIR } from "../env.js";
+import { photoFileOnDisk, storedPhotoPath } from "../photos.js";
 
 /**
  * `/uploads/*` — profile photos, served only to a signed-in User who can view the Person the
@@ -18,25 +17,28 @@ export const photosRouter = Router();
  */
 photosRouter.get("/:fileName", async (req, res) => {
   const { fileName } = req.params as { fileName: string };
-  // The stored path is built the same way the upload route builds it ("uploads/<file>").
-  const person = await findViewablePersonByPhoto(actorOf(req), `uploads/${fileName}`);
+  const person = await findViewablePersonByPhoto(actorOf(req), storedPhotoPath(fileName));
   // Not viewable and not there look the same to the caller.
   if (!person) {
     res.sendStatus(404);
     return;
   }
 
-  res.setHeader("Cache-Control", "private, no-cache");
-  // basename: the name was matched against a stored path, but never let it leave the folder.
-  res.sendFile(path.join(UPLOADS_DIR, path.basename(fileName)), { cacheControl: false }, (error) => {
+  // The header goes in sendFile's options so it's only set if the file is actually sent.
+  const options = { cacheControl: false, headers: { "Cache-Control": "private, no-cache" } };
+  res.sendFile(photoFileOnDisk(fileName), options, (error) => {
     // A Person points at this file but it's gone from disk: still just "not found". (If headers
     // already went out — the client hung up mid-file — there's nothing left to answer.)
     if (error && !res.headersSent) res.sendStatus(404);
   });
 });
 
-// Anything else under /uploads (nested paths, the bare folder) is not found too, rather than
-// falling through to the production frontend's index.html.
+/**
+ * Any other path under `/uploads` (nested paths, the bare folder) is not found too, rather
+ * than falling through to the production frontend's index.html catch-all.
+ * @param _req - the request (unused).
+ * @param res - the response.
+ */
 photosRouter.use((_req, res) => {
   res.sendStatus(404);
 });
