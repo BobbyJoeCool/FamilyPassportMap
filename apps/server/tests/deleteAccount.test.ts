@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { app } from "../src/app.js";
 import { prisma } from "../src/db.js";
 import { UPLOADS_DIR } from "../src/env.js";
-import { completeSignIn, fakeCode, identityFor, newAgent, signIn, type TestAgent } from "./helpers.js";
+import { completeSignIn, fakeCode, identityFor, newAgent, sessionCookieFrom, signIn, type TestAgent } from "./helpers.js";
 
 let alice: TestAgent;
 let aliceCookie: string;
@@ -25,9 +25,7 @@ function pngImage(): Promise<Buffer> {
 beforeEach(async () => {
   alice = newAgent();
   const signedIn = await completeSignIn(alice, fakeCode(identityFor("alice")));
-  aliceCookie = (signedIn.headers["set-cookie"] as unknown as string[])
-    .find((cookie) => cookie.startsWith("fpm_session="))!
-    .split(";")[0];
+  aliceCookie = sessionCookieFrom(signedIn);
   await alice.post("/api/me/primary-person").send({ name: "Alice", colorHex: "#aa00aa" });
 });
 
@@ -73,6 +71,16 @@ describe("Delete account", () => {
     expect((await bob.get(`/api/people/${bobsKid}/visits`)).body).toEqual(["TX"]);
     expect((await bob.get(`/api/people/${bobsKid}/countries`)).body).toEqual(["JP"]);
     expect((await bob.get(`/${bobPhoto}`)).status).toBe(200);
+  });
+
+  it("two simultaneous deletes never fail: each is 204, or 401 once the other has ended the session", async () => {
+    const results = await Promise.all([
+      request(app).delete("/api/me").set("Cookie", aliceCookie),
+      request(app).delete("/api/me").set("Cookie", aliceCookie),
+    ]);
+    // Which one wins the race varies; neither may be a 404 or a 500.
+    for (const res of results) expect([204, 401]).toContain(res.status);
+    expect(results.some((res) => res.status === 204)).toBe(true);
   });
 
   it("signing in again with the same Google account starts fresh as a new User", async () => {

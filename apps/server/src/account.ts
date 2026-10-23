@@ -16,7 +16,10 @@ export async function deleteAccount(actor: Actor | null): Promise<void> {
   const photoPaths = await prisma.$transaction(async (tx) => {
     // Read the photos inside the transaction, so a photo uploaded mid-delete isn't missed.
     const people = await listOwnedPeople(owner, tx);
-    await tx.user.delete({ where: { id: owner.userId } });
+    // The owned People go by the schema's Owner cascade rather than a separate delete: "every
+    // Person this User owns" is exactly what ADR 0002's Owner relation means, so the policy
+    // and the cascade can't disagree. deleteMany, so a second simultaneous delete is a no-op.
+    await tx.user.deleteMany({ where: { id: owner.userId } });
     return people.map((person) => person.profilePicturePath);
   });
 

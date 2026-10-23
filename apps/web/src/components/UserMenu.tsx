@@ -31,6 +31,12 @@ export function UserMenu({ user }: { user: SignedInUser }) {
     }
   }
 
+  /** Closes the menu and opens the Delete account confirmation in its place. */
+  function handleDeleteAccountClick() {
+    setOpen(false);
+    setConfirmingDelete(true);
+  }
+
   return (
     <div className="relative">
       <button
@@ -83,10 +89,7 @@ export function UserMenu({ user }: { user: SignedInUser }) {
           <button
             type="button"
             role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              setConfirmingDelete(true);
-            }}
+            onClick={handleDeleteAccountClick}
             className="w-full text-left px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-bg-card)]"
           >
             Delete account

@@ -3,7 +3,7 @@ import request from "supertest";
 import { app } from "../src/app.js";
 import { missingAuthSettings } from "../src/auth/config.js";
 import { prisma } from "../src/db.js";
-import { completeSignIn, fakeCode, identityFor, newAgent, signIn } from "./helpers.js";
+import { completeSignIn, fakeCode, identityFor, newAgent, sessionCookieFrom, signIn } from "./helpers.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -130,9 +130,7 @@ describe("Sessions", () => {
     const signedIn = await completeSignIn(newAgent(), fakeCode(identityFor("alice")));
     // Send the cookie by hand: a real browser drops it after Max-Age, but a copied cookie
     // must still be refused by the server itself.
-    const sessionCookie = (signedIn.headers["set-cookie"] as unknown as string[])
-      .find((cookie) => cookie.startsWith("fpm_session="))!
-      .split(";")[0];
+    const sessionCookie = sessionCookieFrom(signedIn);
 
     vi.setSystemTime(new Date(Date.now() + 31 * DAY_MS)); // never used since sign-in
     expect((await request(app).get("/api/me").set("Cookie", sessionCookie)).status).toBe(401);

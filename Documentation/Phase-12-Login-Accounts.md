@@ -232,6 +232,7 @@ The existing family's data is attached to the site owner's account on their firs
 - On every successful sign-in, check two things: is the User's verified email equal to `LEGACY_DATA_OWNER_EMAIL` (case-insensitive), and are there People with no Owner? If both, make that User the Owner of all of them. This is safe to repeat and needs nothing else to be run.
 - Adoption ignores the 10-People cap. Adopted People are ordinary (non-Primary) People. The owner then completes the welcome step like everyone else and uses Set as me on their own Person.
 - If the setting is unset, no adoption happens and People with no Owner stay invisible.
+- Once Adopted, Legacy People are owned like any others. If the site owner later deletes their account, the Adopted People are deleted with it; they don't return to having no Owner.
 
 ### Web app
 

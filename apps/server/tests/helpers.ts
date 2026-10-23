@@ -69,6 +69,17 @@ export async function completeSignIn(agent: TestAgent, code: string, returnTo?: 
 }
 
 /**
+ * The session cookie a response set, as a `Cookie` header value — for sending a copy of it by
+ * hand after the agent's own jar has dropped it.
+ * @param res - a response that set the session cookie (e.g. the sign-in callback).
+ * @returns the `fpm_session=<token>` pair.
+ */
+export function sessionCookieFrom(res: { headers: Record<string, unknown> }): string {
+  const cookies = res.headers["set-cookie"] as string[];
+  return cookies.find((cookie) => cookie.startsWith("fpm_session="))!.split(";")[0];
+}
+
+/**
  * Signs a fresh agent in as the named test User.
  * @param name - a short lowercase name ("alice").
  * @returns an agent carrying that User's session cookie.

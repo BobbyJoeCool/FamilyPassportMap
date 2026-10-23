@@ -52,11 +52,10 @@ export function googleSignInUrl(returnTo: string): string {
 
 /**
  * Permanently deletes the signed-in User's account and everything they own (the server also
- * ends every session and clears the cookie).
+ * ends every session and clears the cookie). An expired session goes to sign-in, like any
+ * other call, rather than being reported as a connection problem.
  * @throws if the server couldn't be reached or refused — the account may still exist.
  */
 export async function deleteAccount(): Promise<void> {
-  const res = await fetch("/api/me", { method: "DELETE" });
-  // Anything but success means nothing can be assumed deleted — the caller must not pretend.
-  if (!res.ok) throw new Error(`Delete account failed with status ${res.status}`);
+  await handleResponse<void>(await fetch("/api/me", { method: "DELETE" }));
 }
