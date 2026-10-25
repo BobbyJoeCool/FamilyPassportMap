@@ -2,7 +2,7 @@ import http from "node:http";
 import { afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../src/app.js";
-import type { GoogleIdentity } from "../src/auth/google.js";
+import type { MicrosoftIdentity } from "../src/auth/microsoft.js";
 
 /** A Supertest agent: keeps cookies between requests, like a browser. */
 export type TestAgent = ReturnType<typeof request.agent>;
@@ -25,47 +25,46 @@ export function newAgent(): TestAgent {
 }
 
 /**
- * Encodes a fake Google identity as an authorization "code". The faked Google adapter (see
- * tests/setup.ts) decodes it back, so a test chooses exactly who Google says signed in.
- * @param identity - the identity Google should report.
+ * Encodes a fake Microsoft identity as an authorization "code". The faked Microsoft adapter (see
+ * tests/setup.ts) decodes it back, so a test chooses exactly who Microsoft says signed in.
+ * @param identity - the identity Microsoft should report.
  * @returns the code to pass to the callback.
  */
-export function fakeCode(identity: GoogleIdentity): string {
+export function fakeCode(identity: MicrosoftIdentity): string {
   return Buffer.from(JSON.stringify(identity)).toString("base64url");
 }
 
 /**
- * Builds a complete fake Google identity for a test user.
+ * Builds a complete fake Microsoft identity for a test user, signed in with a personal account.
  * @param name - a short lowercase name ("alice"); also used for the subject and email.
- * @param overrides - any fields to change (e.g. `emailVerified: false`).
+ * @param overrides - any fields to change (e.g. `isPersonalAccount: false` for a work account).
  * @returns the identity.
  */
-export function identityFor(name: string, overrides: Partial<GoogleIdentity> = {}): GoogleIdentity {
+export function identityFor(name: string, overrides: Partial<MicrosoftIdentity> = {}): MicrosoftIdentity {
   return {
-    subject: `google-${name}`,
+    subject: `microsoft-${name}`,
     email: `${name}@example.com`,
-    emailVerified: true,
     name: name.charAt(0).toUpperCase() + name.slice(1),
-    pictureUrl: `https://example.com/${name}.png`,
+    isPersonalAccount: true,
     ...overrides,
   };
 }
 
 /**
- * Walks the real sign-in flow (start → Google → callback) with the faked adapter.
+ * Walks the real sign-in flow (start → Microsoft → callback) with the faked adapter.
  * @param agent - the cookie-keeping agent to sign in.
- * @param code - what Google hands back to the callback (see `fakeCode`).
+ * @param code - what Microsoft hands back to the callback (see `fakeCode`).
  * @param returnTo - optional page to come back to.
  * @returns the callback's response (a redirect).
  */
 export async function completeSignIn(agent: TestAgent, code: string, returnTo?: string) {
-  const start = await agent.get("/api/auth/google").query(returnTo === undefined ? {} : { returnTo });
-  // Starting sign-in always redirects to Google; anything else is a broken test setup.
+  const start = await agent.get("/api/auth/microsoft").query(returnTo === undefined ? {} : { returnTo });
+  // Starting sign-in always redirects to Microsoft; anything else is a broken test setup.
   if (start.status !== 302) {
     throw new Error(`Sign-in start returned ${start.status}: ${JSON.stringify(start.body)} ${start.text}`);
   }
   const state = new URL(start.headers.location).searchParams.get("state");
-  return agent.get("/api/auth/google/callback").query({ code, state });
+  return agent.get("/api/auth/microsoft/callback").query({ code, state });
 }
 
 /**

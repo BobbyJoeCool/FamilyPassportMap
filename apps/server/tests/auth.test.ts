@@ -2,7 +2,6 @@ import { afterEach, describe, it, expect, vi } from "vitest";
 import request from "supertest";
 import { app } from "../src/app.js";
 import { missingAuthSettings } from "../src/auth/config.js";
-import { prisma } from "../src/db.js";
 import { completeSignIn, fakeCode, identityFor, newAgent, sessionCookieFrom, signIn } from "./helpers.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -24,25 +23,26 @@ describe("Signing in", () => {
     expect(res.body).toEqual({ error: "Not signed in" });
   });
 
-  it("signing in with Google creates a User that /api/me returns", async () => {
+  it("signing in with Microsoft creates a User that /api/me returns", async () => {
     const alice = await signIn("alice");
     const res = await alice.get("/api/me");
     expect(res.status).toBe(200);
     expect(res.body.user).toMatchObject({
       email: "alice@example.com",
       displayName: "Alice",
-      avatarUrl: "https://example.com/alice.png",
+      // Microsoft's ID token has no picture.
+      avatarUrl: null,
     });
     expect(res.body.user.id).toBeDefined();
   });
 });
 
 describe("Sign-in outcomes", () => {
-  it("signing in again with the same Google account reuses the User and refreshes their profile", async () => {
+  it("signing in again with the same Microsoft account reuses the User and refreshes their profile", async () => {
     const first = await (await signIn("alice")).get("/api/me");
 
     const agent = newAgent();
-    const renamed = identityFor("alice", { name: "Alice Smith", email: "alice.smith@example.com", pictureUrl: null });
+    const renamed = identityFor("alice", { name: "Alice Smith", email: "alice.smith@example.com" });
     await completeSignIn(agent, fakeCode(renamed));
     const second = await agent.get("/api/me");
 
@@ -70,37 +70,40 @@ describe("Sign-in outcomes", () => {
     },
   );
 
-  it("an unverified Google email is refused and leaves the browser signed out", async () => {
+  it("a work or school account signs in like a personal one", async () => {
     const agent = newAgent();
-    const res = await completeSignIn(agent, fakeCode(identityFor("alice", { emailVerified: false })));
-    expect(res.headers.location).toBe("/signin?error=unverified");
-    expect((await agent.get("/api/me")).status).toBe(401);
+    const res = await completeSignIn(agent, fakeCode(identityFor("alice", { isPersonalAccount: false })));
+    expect(res.headers.location).toBe("/welcome");
+    expect((await agent.get("/api/me")).body.user).toMatchObject({ email: "alice@example.com" });
   });
 
-  it("an unverified Google email creates no User", async () => {
-    await completeSignIn(newAgent(), fakeCode(identityFor("alice", { emailVerified: false })));
-    // Whether a User row exists isn't visible through the API (nothing lists Users), so this
-    // one check reads the database directly.
-    expect(await prisma.user.count()).toBe(0);
+  it("two accounts with the same email are two different Users", async () => {
+    const personal = newAgent();
+    await completeSignIn(personal, fakeCode(identityFor("alice")));
+    const work = newAgent();
+    await completeSignIn(work, fakeCode(identityFor("alice", { subject: "microsoft-alice-work", isPersonalAccount: false })));
+
+    // Users are keyed by Microsoft's account id, never by email, which a work directory can set freely.
+    expect((await personal.get("/api/me")).body.user.id).not.toBe((await work.get("/api/me")).body.user.id);
   });
 
-  it("cancelling at Google returns to the sign-in page with a cancelled message", async () => {
+  it("cancelling at Microsoft returns to the sign-in page with a cancelled message", async () => {
     const agent = newAgent();
-    await agent.get("/api/auth/google");
-    const res = await agent.get("/api/auth/google/callback").query({ error: "access_denied" });
+    await agent.get("/api/auth/microsoft");
+    const res = await agent.get("/api/auth/microsoft/callback").query({ error: "access_denied" });
     expect(res.headers.location).toBe("/signin?error=cancelled");
   });
 
-  it("a code Google rejects ends in a failed sign-in", async () => {
+  it("a code Microsoft rejects ends in a failed sign-in", async () => {
     const res = await completeSignIn(newAgent(), "bad-code");
     expect(res.headers.location).toBe("/signin?error=failed");
   });
 
   it("a callback that this browser didn't start (state mismatch) fails", async () => {
     const agent = newAgent();
-    await agent.get("/api/auth/google");
+    await agent.get("/api/auth/microsoft");
     const res = await agent
-      .get("/api/auth/google/callback")
+      .get("/api/auth/microsoft/callback")
       .query({ code: fakeCode(identityFor("alice")), state: "forged" });
     expect(res.headers.location).toBe("/signin?error=failed");
     expect((await agent.get("/api/me")).status).toBe(401);
@@ -108,7 +111,7 @@ describe("Sign-in outcomes", () => {
 
   it("a callback with no sign-in started at all fails", async () => {
     const res = await request(app)
-      .get("/api/auth/google/callback")
+      .get("/api/auth/microsoft/callback")
       .query({ code: fakeCode(identityFor("alice")), state: "anything" });
     expect(res.headers.location).toBe("/signin?error=failed");
   });
@@ -180,16 +183,16 @@ describe("Protected routes", () => {
 });
 
 describe("Sign-in configuration", () => {
-  it("reports every missing Google setting", () => {
-    expect(missingAuthSettings({})).toEqual(["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "APP_BASE_URL"]);
-    expect(missingAuthSettings({ GOOGLE_CLIENT_ID: "id", GOOGLE_CLIENT_SECRET: "", APP_BASE_URL: "http://x" })).toEqual([
-      "GOOGLE_CLIENT_SECRET",
+  it("reports every missing Microsoft setting", () => {
+    expect(missingAuthSettings({})).toEqual(["MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET", "APP_BASE_URL"]);
+    expect(missingAuthSettings({ MICROSOFT_CLIENT_ID: "id", MICROSOFT_CLIENT_SECRET: "", APP_BASE_URL: "http://x" })).toEqual([
+      "MICROSOFT_CLIENT_SECRET",
     ]);
   });
 
   it("reports nothing when sign-in is fully configured", () => {
     expect(
-      missingAuthSettings({ GOOGLE_CLIENT_ID: "id", GOOGLE_CLIENT_SECRET: "secret", APP_BASE_URL: "http://localhost:5173" }),
+      missingAuthSettings({ MICROSOFT_CLIENT_ID: "id", MICROSOFT_CLIENT_SECRET: "secret", APP_BASE_URL: "http://localhost:5173" }),
     ).toEqual([]);
   });
 });

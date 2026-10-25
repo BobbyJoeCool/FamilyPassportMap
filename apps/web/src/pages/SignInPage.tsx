@@ -1,17 +1,16 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { DEFAULT_LANDING_PATH, SIGN_IN_ERRORS, type SignInError } from "@familypassportmap/shared";
-import { googleSignInUrl } from "../api/auth";
+import { microsoftSignInUrl } from "../api/auth";
 
 /** What to tell the visitor for each way sign-in can fail (the `error` query value). */
 const ERROR_MESSAGES: Record<SignInError, string> = {
   cancelled: "Sign-in was cancelled.",
   failed: "Sign-in didn't work. Please try again.",
-  unverified: "Your Google email isn't verified, so we can't sign you in.",
 };
 
 /**
  * The public sign-in page: every signed-out visit lands here. Shows why the last attempt
- * failed (if it did) and starts Google sign-in, coming back to `returnTo` afterwards.
+ * failed (if it did) and starts Microsoft sign-in, coming back to `returnTo` afterwards.
  */
 export function SignInPage() {
   const [params] = useSearchParams();
@@ -34,12 +33,12 @@ export function SignInPage() {
           </p>
         )}
 
-        {/* A plain link, not a router Link: the browser must leave for Google and come back. */}
+        {/* A plain link, not a router Link: the browser must leave for Microsoft and come back. */}
         <a
-          href={googleSignInUrl(returnTo)}
+          href={microsoftSignInUrl(returnTo)}
           className="block w-full px-4 py-2 rounded-lg bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-medium transition-colors"
         >
-          Sign in with Google
+          Sign in with Microsoft
         </a>
 
         <Link to="/privacy" className="inline-block mt-4 text-sm text-[var(--color-text-muted)] underline">

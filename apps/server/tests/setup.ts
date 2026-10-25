@@ -5,25 +5,25 @@ import os from "node:os";
 import path from "node:path";
 import { beforeEach, afterAll, vi } from "vitest";
 
-// Google is the one thing tests fake (the agreed seam). The "code" a test hands the callback is
+// Microsoft is the one thing tests fake (the agreed seam). The "code" a test hands the callback is
 // the identity itself, base64url-encoded (see tests/helpers.ts fakeCode); "bad-code" simulates
 // a failed exchange or verification.
-vi.mock("../src/auth/google.js", () => ({
+vi.mock("../src/auth/microsoft.js", () => ({
   /**
-   * Fake consent-page URL: just carries the state, as Google's would.
+   * Fake sign-in-page URL: just carries the state, as Microsoft's would.
    * @param state - the anti-forgery value the callback must get back.
    * @returns a URL whose `state` query parameter tests can read.
    */
-  googleAuthorizationUrl: (state: string) => `https://accounts.google.test/o/oauth2/auth?state=${state}`,
+  microsoftAuthorizationUrl: (state: string) => `https://login.microsoftonline.test/common/oauth2/v2.0/authorize?state=${state}`,
   /**
    * Fake code exchange: the code IS the identity, base64url-encoded by `fakeCode`.
    * @param code - what the test passed to the callback.
    * @returns the identity encoded in the code.
-   * @throws for "bad-code", like a code Google rejects.
+   * @throws for "bad-code", like a code Microsoft rejects.
    */
-  googleIdentityFromCode: async (code: string) => {
-    // Simulate Google refusing the exchange or the ID token failing verification.
-    if (code === "bad-code") throw new Error("Google rejected the code");
+  microsoftIdentityFromCode: async (code: string) => {
+    // Simulate Microsoft refusing the exchange or the ID token failing verification.
+    if (code === "bad-code") throw new Error("Microsoft rejected the code");
     return JSON.parse(Buffer.from(code, "base64url").toString("utf8"));
   },
 }));

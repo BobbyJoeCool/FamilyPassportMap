@@ -37,7 +37,7 @@ Login, per-User data, and (later) Link/Join between Users. Domain terms are in [
 
 | Phase | Version | Name | Spec doc | Status |
 |---|---|---|---|---|
-| 12 | v2.3.0 | Login & Accounts (Google sign-in, Primary Person, per-User data) | [Documentation/Phase-12-Login-Accounts.md](Documentation/Phase-12-Login-Accounts.md) (tickets: [#1–#12](https://github.com/BobbyJoeCool/FamilyPassportMap/issues)) | **Built, pending verification** (v2.3.0). All tickets are built and the automated tests pass. The spec's manual local checklist runs once the Google OAuth client exists (#11), and then this becomes Complete. |
+| 12 | v2.3.0 | Login & Accounts (Microsoft sign-in, Primary Person, per-User data) | [Documentation/Phase-12-Login-Accounts.md](Documentation/Phase-12-Login-Accounts.md) (tickets: [#1–#13](https://github.com/BobbyJoeCool/FamilyPassportMap/issues)) | **Built, pending verification** (v2.3.0). All tickets are built and the automated tests pass. Sign-in was switched from Google to Microsoft mid-phase (#13). The spec's manual local checklist runs once the Microsoft app registration exists (#11), and then this becomes Complete. |
 
 ## Versioning convention
 

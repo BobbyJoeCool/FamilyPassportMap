@@ -28,7 +28,7 @@ function hashToken(token: string): string {
 export function sessionCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
-    // Lax: sent on normal navigation (including back from Google), never on cross-site
+    // Lax: sent on normal navigation (including back from Microsoft), never on cross-site
     // POST/PATCH/DELETE — which is what protects the API from cross-site requests.
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

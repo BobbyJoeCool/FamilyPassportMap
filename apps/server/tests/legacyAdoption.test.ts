@@ -42,6 +42,16 @@ describe("Legacy data adoption", () => {
     expect((await bob.get("/api/people")).body).toEqual([]);
   });
 
+  it("a work or school account with the site owner's email Adopts nothing", async () => {
+    // A work directory's admin can give an account any email, so the email alone proves nothing.
+    vi.stubEnv("LEGACY_DATA_OWNER_EMAIL", "owner@example.com");
+    const impostor = newAgent();
+    await completeSignIn(impostor, fakeCode(identityFor("owner", { subject: "microsoft-impostor", isPersonalAccount: false })));
+
+    expect((await impostor.get("/api/people")).body).toEqual([]);
+    expect(await prisma.person.count({ where: { ownerId: null } })).toBe(LEGACY_COUNT);
+  });
+
   it.each([
     ["unset", undefined],
     ["empty", ""],

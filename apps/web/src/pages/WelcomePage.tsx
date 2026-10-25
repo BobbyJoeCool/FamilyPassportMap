@@ -9,9 +9,9 @@ type WelcomeErrors = { name?: string; color?: string; submit?: string };
 
 /**
  * The one-time welcome step after a User's first sign-in: confirm their name (prefilled from
- * Google) and choose their color, which creates their Primary Person. Sign out is offered here
+ * Microsoft) and choose their color, which creates their Primary Person. Sign out is offered here
  * too, since this page shows before the app's header (and its user menu).
- * @param suggestedName - the name from their Google account.
+ * @param suggestedName - the name from their Microsoft account.
  */
 export function WelcomePage({ suggestedName }: { suggestedName: string }) {
   const [name, setName] = useState(suggestedName);

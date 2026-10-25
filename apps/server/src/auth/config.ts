@@ -1,11 +1,11 @@
-/** Settings Google sign-in needs. Production refuses to start without all of them. */
-export const REQUIRED_AUTH_SETTINGS = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "APP_BASE_URL"] as const;
+/** Settings Microsoft sign-in needs. Production refuses to start without all of them. */
+export const REQUIRED_AUTH_SETTINGS = ["MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET", "APP_BASE_URL"] as const;
 
-/** Everything the Google adapter needs to talk to Google. */
-export interface GoogleConfig {
+/** Everything the Microsoft adapter needs to talk to Microsoft. */
+export interface MicrosoftConfig {
   clientId: string;
   clientSecret: string;
-  /** Where Google sends the browser back to — must be registered on the OAuth client. */
+  /** Where Microsoft sends the browser back to — must be registered on the app registration. */
   redirectUri: string;
 }
 
@@ -19,32 +19,35 @@ export function missingAuthSettings(env: NodeJS.ProcessEnv = process.env): strin
 }
 
 /**
- * Reads the Google sign-in settings. Read lazily (per sign-in), not at import, so tests and
- * local runs without Google configured still start.
+ * Reads the Microsoft sign-in settings. Read lazily (per sign-in), not at import, so tests and
+ * local runs without Microsoft configured still start.
  * @returns the config.
  * @throws if any required setting is missing.
  */
-export function googleConfig(): GoogleConfig {
+export function microsoftConfig(): MicrosoftConfig {
   const missing = missingAuthSettings();
   // Fail with the exact setting names so a misconfigured deploy is easy to fix.
   if (missing.length > 0) {
-    throw new Error(`Google sign-in is not configured: missing ${missing.join(", ")}`);
+    throw new Error(`Microsoft sign-in is not configured: missing ${missing.join(", ")}`);
   }
   return {
-    clientId: process.env.GOOGLE_CLIENT_ID!,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    redirectUri: new URL("/api/auth/google/callback", process.env.APP_BASE_URL).toString(),
+    clientId: process.env.MICROSOFT_CLIENT_ID!,
+    clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
+    redirectUri: new URL("/api/auth/microsoft/callback", process.env.APP_BASE_URL).toString(),
   };
 }
 
 /**
- * Whether a signed-in email belongs to the site owner, who Adopts the Legacy People. Compared
+ * Whether a signed-in User is the site owner, who Adopts the Legacy People. The email is compared
  * case-insensitively against `LEGACY_DATA_OWNER_EMAIL`, read per call (so tests can change it).
- * Unset or empty means nobody is the site owner, and Legacy People stay invisible.
- * @param email - the User's verified email.
+ * Only a personal Microsoft account qualifies: a work or school directory's admin can give an
+ * account any email, so a matching email there proves nothing. Unset or empty means nobody is
+ * the site owner, and Legacy People stay invisible.
+ * @param email - the User's email, as Microsoft reported it.
+ * @param isPersonalAccount - whether they signed in with a personal Microsoft account.
  * @returns true when this User should Adopt the Legacy People.
  */
-export function isLegacyDataOwner(email: string): boolean {
+export function isLegacyDataOwner(email: string, isPersonalAccount: boolean): boolean {
   const ownerEmail = process.env.LEGACY_DATA_OWNER_EMAIL?.trim().toLowerCase();
-  return !!ownerEmail && email.trim().toLowerCase() === ownerEmail;
+  return isPersonalAccount && !!ownerEmail && email.trim().toLowerCase() === ownerEmail;
 }

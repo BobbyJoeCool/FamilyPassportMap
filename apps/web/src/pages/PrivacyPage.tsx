@@ -17,7 +17,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 /**
  * The public privacy page: a plain-language summary of what the app stores, who can see it,
  * and how to delete it. Reachable without signing in (linked from the sign-in page), and its
- * URL is the privacy-policy link on the Google sign-in consent screen.
+ * URL is the privacy-policy link on the Microsoft app registration's branding page.
  */
 export function PrivacyPage() {
   return (
@@ -25,7 +25,7 @@ export function PrivacyPage() {
       <h1 className="text-2xl md:text-3xl font-bold mb-6">Privacy</h1>
 
       <Section title="What we store">
-        <p>When you sign in with Google, we store your Google name, email address, and the web address of your Google profile picture.</p>
+        <p>When you sign in with Microsoft, we store the name and email address on your Microsoft account.</p>
         <p>We also store what you add: the People you track (each with a name, a color, and an optional photo) and the US states and countries each of them has visited.</p>
       </Section>
 
@@ -38,7 +38,7 @@ export function PrivacyPage() {
       </Section>
 
       <Section title="Signing in">
-        <p>Google is used only to sign you in. We never see your Google password, and we don't read anything else from your Google account.</p>
+        <p>Microsoft is used only to sign you in. We never see your Microsoft password, and we don't read anything else from your Microsoft account.</p>
         <p>A cookie keeps you signed in on this device until you sign out or haven't used the app for 30 days.</p>
       </Section>
 

@@ -4,17 +4,17 @@ import { safeReturnTo, type SignInError } from "@familypassportmap/shared";
 import { adoptLegacyPeople } from "../access.js";
 import { prisma } from "../db.js";
 import { isLegacyDataOwner } from "./config.js";
-import { googleAuthorizationUrl, googleIdentityFromCode } from "./google.js";
+import { microsoftAuthorizationUrl, microsoftIdentityFromCode } from "./microsoft.js";
 import { createSession, deleteSession, readSessionToken, SESSION_COOKIE, sessionCookieOptions } from "./sessions.js";
 
-/** Router for `/api/auth` — Google sign-in and sign-out. Public (no session required). */
+/** Router for `/api/auth` — Microsoft sign-in and sign-out. Public (no session required). */
 export const authRouter = Router();
 
 /** Where a User with no Primary Person yet is sent after signing in. */
 const WELCOME_PATH = "/welcome";
 
-/** The `User.authProvider` value for Google sign-ins. */
-const GOOGLE_AUTH_PROVIDER = "google";
+/** The `User.authProvider` value for Microsoft sign-ins. */
+const MICROSOFT_AUTH_PROVIDER = "microsoft";
 
 /** Short-lived cookie holding the in-flight sign-in's anti-forgery state and return path. */
 const PENDING_SIGN_IN_COOKIE = "fpm_signin";
@@ -61,26 +61,26 @@ function signInErrorPath(reason: SignInError): string {
 }
 
 /**
- * `GET /api/auth/google?returnTo=<path>` — start signing in: remember where to come back to,
- * then send the browser to Google.
+ * `GET /api/auth/microsoft?returnTo=<path>` — start signing in: remember where to come back to,
+ * then send the browser to Microsoft.
  */
-authRouter.get("/google", (req, res) => {
+authRouter.get("/microsoft", (req, res) => {
   const state = crypto.randomBytes(16).toString("base64url");
   const returnTo = safeReturnTo(req.query.returnTo);
   res.cookie(PENDING_SIGN_IN_COOKIE, JSON.stringify({ state, returnTo }), pendingCookieOptions());
-  res.redirect(googleAuthorizationUrl(state));
+  res.redirect(microsoftAuthorizationUrl(state));
 });
 
 /**
- * `GET /api/auth/google/callback` — Google sends the browser back here. Verify it's the
+ * `GET /api/auth/microsoft/callback` — Microsoft sends the browser back here. Verify it's the
  * sign-in we started, get the identity, find or create the User, start a session.
  */
-authRouter.get("/google/callback", async (req, res) => {
+authRouter.get("/microsoft/callback", async (req, res) => {
   const pending = readPendingSignIn(req.cookies?.[PENDING_SIGN_IN_COOKIE]);
   // Express 5 clearCookie drops maxAge itself, so the same options can be reused.
   res.clearCookie(PENDING_SIGN_IN_COOKIE, pendingCookieOptions());
 
-  // Google reports the user backing out (or any other consent-page problem) as `error`.
+  // Microsoft reports the user backing out (or any other sign-in-page problem) as `error`.
   if (req.query.error) {
     res.redirect(signInErrorPath(req.query.error === "access_denied" ? "cancelled" : "failed"));
     return;
@@ -95,31 +95,26 @@ authRouter.get("/google/callback", async (req, res) => {
 
   let identity;
   try {
-    identity = await googleIdentityFromCode(code);
+    identity = await microsoftIdentityFromCode(code);
   } catch (error) {
-    console.error("Google sign-in failed:", error);
+    console.error("Microsoft sign-in failed:", error);
     res.redirect(signInErrorPath("failed"));
-    return;
-  }
-
-  // An unverified email can't be trusted to identify anyone — no User is created.
-  if (!identity.emailVerified) {
-    res.redirect(signInErrorPath("unverified"));
     return;
   }
 
   let token: string;
   let primaryPersonId: string | null;
   try {
-    // Same Google account → same User; name, email and picture are refreshed every sign-in.
-    const providerDetails = { email: identity.email, displayName: identity.name, avatarUrl: identity.pictureUrl };
+    // Same Microsoft account → same User (keyed by its id, never by email); name and email are
+    // refreshed every sign-in. Microsoft's ID token carries no picture, so there's no avatar.
+    const providerDetails = { email: identity.email, displayName: identity.name, avatarUrl: null };
     const user = await prisma.user.upsert({
-      where: { authProvider_authSubject: { authProvider: GOOGLE_AUTH_PROVIDER, authSubject: identity.subject } },
-      create: { authProvider: GOOGLE_AUTH_PROVIDER, authSubject: identity.subject, ...providerDetails },
+      where: { authProvider_authSubject: { authProvider: MICROSOFT_AUTH_PROVIDER, authSubject: identity.subject } },
+      create: { authProvider: MICROSOFT_AUTH_PROVIDER, authSubject: identity.subject, ...providerDetails },
       update: providerDetails,
     });
     // The site owner Adopts any Legacy People, on every sign-in (a no-op once none are left).
-    if (isLegacyDataOwner(user.email)) {
+    if (isLegacyDataOwner(identity.email, identity.isPersonalAccount)) {
       const adopted = await adoptLegacyPeople({ userId: user.id });
       // Only worth a log line when something actually changed hands.
       if (adopted > 0) console.log(`Adopted ${adopted} Legacy People for the site owner`);

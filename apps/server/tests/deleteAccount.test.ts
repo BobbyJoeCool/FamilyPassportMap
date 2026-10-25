@@ -83,7 +83,7 @@ describe("Delete account", () => {
     expect(results.some((res) => res.status === 204)).toBe(true);
   });
 
-  it("signing in again with the same Google account starts fresh as a new User", async () => {
+  it("signing in again with the same Microsoft account starts fresh as a new User", async () => {
     const before = (await alice.get("/api/me")).body.user.id as string;
     await alice.post("/api/people").send({ name: "Kid", colorHex: "#ff0000" });
     await alice.delete("/api/me");

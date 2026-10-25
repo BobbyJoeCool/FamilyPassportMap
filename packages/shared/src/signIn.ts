@@ -4,7 +4,7 @@
 export const DEFAULT_LANDING_PATH = "/us/map";
 
 /** Why a sign-in didn't complete; the server sends it to the sign-in page as `?error=`. */
-export const SIGN_IN_ERRORS = ["cancelled", "failed", "unverified"] as const;
+export const SIGN_IN_ERRORS = ["cancelled", "failed"] as const;
 export type SignInError = (typeof SIGN_IN_ERRORS)[number];
 
 /**

@@ -41,13 +41,13 @@ export async function signOut(): Promise<void> {
 }
 
 /**
- * The URL that starts Google sign-in. A real navigation, not a fetch: the browser has to
- * leave for Google's page and come back.
+ * The URL that starts Microsoft sign-in. A real navigation, not a fetch: the browser has to
+ * leave for Microsoft's page and come back.
  * @param returnTo - the in-app path to land on afterwards.
  * @returns the sign-in start URL.
  */
-export function googleSignInUrl(returnTo: string): string {
-  return `/api/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
+export function microsoftSignInUrl(returnTo: string): string {
+  return `/api/auth/microsoft?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
 /**

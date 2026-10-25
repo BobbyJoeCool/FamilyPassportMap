@@ -8,7 +8,7 @@ import { shrinkOversizedPhotos } from "./photos.js";
 // the local development default.
 const port = process.env.PORT ? Number(process.env.PORT) : 3001;
 
-// Production must be able to sign people in. Refuse to start without the Google settings, so a
+// Production must be able to sign people in. Refuse to start without the Microsoft settings, so a
 // misconfigured deploy fails at startup instead of on someone's first sign-in. (Local runs and
 // tests don't need them until someone actually signs in.)
 const missingSettings = missingAuthSettings();

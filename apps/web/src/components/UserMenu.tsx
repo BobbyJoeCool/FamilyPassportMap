@@ -46,9 +46,9 @@ export function UserMenu({ user }: { user: SignedInUser }) {
         aria-expanded={open}
         className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-[var(--color-bg-card)] transition-colors"
       >
-        {/* Google's picture when there is one; otherwise the first letter of the name. */}
+        {/* The sign-in provider's picture when there is one (Microsoft sends none); otherwise the first letter of the name. */}
         {user.avatarUrl ? (
-          // no-referrer: Google's avatar host can refuse images requested with a Referer.
+          // no-referrer: avatar hosts can refuse images requested with a Referer.
           <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" className="w-8 h-8 rounded-full" />
         ) : (
           <span className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--color-primary)] text-white text-sm font-medium">

@@ -62,11 +62,11 @@ model VisitedCountry {
 // refreshed from the provider on every sign-in.
 model User {
   id              String    @id @default(cuid())
-  authProvider    String // "google"
-  authSubject     String // the provider's user id (Google's "sub")
+  authProvider    String // "microsoft"
+  authSubject     String // the provider's user id (Microsoft's "sub")
   email           String
   displayName     String
-  avatarUrl       String? // provider's profile-picture URL; shown in the header only
+  avatarUrl       String? // provider's profile-picture URL; shown in the header only (Microsoft sends none)
   // The Person who IS this User. Null only between first sign-in and finishing the welcome
   // step. Set back to null if that Person is ever deleted (in practice only Claim replaces it).
   primaryPersonId String?   @unique
