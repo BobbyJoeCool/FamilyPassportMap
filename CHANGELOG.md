@@ -6,9 +6,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
-## [2.3.0] — 2026-10-23 — Login & Accounts (Phase 12)
-
-**Pending verification:** the spec's manual local checklist runs once the Microsoft app registration exists (#11).
+## [2.3.0] — 2026-10-25 — Login & Accounts (Phase 12)
 
 - **Sign in with Microsoft**: any Microsoft account, personal or work or school. (Built with Google first, then switched before release, #13.) Signed out, every page goes to a sign-in page, which links to a new plain-language **privacy page** (`/privacy`). Sessions last 30 days and renew as you use the app. After an expired session you're sent to sign in, then back to the page you were on. The header gains an account menu (your initial) with your name and email, **Privacy**, **Sign out** and **Delete account**. On phones a slim top bar holds it.
 - **Your data is yours.** Each User sees and manages only the People they own. Opening, changing or marking visits on anyone else's Person behaves as if it doesn't exist (`404`). The People list, Map, Compare, List and the counters all count only your People.
