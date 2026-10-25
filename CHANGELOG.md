@@ -6,12 +6,28 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
-- **Fixed: Azure deploy workflow failed on every run.** The workflow expected an `AZURE_WEBAPP_PUBLISH_PROFILE` secret that was never added, so `azure/webapps-deploy` had no credentials ("No credentials found").
-  - The workflow now signs in with **OIDC** (`azure/login` + a federated credential), so no password or publish profile is stored and SCM basic auth stays off.
-  - It fails fast with a clear message if the `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID` repository variables are missing.
-  - The app name falls back to `family-passport-map`.
-  - Removed `startup-command`, which the action rejects with publish-profile auth; it's already set in the App Service.
-  - `Documentation/AZURE-SETUP.md` gives the correct startup command (`bash startup.sh`, not `npm start`) and the one-time OIDC setup commands.
+## [2.3.0] — 2026-10-25 — Login & Accounts (Phase 12)
+
+- **Sign in with Microsoft**: any Microsoft account, personal or work or school. (Built with Google first, then switched before release, #13.) Signed out, every page goes to a sign-in page, which links to a new plain-language **privacy page** (`/privacy`). Sessions last 30 days and renew as you use the app. After an expired session you're sent to sign in, then back to the page you were on. The header gains an account menu (your initial) with your name and email, **Privacy**, **Sign out** and **Delete account**. On phones a slim top bar holds it.
+- **Your data is yours.** Each User sees and manages only the People they own. Opening, changing or marking visits on anyone else's Person behaves as if it doesn't exist (`404`). The People list, Map, Compare, List and the counters all count only your People.
+- **Private photos.** `/uploads/*` is no longer public: a photo is served only to a signed-in User who can view its Person, and every other request gets `404`. Photos are shrunk to **256×256 avatars** on upload (JPEG, PNG and WebP up to 5 MB, as before), and photos uploaded earlier are shrunk once at server start.
+- **"You" (the Primary Person).** A one-time **welcome step** on first sign-in creates you as a Person, with your name and a color. People marks it **You**, and it can't be deleted on its own. **Set as me** on any other Person you own makes that Person "You". Your old "You"'s states and countries are merged into it, and the old one is removed.
+- **Up to 10 People** per User, yourself included. When you reach it, the add form is disabled.
+- **Delete account** in the account menu permanently deletes your account, all your People, their visits and photos, and every session, after a confirmation listing exactly that. Signing in again starts fresh.
+- **Existing data is kept.** The People recorded before login (Legacy People) are **Adopted** by the site owner, the User whose personal Microsoft account's email matches the new `LEGACY_DATA_OWNER_EMAIL` setting, on their sign-in. A work or school account with that email doesn't qualify, since its directory can set any email. Until then nobody can see them.
+- **Deploying:** add the new App Service settings **before** this release deploys. The server refuses to start without `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` and `APP_BASE_URL`, and `LEGACY_DATA_OWNER_EMAIL` decides who Adopts the existing data. The steps and the deploy order are in `Documentation/AZURE-SETUP.md`.
+- **Under the hood:**
+  - new `User` and `Session` models, `Person.ownerId` and `User.primaryPersonId` (ERD updated);
+  - one access-policy module (`apps/server/src/access.ts`) decides every "can this User see or change this Person?";
+  - the domain glossary is in `CONTEXT.md` and the ownership model in ADR 0002;
+  - 142 server tests.
+- **Also in this release** (merged to `main` before Phase 12 began):
+  - **Fixed: Azure deploy workflow failed on every run.** The workflow expected an `AZURE_WEBAPP_PUBLISH_PROFILE` secret that was never added, so `azure/webapps-deploy` had no credentials ("No credentials found").
+    - The workflow now signs in with **OIDC** (`azure/login` + a federated credential), so no password or publish profile is stored and SCM basic auth stays off.
+    - It fails fast with a clear message if the `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID` repository variables are missing.
+    - The app name falls back to `family-passport-map`.
+    - Removed `startup-command`, which the action rejects with publish-profile auth; it's already set in the App Service.
+    - `Documentation/AZURE-SETUP.md` gives the correct startup command (`bash startup.sh`, not `npm start`) and the one-time OIDC setup commands.
 
 ## [2.2.0] — 2026-09-16 — Navigation: People / US / World
 

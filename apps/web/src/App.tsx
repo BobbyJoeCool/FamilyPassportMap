@@ -4,7 +4,14 @@ import { PeoplePage } from "./pages/PeoplePage";
 import { MapPage } from "./pages/MapPage";
 import { ComparePage } from "./pages/ComparePage";
 import { ListPage } from "./pages/ListPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
+import { UserMenu } from "./components/UserMenu";
 import { SectionTabs } from "./components/SectionTabs";
+import { SignInPage } from "./pages/SignInPage";
+import { WelcomePage } from "./pages/WelcomePage";
+import { signInPath } from "./auth/signInPath";
+import { useCurrentUser } from "./auth/useCurrentUser";
+import { DEFAULT_LANDING_PATH, safeReturnTo, type CurrentUserResponse } from "@familypassportmap/shared";
 import { parseSectionPath } from "./sections";
 
 // The World pages are lazy-loaded so the world topology (world-atlas) ships in its own chunk
@@ -72,9 +79,11 @@ function navTarget(to: string, pathname: string): string {
 }
 
 /**
- * The app shell: top nav (desktop) / bottom tab bar (mobile) plus the routed page content.
+ * The signed-in app shell: top nav (desktop) / bottom tab bar (mobile) plus the routed page
+ * content, with the user menu in the header.
+ * @param currentUser - who is signed in.
  */
-function App() {
+function AppShell({ currentUser }: { currentUser: CurrentUserResponse }) {
   const location = useLocation();
   const section = parseSectionPath(location.pathname)?.section;
 
@@ -92,7 +101,16 @@ function App() {
             active={isNavActive(item.to, location.pathname)}
           />
         ))}
+        <div className="ml-auto">
+          <UserMenu user={currentUser.user} />
+        </div>
       </nav>
+
+      {/* Mobile top bar: the bottom tab bar has no room for the user menu. */}
+      <header className="md:hidden flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+        <span className="font-bold text-[var(--color-text-heading)]">🗺️ FamilyPassportMap</span>
+        <UserMenu user={currentUser.user} />
+      </header>
 
       {/* Page content */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 md:px-6 md:py-8">
@@ -106,6 +124,7 @@ function App() {
             {/* Default route: no page owns "/", so redirect straight to the US map. */}
             <Route path="/" element={<Navigate to="/us/map" replace />} />
             <Route path="/people" element={<PeoplePage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
             {/* Neither section has a page of its own at its root — land on its Map tab. */}
             <Route path="/us" element={<Navigate to="/us/map" replace />} />
             <Route path="/us/map" element={<MapPage />} />
@@ -142,6 +161,62 @@ function App() {
       </nav>
     </div>
   );
+}
+
+/**
+ * The sign-in gate. Finds out who's signed in, then shows the sign-in page, the public privacy
+ * page, or the full app. Every other signed-out visit is sent to /signin, remembering where it was
+ * headed so sign-in can come back to it.
+ */
+function App() {
+  const location = useLocation();
+  const currentUserState = useCurrentUser();
+
+  // The sign-in page never shows app chrome. Someone already signed in skips past it.
+  if (location.pathname === "/signin") {
+    if (currentUserState.status === "ready") {
+      // Same rule the server applies: only paths inside this app.
+      return <Navigate to={safeReturnTo(new URLSearchParams(location.search).get("returnTo"))} replace />;
+    }
+    return <SignInPage />;
+  }
+
+  if (currentUserState.status === "ready") {
+    const { currentUser } = currentUserState;
+    // No Primary Person yet: the welcome step comes before anything else (the privacy page
+    // stays reachable below). Leaving and coming back lands here again until it's done.
+    if (currentUser.primaryPersonId === null && location.pathname !== "/privacy") {
+      // Always show the welcome step at its own address.
+      if (location.pathname !== "/welcome") return <Navigate to="/welcome" replace />;
+      return <WelcomePage suggestedName={currentUser.user.displayName} />;
+    }
+    // Welcome already done: /welcome has nothing left to do.
+    if (location.pathname === "/welcome") return <Navigate to={DEFAULT_LANDING_PATH} replace />;
+    // Signed in: the whole app, including /privacy inside the normal shell.
+    return <AppShell currentUser={currentUser} />;
+  }
+
+  // The privacy page is public: it renders on its own while signed out (or still checking).
+  if (location.pathname === "/privacy") {
+    return (
+      <main className="max-w-6xl w-full mx-auto px-4 py-6 md:px-6 md:py-8">
+        <PrivacyPage />
+      </main>
+    );
+  }
+
+  // Still finding out who's signed in.
+  if (currentUserState.status === "loading") {
+    return <p className="p-6 text-[var(--color-text-muted)]">Loading…</p>;
+  }
+
+  // The server couldn't be reached — don't pretend the visitor is signed out.
+  if (currentUserState.status === "error") {
+    return <p className="p-6 text-[var(--color-danger)]">Couldn't reach the server: {currentUserState.message}</p>;
+  }
+
+  // Signed out on a protected page: go sign in, then come back here.
+  return <Navigate to={signInPath(location.pathname + location.search)} replace />;
 }
 
 export default App;

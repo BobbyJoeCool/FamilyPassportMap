@@ -1,37 +1,52 @@
-import { Router } from "express";
-import { Prisma } from "@prisma/client";
-import { createPersonSchema, updatePersonSchema, type Person } from "@familypassportmap/shared";
+import fs from "node:fs/promises";
+import { Router, type Request } from "express";
+import {
+  createPersonSchema,
+  MAX_PEOPLE_PER_USER,
+  PEOPLE_CAP_MESSAGE,
+  updatePersonSchema,
+  type PeopleAllowance,
+} from "@familypassportmap/shared";
+import {
+  actorOf,
+  countOwnedPeople,
+  createOwnedPerson,
+  listViewablePeople,
+  requireEditablePerson,
+  requireOwnedPerson,
+} from "../access.js";
+import { claimPerson, deletePersonUnlessPrimary } from "../primaryPerson.js";
 import { prisma } from "../db.js";
+import { toPersonResponse } from "../personResponse.js";
+import { shrinkPhoto, storedPhotoPath } from "../photos.js";
 import { uploadPhoto } from "../uploads.js";
 
 /** Router for `/api/people` — CRUD for family members plus profile-photo upload. */
 export const peopleRouter = Router();
 
 /**
- * Converts a Prisma `Person` row into the API's `Person` shape.
- * @param row - the raw row as returned by Prisma.
- * @returns the same person, with `createdAt` serialized to an ISO 8601 string for the wire.
+ * The signed-in User's Primary Person id, for marking "You" in responses.
+ * @param req - the request (after requireUser).
+ * @returns the id, or null before the welcome step.
  */
-function toPerson(row: {
-  id: string;
-  name: string;
-  colorHex: string;
-  profilePicturePath: string | null;
-  createdAt: Date;
-}): Person {
-  return {
-    id: row.id,
-    name: row.name,
-    colorHex: row.colorHex,
-    profilePicturePath: row.profilePicturePath,
-    createdAt: row.createdAt.toISOString(),
-  };
+function primaryPersonIdOf(req: Request): string | null {
+  return req.user?.primaryPersonId ?? null;
 }
 
 /** `GET /api/people` — list every person, oldest-added first. */
-peopleRouter.get("/", async (_req, res) => {
-  const people = await prisma.person.findMany({ orderBy: { createdAt: "asc" } });
-  res.json(people.map(toPerson));
+peopleRouter.get("/", async (req, res) => {
+  const people = await listViewablePeople(actorOf(req));
+  res.json(people.map((person) => toPersonResponse(person, primaryPersonIdOf(req))));
+});
+
+/**
+ * `GET /api/people/allowance` — how many People the User owns, against the per-User cap. The
+ * People page uses it to disable adding at the cap; it counts OWNED People, which the list
+ * above stops matching once Link lets a User see other Users' People.
+ */
+peopleRouter.get("/allowance", async (req, res) => {
+  const allowance: PeopleAllowance = { owned: await countOwnedPeople(actorOf(req)), max: MAX_PEOPLE_PER_USER };
+  res.json(allowance);
 });
 
 /** `POST /api/people` — create a person from a validated `{ name, colorHex }` body. */
@@ -43,53 +58,54 @@ peopleRouter.post("/", async (req, res) => {
     return;
   }
 
-  const person = await prisma.person.create({ data: parsed.data });
-  res.status(201).json(toPerson(person));
+  // The signed-in User becomes the Owner, unless they're at the per-User cap (null).
+  const person = await createOwnedPerson(actorOf(req), parsed.data);
+  if (!person) {
+    res.status(409).json({ error: PEOPLE_CAP_MESSAGE });
+    return;
+  }
+  res.status(201).json(toPersonResponse(person, primaryPersonIdOf(req)));
 });
 
 /** `PATCH /api/people/:id` — partially update a person's name and/or color. */
-peopleRouter.patch("/:id", async (req, res) => {
+peopleRouter.patch("/:id", requireEditablePerson, async (req, res) => {
   const parsed = updatePersonSchema.safeParse(req.body);
+  // Reject a body that fails validation (empty name, bad color) before touching the Person.
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues.map((issue) => issue.message).join(", ") });
     return;
   }
 
-  try {
-    const person = await prisma.person.update({ where: { id: req.params.id }, data: parsed.data });
-    res.json(toPerson(person));
-  } catch (error) {
-    // P2025 = "record to update not found" — translate Prisma's error into a 404.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-      res.status(404).json({ error: "Person not found" });
-      return;
-    }
-    throw error;
-  }
+  const { id } = req.params as { id: string };
+  const person = await prisma.person.update({ where: { id }, data: parsed.data });
+  res.json(toPersonResponse(person, primaryPersonIdOf(req)));
 });
 
 /** `DELETE /api/people/:id` — remove a person (their visited states cascade-delete with them). */
-peopleRouter.delete("/:id", async (req, res) => {
-  try {
-    await prisma.person.delete({ where: { id: req.params.id } });
-    res.status(204).end();
-  } catch (error) {
-    // P2025 = "record to delete not found" — translate Prisma's error into a 404.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-      res.status(404).json({ error: "Person not found" });
-      return;
-    }
-    throw error;
+peopleRouter.delete("/:id", requireEditablePerson, async (req, res) => {
+  const { id } = req.params as { id: string };
+  const outcome = await deletePersonUnlessPrimary(actorOf(req), id);
+  // A User's Primary Person is them: it only goes when the whole account is deleted.
+  if (outcome === "isPrimary") {
+    res.status(409).json({ error: "This is you, so it can't be deleted. To remove it, delete your account." });
+    return;
   }
+  // Gone between the route guard and the transaction (e.g. deleted in another tab).
+  if (outcome === "notFound") {
+    res.status(404).json({ error: "Person not found" });
+    return;
+  }
+  res.status(204).end();
 });
 
 /**
  * `POST /api/people/:id/photo` — upload/replace a person's profile picture.
- * Runs the `uploadPhoto` multer middleware manually (rather than as a normal middleware
- * argument) so multer's own errors (bad type, too large) can be turned into a JSON 400
- * instead of Express's default error page.
+ * `requireEditablePerson` runs BEFORE the upload is accepted, so nothing is written to disk
+ * for a missing or not-editable Person. Then the `uploadPhoto` multer middleware runs manually
+ * (rather than as a normal middleware argument) so multer's own errors (bad type, too large)
+ * can be turned into a JSON 400 instead of Express's default error page.
  */
-peopleRouter.post("/:id/photo", (req, res, next) => {
+peopleRouter.post("/:id/photo", requireEditablePerson, (req, res, next) => {
   uploadPhoto.single("photo")(req, res, async (err) => {
     // Multer failed the upload (wrong type, too large) before a file was saved.
     if (err) {
@@ -103,20 +119,45 @@ peopleRouter.post("/:id/photo", (req, res, next) => {
     }
 
     try {
-      // Relative to the server root — must match the "/uploads" static mount in app.ts.
-      const profilePicturePath = `uploads/${req.file.filename}`;
+      await shrinkPhoto(req.file.path);
+    } catch {
+      // The bytes claimed an image type but sharp couldn't decode them — discard the file.
+      await fs.rm(req.file.path, { force: true });
+      res.status(400).json({ error: "Photo couldn't be read as an image." });
+      return;
+    }
+
+    try {
+      const profilePicturePath = storedPhotoPath(req.file.filename);
+      const { id } = req.params as { id: string };
       const person = await prisma.person.update({
-        where: { id: req.params.id },
+        where: { id },
         data: { profilePicturePath },
       });
-      res.json(toPerson(person));
+      res.json(toPersonResponse(person, primaryPersonIdOf(req)));
     } catch (error) {
-      // P2025 = "record to update not found" — translate Prisma's error into a 404.
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-        res.status(404).json({ error: "Person not found" });
-        return;
-      }
       next(error);
     }
   });
+});
+
+/**
+ * `POST /api/people/:id/claim` — "Set as me": make one of your own People your Primary
+ * Person, merging your old Primary Person's visits into it (see `claimPerson`).
+ */
+peopleRouter.post("/:id/claim", requireOwnedPerson, async (req, res) => {
+  const { id } = req.params as { id: string };
+  const result = await claimPerson(actorOf(req), id);
+  // Each outcome maps to one response: success, already you, or (raced away) not yours.
+  switch (result.outcome) {
+    case "claimed":
+      res.json(toPersonResponse(result.person, result.person.id));
+      return;
+    case "alreadyPrimary":
+      res.status(409).json({ error: "This is already you." });
+      return;
+    case "notOwned":
+      res.status(404).json({ error: "Person not found" });
+      return;
+  }
 });

@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
-import type { Person } from "@familypassportmap/shared";
-import { COUNTRIES } from "@familypassportmap/shared";
-import { createPerson, deletePerson, listPeople, updatePerson, uploadPersonPhoto } from "../api/people";
+import type { PeopleAllowance, Person } from "@familypassportmap/shared";
+import { COUNTRIES, PEOPLE_CAP_MESSAGE } from "@familypassportmap/shared";
+import {
+  claimPerson,
+  createPerson,
+  deletePerson,
+  getPeopleAllowance,
+  listPeople,
+  updatePerson,
+  uploadPersonPhoto,
+} from "../api/people";
 import { getAllVisits, type PersonVisits } from "../api/visits";
 import { getAllCountries, type PersonCountries } from "../api/countries";
 import { PersonAvatar } from "../components/PersonAvatar";
@@ -17,6 +25,7 @@ export function PeoplePage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [visits, setVisits] = useState<PersonVisits[]>([]);
   const [countries, setCountries] = useState<PersonCountries[]>([]);
+  const [allowance, setAllowance] = useState<PeopleAllowance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,24 +42,30 @@ export function PeoplePage() {
   const [saving, setSaving] = useState(false);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
 
   useEffect(() => {
     refresh();
   }, []);
 
-  /** Reloads the people list and their visited-state and visited-country counts from the server. */
+  /**
+   * Reloads the people list, their visited-state and visited-country counts, and how many
+   * more People this User may add, from the server.
+   */
   async function refresh() {
     setLoading(true);
     setError(null);
     try {
-      const [loadedPeople, loadedVisits, loadedCountries] = await Promise.all([
+      const [loadedPeople, loadedVisits, loadedCountries, loadedAllowance] = await Promise.all([
         listPeople(),
         getAllVisits(),
         getAllCountries(),
+        getPeopleAllowance(),
       ]);
       setPeople(loadedPeople);
       setVisits(loadedVisits);
       setCountries(loadedCountries);
+      setAllowance(loadedAllowance);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load people");
     } finally {
@@ -188,6 +203,27 @@ export function PeoplePage() {
     }
   }
 
+  // The server counts owned People (not the visible list, which Link will widen). Until it
+  // answers, the form stays enabled; the server enforces the cap regardless.
+  const atPeopleCap = allowance !== null && allowance.owned >= allowance.max;
+
+  /**
+   * "Set as me" after its confirmation: makes this Person the User's Primary Person.
+   * @param id - the Person to Claim.
+   */
+  async function handleClaim(id: string) {
+    setError(null);
+    try {
+      await claimPerson(id);
+      setClaimingId(null);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to set as you");
+    }
+  }
+
+  const currentPrimary = people.find((person) => person.isPrimary);
+
   return (
     <div>
       <h1 className="text-2xl md:text-3xl font-bold mb-6">People</h1>
@@ -200,7 +236,10 @@ export function PeoplePage() {
 
       <form onSubmit={handleAdd} className="mb-8 p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
         <h2 className="text-lg font-semibold mb-3">Add a person</h2>
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+        {/* At the cap, explain why the form below is disabled. */}
+        {atPeopleCap && <p className="mb-3 text-sm text-[var(--color-text-muted)]">{PEOPLE_CAP_MESSAGE}</p>}
+        {/* A disabled fieldset turns off every input and the button at once. */}
+        <fieldset disabled={atPeopleCap} className="flex flex-col sm:flex-row gap-3 items-start sm:items-end disabled:opacity-50">
           <label className="flex flex-col gap-1 text-sm font-medium flex-1 min-w-0">
             Name
             <input
@@ -242,7 +281,7 @@ export function PeoplePage() {
           >
             {submitting ? "Adding…" : "Add person"}
           </button>
-        </div>
+        </fieldset>
       </form>
 
       <h2 className="text-lg font-semibold mb-3">Family</h2>
@@ -258,8 +297,8 @@ export function PeoplePage() {
               className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]"
             >
               <PersonAvatar person={person} />
-              {/* Each row renders one of three mutually exclusive states: editing this
-                  person, confirming their deletion, or the normal read-only view. */}
+              {/* Each row renders one of four mutually exclusive states: editing this person,
+                  confirming their deletion, confirming "Set as me", or the normal view. */}
               {editingId === person.id ? (
                 <div className="flex flex-col sm:flex-row gap-2 flex-1 min-w-0 items-start sm:items-center">
                   <input
@@ -316,28 +355,70 @@ export function PeoplePage() {
                     </button>
                   </div>
                 </div>
+              ) : claimingId === person.id ? (
+                <div className="flex flex-col sm:flex-row gap-2 flex-1 min-w-0 items-start sm:items-center">
+                  <span className="text-sm">
+                    Set <strong>{person.name}</strong> as you?
+                    {/* Before the welcome step there's no current "You" to merge. */}
+                    {currentPrimary &&
+                      ` "${currentPrimary.name}" (currently you) will be merged in: its visited states and countries are added to ${person.name}, then it's removed.`}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleClaim(person.id)}
+                      className="px-3 py-1 rounded bg-[var(--color-primary)] text-white text-sm hover:bg-[var(--color-primary-hover)] transition-colors"
+                    >
+                      Set as me
+                    </button>
+                    <button
+                      onClick={() => setClaimingId(null)}
+                      className="px-3 py-1 rounded border border-[var(--color-border)] text-sm hover:bg-[var(--color-bg-card)] transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <>
                   <span className="font-medium flex-1 min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="truncate max-w-full">{person.name}</span>
+                    {/* The signed-in User's own Person. */}
+                    {person.isPrimary && (
+                      <span className="px-2 py-0.5 rounded-full bg-[var(--color-primary)] text-white text-xs font-medium">
+                        You
+                      </span>
+                    )}
                     <span className="flex flex-wrap gap-1">
                       <StateCounter count={stateCountFor(person.id)} />
                       <StateCounter count={countryCountFor(person.id)} total={COUNTRIES.length} label="countries" />
                     </span>
                   </span>
-                  <div className="flex gap-2">
+                  {/* Up to three buttons: let them wrap rather than squeeze on phones. */}
+                  <div className="flex flex-wrap justify-end gap-2">
                     <button
                       onClick={() => startEdit(person)}
                       className="px-3 py-1 rounded border border-[var(--color-border)] text-sm hover:bg-[var(--color-bg-card)] transition-colors"
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={() => setDeletingId(person.id)}
-                      className="px-3 py-1 rounded border border-[var(--color-danger)] text-[var(--color-danger)] text-sm hover:bg-[var(--color-danger)] hover:text-white transition-colors"
-                    >
-                      Delete
-                    </button>
+                    {/* Only for People who aren't you: "Set as me" would do nothing, and your
+                        Primary Person can't be deleted on its own (only with the account). */}
+                    {!person.isPrimary && (
+                      <>
+                        <button
+                          onClick={() => setClaimingId(person.id)}
+                          className="px-3 py-1 rounded border border-[var(--color-border)] text-sm hover:bg-[var(--color-bg-card)] transition-colors"
+                        >
+                          Set as me
+                        </button>
+                        <button
+                          onClick={() => setDeletingId(person.id)}
+                          className="px-3 py-1 rounded border border-[var(--color-danger)] text-[var(--color-danger)] text-sm hover:bg-[var(--color-danger)] hover:text-white transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
                   </div>
                 </>
               )}

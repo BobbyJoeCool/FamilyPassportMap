@@ -20,8 +20,9 @@ These are GitHub issues with native blocking links. #1–#4 can start right away
 | #8 | Private photos | #5 |
 | #9 | Delete account | #5 |
 | #10 | Legacy data adoption for the site owner | #5 |
-| #11 | Set up Google OAuth client and Azure app settings *(ready-for-human)* | #2 |
-| #12 | Release v2.3.0 | #3, #7, #8, #9, #10, #11 |
+| #11 | Register the Microsoft sign-in app and add Azure app settings *(ready-for-human)* | #2, #13 |
+| #12 | Release v2.3.0 | #3, #7, #8, #9, #10, #11, #13 |
+| #13 | Switch sign-in from Google to Microsoft (added mid-phase, see the note below) | #4 |
 
 ## App overview (full context)
 
@@ -81,9 +82,9 @@ Anyone who opens the app's URL sees, and can change, every Person, visit and pho
 
 ## Solution
 
-People sign in with their Google account. Each User sees and manages only the People they own. Signed-out visitors see only a sign-in page and a short privacy page, and photos are private too. On first sign-in, a short welcome step creates the User's Primary Person from their name and a chosen color. Any Person they own can later be made "me" with Set as me.
+People sign in with their Microsoft account. Each User sees and manages only the People they own. Signed-out visitors see only a sign-in page and a short privacy page, and photos are private too. On first sign-in, a short welcome step creates the User's Primary Person from their name and a chosen color. Any Person they own can later be made "me" with Set as me.
 
-Anyone with a Google account can sign up. To keep the free host safe, each User may own at most 10 People, and every photo is shrunk to a small avatar.
+Anyone with a Microsoft account (personal, or work or school) can sign up. To keep the free host safe, each User may own at most 10 People, and every photo is shrunk to a small avatar.
 
 The existing family's data is attached to the site owner's account on their first sign-in. Users can sign out, and can permanently delete their account and everything in it.
 
@@ -92,24 +93,24 @@ The existing family's data is attached to the site owner's account on their firs
 ### Signing in and out
 
 1. As a visitor who isn't signed in, I want every page to send me to a sign-in page, so that nobody can see or change data without an account.
-2. As a visitor, I want to sign in with my Google account, so that I don't have to create or remember another password.
+2. As a visitor, I want to sign in with my Microsoft account, so that I don't have to create or remember another password.
 3. As a visitor, I want to read a short privacy page from the sign-in screen before signing in, so that I know what the app stores about me and my family.
-4. As a visitor, I want to see a short message if I cancel Google sign-in or it fails, so that I know to try again rather than staring at a blank page.
-5. As a visitor whose Google email isn't verified, I want to be told sign-in can't continue, so that I understand why I wasn't let in.
+4. As a visitor, I want to see a short message if I cancel Microsoft sign-in or it fails, so that I know to try again rather than staring at a blank page.
+5. *(Dropped with the switch to Microsoft: any Microsoft account may sign in, and email never identifies a User. See "Email trust" below.)*
 6. As a User, I want to stay signed in for 30 days after my last visit, so that opening the installed app on my phone doesn't make me sign in every time.
 7. As a User, I want my session renewed as I keep using the app, so that I'm not signed out mid-use just because 30 days have passed since I first signed in.
 8. As a User whose session has expired, I want my next action to take me to sign-in and then back to the page I was on, so that I don't lose my place.
-9. As a User, I want to see my Google name and photo in the header, so that I know which account I'm signed in with.
+9. As a User, I want to see my Microsoft account name (and its initial) in the header, so that I know which account I'm signed in with.
 10. As a User, I want a Sign out option in the header menu, so that I can leave a shared device safely.
 11. As a User who has signed out, I want the next person on that device to see the sign-in page, not my family, so that my data stays private.
 12. As a User, I want links that sent me to sign-in to only return me to pages inside this app, so that a crafted link can't bounce me to another site.
 
 ### First sign-in and the Primary Person
 
-13. As a new User, I want a one-time welcome step asking for my name (prefilled from Google) and my color, so that I appear on the maps as myself from the start.
+13. As a new User, I want a one-time welcome step asking for my name (prefilled from Microsoft) and my color, so that I appear on the maps as myself from the start.
 14. As a new User, I want the welcome step to require a color just like adding any Person, so that every Person on the map has a color I chose.
 15. As a new User, I want to start with no other People after the welcome step, so that I add exactly the family members I want.
-16. As a new User, I want my Google photo *not* copied into the app automatically, so that only photos I choose to upload are stored.
+16. As a new User, I want no sign-in provider photo copied into the app automatically, so that only photos I choose to upload are stored.
 17. As a User, I want my Primary Person marked as "You" on the People page, so that I can tell myself apart from the People I manage.
 18. As a User, I want to edit my Primary Person's name, color and photo like any other Person, so that I can fix how I appear.
 19. As a User, I want the app to refuse to delete my Primary Person and explain that deleting my account is the way to remove it, so that I never end up as a User with no "me".
@@ -143,42 +144,42 @@ The existing family's data is attached to the site owner's account on their firs
 38. As a User, I want "Delete account" in the header menu, so that I can leave the app and take my data with me.
 39. As a User, I want a confirmation that spells out what will be permanently deleted (my account, all my People, their visits and photos) before anything happens, so that I can't delete everything by accident.
 40. As a User who deleted their account, I want to land on the sign-in page signed out, so that it's clear the account is gone.
-41. As a User who deleted their account, I want signing in again with the same Google account to start fresh as a new User, so that deletion really did remove everything.
+41. As a User who deleted their account, I want signing in again with the same Microsoft account to start fresh as a new User, so that deletion really did remove everything.
 
 ### The existing family's data
 
 42. As the site owner, I want all People already in the app attached to my account the first time I sign in, so that nothing my family recorded before login is lost.
-43. As the site owner, I want that attachment tied to my Google email in an app setting, so that no other sign-up can take the existing data.
+43. As the site owner, I want that attachment tied to my personal Microsoft account's email in an app setting, so that no other sign-up can take the existing data.
 44. As the site owner, after my data is attached, I want to use Set as me on the Person who is me, so that my migrated self becomes my Primary Person with all my visits.
 45. As any other new User, I want to start with only my own Primary Person, so that I never see the original family's data.
 46. As the site owner, I want People with no Owner to stay invisible to everyone until I sign in, so that the data is private during the gap between deploying and my first sign-in.
 
 ### Running and developing the app
 
-47. As the developer, I want sign-in to work against `localhost` with a Google client set up for local development, so that I can test everything locally as the project requires.
-48. As the developer, I want the server to fail clearly at startup in production if Google sign-in isn't configured, so that a missing setting is caught at deploy rather than when someone tries to sign in.
+47. As the developer, I want sign-in to work against `localhost` with a Microsoft app registration set up for local development, so that I can test everything locally as the project requires.
+48. As the developer, I want the server to fail clearly at startup in production if Microsoft sign-in isn't configured, so that a missing setting is caught at deploy rather than when someone tries to sign in.
 49. As the developer, I want every "can this User see / change this Person?" decision made in one place, so that adding Link and Join later changes one module instead of every route.
-50. As the developer, I want tests to sign in as any fake User without contacting Google, so that the access rules can be tested quickly and reliably.
+50. As the developer, I want tests to sign in as any fake User without contacting Microsoft, so that the access rules can be tested quickly and reliably.
 
 ## Implementation Decisions
 
 ### Sign-in flow
 
-- **Provider:** Google only, using the server-side **authorization code flow** with redirects. Scopes are `openid email profile`. A redirect flow is used instead of a popup or One Tap because popups are unreliable in installed (standalone) PWAs, especially on iOS.
+- **Provider:** Microsoft only (switched from Google mid-phase, #13), using the server-side **authorization code flow** with redirects against the `common` endpoint, so any Microsoft account works: personal (Outlook, Hotmail, Xbox) and work or school. Scopes are `openid email profile`, and Microsoft is asked to show its account chooser every time (`prompt=select_account`), so someone signing in on a shared device can pick their own account. A redirect flow is used instead of a popup because popups are unreliable in installed (standalone) PWAs, especially on iOS.
 - **Routes:**
-  - `GET /api/auth/google?returnTo=<path>` sends the browser to Google.
-  - `GET /api/auth/google/callback` handles Google's response.
+  - `GET /api/auth/microsoft?returnTo=<path>` sends the browser to Microsoft.
+  - `GET /api/auth/microsoft/callback` handles Microsoft's response.
   - `POST /api/auth/signout` ends the session.
 - **CSRF protection:** a random `state` value is set in a short-lived httpOnly cookie and checked on the callback.
 - **`returnTo`:** only a same-origin relative path (starting with a single `/`) is accepted. Anything else falls back to the default landing page `/us/map`.
-- **Google identity adapter.** The callback hands Google's authorization code to one small module. It exchanges the code, verifies the ID token, and returns `{ subject, email, emailVerified, name, pictureUrl }`. This is the only code that talks to Google, and it's the one thing tests replace with a fake. Use Google's official library or a standard OpenID Connect client.
+- **Microsoft identity adapter** (`apps/server/src/auth/microsoft.ts`). The callback hands Microsoft's authorization code to one small module. It exchanges the code at the token endpoint and verifies the ID token with `jose` against Microsoft's published signing keys. It checks the audience (our client ID) and the issuer, which must name the token's own tenant (`https://login.microsoftonline.com/<tid>/v2.0`), since the `common` key set is shared by every tenant. It returns `{ subject, email, name, isPersonalAccount }`. `email` falls back to `preferred_username` when a work account has no email claim. `isPersonalAccount` is true when the tenant is the personal-accounts tenant `9188040d-6c67-4c5b-b112-36a304b66dad`. This is the only code that talks to Microsoft, and it's the one thing tests replace with a fake.
+- **Email trust.** Unlike Google, Microsoft doesn't vouch for the email on work or school accounts: a directory's admin can give an account any email. So email is shown but never identifies a User (Users are keyed by `sub`), there is no "unverified" outcome, and Adoption also requires a personal account (see Legacy data adoption).
 - **Callback outcomes:**
-  - **Success:** find or create the User by `(authProvider = "google", authSubject = subject)` and refresh their email, display name and avatar URL. Run the legacy-data adoption check (below). Start a session.
+  - **Success:** find or create the User by `(authProvider = "microsoft", authSubject = subject)` and refresh their email and display name. Microsoft's ID token has no picture, so `avatarUrl` stays null. Run the legacy-data adoption check (below). Start a session.
   - **Redirect after success:** to `/welcome` if the User has no Primary Person yet, otherwise to `returnTo`.
-  - **Cancelled at Google:** redirect to `/signin?error=cancelled`.
+  - **Cancelled at Microsoft:** redirect to `/signin?error=cancelled`.
   - **Exchange or verification failed:** redirect to `/signin?error=failed`.
-  - **Unverified email:** redirect to `/signin?error=unverified`, and create no User.
-- **Configuration:** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_BASE_URL` (used to build the redirect URI; `http://localhost:5173` locally, through the existing dev proxy) and `LEGACY_DATA_OWNER_EMAIL`. In production, the server refuses to start without the first three.
+- **Configuration:** `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `APP_BASE_URL` (used to build the redirect URI; `http://localhost:5173` locally, through the existing dev proxy) and `LEGACY_DATA_OWNER_EMAIL`. In production, the server refuses to start without the first three.
 
 ### Sessions
 
@@ -197,7 +198,7 @@ The existing family's data is attached to the site owner's account on their firs
 ### Schema changes
 
 - **New `User` model:**
-  - Fields: `id`, `authProvider`, `authSubject`, `email`, `displayName`, an optional `avatarUrl` (Google's picture URL, used only in the header) and `createdAt`.
+  - Fields: `id`, `authProvider`, `authSubject`, `email`, `displayName`, an optional `avatarUrl` (a provider picture URL, used only in the header; always null with Microsoft, kept so a later provider needs no data change) and `createdAt`.
   - `(authProvider, authSubject)` is unique. Storing the provider separately leaves room for more sign-in providers later without a data change.
   - An optional, unique `primaryPersonId` points to a Person. It's null only between first sign-in and finishing the welcome step. If that Person is deleted, it's set back to null; in practice only the Claim flow ever deletes a Primary Person, inside the same transaction that sets the new one.
 - **`Person`** gains `ownerId`, which points to a User and is deleted along with that User. It's **nullable** only so pre-login People can exist with no Owner until adoption. After adoption, every Person has an Owner, and every new Person is created with one.
@@ -207,30 +208,32 @@ The existing family's data is attached to the site owner's account on their firs
 ### API changes
 
 - `GET /api/me` → `{ user: { id, email, displayName, avatarUrl }, primaryPersonId: string | null }`, or `401`.
-- `POST /api/me/primary-person` with `{ name, colorHex }` (the same rules as creating a Person) creates the Primary Person and returns it. It returns `409` if the User already has one. This endpoint does not count against the 10-People cap, so the legacy owner can always finish the welcome step.
-- `DELETE /api/me` permanently deletes the User and everything they own: People, visits, photo files and sessions. It clears the cookie and returns `204`.
-- `POST /api/people` returns `409 { error: "You can have up to 10 people, including yourself." }` when the User already owns 10.
+- `POST /api/me/primary-person` with `{ name, colorHex }` (the same rules as creating a Person) creates the Primary Person and returns it. It returns `409 { error: "You already have a Primary Person." }` if the User already has one (the web app treats that as "welcome is done"). This endpoint does not count against the 10-People cap, so the legacy owner can always finish the welcome step.
+- `DELETE /api/me` permanently deletes the User and everything they own: People, visits, photo files and sessions. It clears the cookie and returns `204`. The rows go in one transaction (deleting the User cascades to their People, visits and sessions). The photo files are removed after it commits, best-effort like Claim: a file left behind belongs to no Person, so it's never served.
+- `POST /api/people` returns `409 { error: "You can have up to 10 people, including yourself." }` when the User already owns 10. The count and the insert run in one transaction, so simultaneous adds can't exceed the cap.
+- `GET /api/people/allowance` → `{ owned, max }`: how many People the User **owns**, against the cap. The People page uses it rather than the length of the People list, because once Link exists the list will include People the User doesn't own.
 - `POST /api/people/:id/claim` performs **Set as me**. It needs a Person the User owns that isn't already their Primary Person. In one transaction it:
   1. copies every state and country on the old Primary Person that the target lacks, keeping the original `visitedAt`;
   2. sets the target as the Primary Person;
   3. deletes the old Primary Person and its photo file.
 
-  It returns the updated Person.
-- `DELETE /api/people/:id` on the User's Primary Person returns `409 { error: "This is you, so it can't be deleted. To remove it, delete your account." }`.
+  It returns the updated Person. Claiming your current Primary Person returns `409 { error: "This is already you." }`. A User with no Primary Person yet (before the welcome step) can Claim directly: there's nothing to merge, and it completes the welcome step for them. The photo file is removed after the transaction commits; if that fails it's logged, not reported, since the Claim itself already succeeded.
+- `DELETE /api/people/:id` on the User's Primary Person returns `409 { error: "This is you, so it can't be deleted. To remove it, delete your account." }`. The check runs in the same transaction as the delete, so a Claim landing in between can't let the new Primary Person be deleted.
 - The `Person` API shape gains `isPrimary: boolean`.
 - All other People, visit and country endpoints keep their current contracts, now scoped through the access policy.
 
 ### Photos
 
-- **Access:** `/uploads/*` stops being public static hosting. A request is served only if a signed-in User can view the Person whose photo it is. In every other case (signed out, someone else's, missing), the response is `404`.
-- **Shrinking on upload:** the 5 MB, JPEG/PNG/WebP upload limit stays. Each upload is center-cropped to a square and resized to **256×256** in **its original format**, so file extensions and stored paths never change. Use `sharp` (it runs on Azure's Linux App Service).
+- **Access:** `/uploads/*` stops being public static hosting. A request is served only if a signed-in User can view the Person whose photo it is (the access policy looks the Person up by its stored `profilePicturePath`). In every other case (signed out, someone else's, a file no Person uses, such as a replaced photo still on disk, a missing file, or any other path under `/uploads`), the response is a bare `404`. A served photo carries `Cache-Control: private, no-cache`, so shared caches never keep it and the browser re-checks access on every view (a cheap `304` when unchanged).
+- **Shrinking on upload:** the 5 MB, JPEG/PNG/WebP upload limit stays. Each upload is rotated upright (per its EXIF orientation), center-cropped to a square and resized to **256×256**. It's re-encoded in **the format its file extension names**, so extensions and stored paths never change and the bytes always match the name (PNG bytes sent as `image/jpeg` are stored as a real `.jpg`). Re-encoding drops all metadata, including any GPS location. A file that claims an image type but can't be decoded is discarded with `400 { error: "Photo couldn't be read as an image." }`. Use `sharp` (it runs on Azure's Linux App Service).
 - **Shrinking existing photos:** a startup step that is safe to run more than once shrinks any photo in the uploads folder larger than 256 px on either side, in place. On later starts it finds nothing to do.
 
 ### Legacy data adoption
 
-- On every successful sign-in, check two things: is the User's verified email equal to `LEGACY_DATA_OWNER_EMAIL` (case-insensitive), and are there People with no Owner? If both, make that User the Owner of all of them. This is safe to repeat and needs nothing else to be run.
+- On every successful sign-in, check three things: did they sign in with a **personal** Microsoft account, is that account's email equal to `LEGACY_DATA_OWNER_EMAIL` (case-insensitive), and are there People with no Owner? If all three, make that User the Owner of all of them. This is safe to repeat and needs nothing else to be run.
 - Adoption ignores the 10-People cap. Adopted People are ordinary (non-Primary) People. The owner then completes the welcome step like everyone else and uses Set as me on their own Person.
 - If the setting is unset, no adoption happens and People with no Owner stay invisible.
+- Once Adopted, Legacy People are owned like any others. If the site owner later deletes their account, the Adopted People are deleted with it; they don't return to having no Owner.
 
 ### Web app
 
@@ -241,34 +244,33 @@ The existing family's data is attached to the site owner's account on their firs
   - **ready**.
 - **Public routes:** only `/signin` and `/privacy`.
 - **Expired sessions:** the shared response handler treats any `401` as an expired session and sends the browser to `/signin?returnTo=<current path>`.
-- **Sign-in page:** the app name, a "Sign in with Google" button (a link to the start route), a link to the privacy page, and a short message for each `error` value:
+- **Sign-in page:** the app name, a "Sign in with Microsoft" button (a link to the start route), a link to the privacy page, and a short message for each `error` value:
   - `cancelled`: "Sign-in was cancelled."
   - `failed`: "Sign-in didn't work. Please try again."
-  - `unverified`: "Your Google email isn't verified, so we can't sign you in."
-- **Welcome page:** a name field prefilled from Google, the existing color picker (required) and Continue. It creates the Primary Person, then goes to `/us/map`.
+- **Welcome page:** a name field prefilled from Microsoft, the existing color picker (required) and Continue. It creates the Primary Person, then goes to `/us/map`. It also has a **Sign out** link, since it shows before the app header and its user menu.
 - **Privacy page:** plain language covering:
-  - what is stored (Google name, email and picture URL; your People, their visits and photos);
+  - what is stored (Microsoft account name and email; your People, their visits and photos);
   - who can see it (only you, while signed in);
   - photos being shrunk;
   - how to delete everything (Delete account).
-- **Header account menu:** your Google avatar and name, then **Sign out** and **Delete account**. Delete account opens a confirmation dialog that lists what will be permanently deleted. Its destructive button is labelled "Delete my account".
-- **Leaving the app:** both Sign out and Delete account end with a full page load to `/signin`, so nothing from the previous User stays in memory. The service worker keeps caching only the app shell, never `/api/*` or `/uploads/*`.
+- **Header account menu:** your initial (Microsoft sends no picture), plus your name on wide screens. It opens a menu with your name and email, a **Privacy** link, **Sign out** and **Delete account**. On phones, a slim top bar holds the app name and this menu, since the bottom tab bar has no room for it. Delete account opens a confirmation dialog that lists what will be permanently deleted. Its destructive button is labelled "Delete my account".
+- **Leaving the app:** both Sign out and Delete account end with a full page load to `/signin`, so nothing from the previous User stays in memory. The service worker keeps caching only the app shell, never `/api/*` or `/uploads/*`, and its navigation fallback skips both, so opening a photo URL always reaches the server.
 - **People page:**
   - the Primary Person gets a "You" badge and no delete control;
   - every other Person gets a **Set as me** action with a short confirmation explaining the merge;
-  - at 10 People the add form is disabled and shows the cap message.
+  - at 10 owned People (per `GET /api/people/allowance`) the add form is disabled and shows the cap message.
 
 ## Testing Decisions
 
 - **What makes a good test:** it checks behavior a client can observe through the HTTP API (status codes, response bodies, what a later request returns), never internal function calls or database layout. A test should still pass if the access policy, session storage or image code were rewritten.
 - **Seams (agreed):**
   1. **HTTP API through Supertest** is the main seam, as today. Nearly everything is tested here.
-  2. **The Google identity adapter** is the only fake. A test helper signs in as a named fake User by driving the callback with a faked identity, then returns a Supertest agent carrying that session cookie.
+  2. **The Microsoft identity adapter** is the only fake. A test helper signs in as a named fake User by driving the callback with a faked identity, then returns a Supertest agent carrying that session cookie.
   3. **The startup step that shrinks existing photos** is tested by calling it directly on a temporary uploads folder, since startup isn't reachable through HTTP.
 - **What to cover:**
   - Signed-out requests get `401` on every protected route and `404` on `/uploads/*`.
   - **Isolation between two Users.** Bob can't list, read, edit, delete, mark visits on, or fetch the photo of Alice's People (all `404`), and his bulk maps don't include them.
-  - Sign-in creates the User. A second sign-in with the same subject reuses it. An unverified email creates no User.
+  - Sign-in creates the User. A second sign-in with the same subject reuses it. A work account signs in too, and two accounts with the same email are two Users. A work account with the owner's email Adopts nothing.
   - `returnTo` rejects outside URLs.
   - Welcome: `/api/me` reports no Primary Person until it's created, and creating a second one returns `409`.
   - The cap: the 11th Person is refused, and the Primary Person counts.
@@ -286,25 +288,25 @@ The existing family's data is attached to the site owner's account on their firs
 ## Out of Scope
 
 - **Link** (two-way, view-only connections between Users), **Join** and **Family** (a group of Users who manage each other's People, with an editable Family name), and **Claim across a Family**, which needs the Owner's approval. Giving a family member their own account (they sign up, Join and Claim) comes with these.
-- Sign-in providers other than Google, and email/password sign-in.
+- Sign-in providers other than Microsoft (Google was replaced, not kept alongside), and email/password sign-in.
 - Admin screens. The site owner manages Users directly in the database if ever needed.
 - Rate limiting or abuse detection beyond the 10-People cap and photo shrinking.
 - Offline use of data.
-- Copying the Google profile photo into a Person.
+- Copying a provider profile photo into a Person.
 - Changing which email owns the legacy data after adoption.
 
 ## Acceptance criteria
 
 - All new and existing server tests pass locally (`npm test`), and the build passes (`npm run build`).
-- **Manual local checklist** (dev servers running, with a Google OAuth client configured for `http://localhost:5173`):
+- **Manual local checklist** (dev servers running, with a Microsoft app registration configured for `http://localhost:5173`):
   1. Signed out: every app URL goes to `/signin`; `/privacy` opens; a photo URL returns 404.
-  2. Sign in with Google: the welcome step appears with the name prefilled; Continue is blocked without a color; after Continue you land on the US map, and People shows only you, marked "You".
-  3. Cancel at Google: you're back on `/signin` with the cancelled message.
+  2. Sign in with Microsoft: the welcome step appears with the name prefilled; Continue is blocked without a color; after Continue you land on the US map, and People shows only you, marked "You".
+  3. Cancel at Microsoft: you're back on `/signin` with the cancelled message.
   4. Add People up to 10: the add form disables and shows the cap message.
   5. Set as me on another Person: their visits now include your old visits; the old "You" is gone.
   6. Try to delete your Primary Person: it's refused with the explanation.
-  7. A second Google account in a private window sees none of the first account's People, maps, lists or photos.
-  8. With `LEGACY_DATA_OWNER_EMAIL` set to your email against a copy of the pre-login database, your first sign-in shows all existing People. You can Set as me on yourself, and the other account still sees nothing of yours.
+  7. A second Microsoft account in a private window sees none of the first account's People, maps, lists or photos.
+  8. With `LEGACY_DATA_OWNER_EMAIL` set to your personal Microsoft account's email against a copy of the pre-login database, your first sign-in shows all existing People. You can Set as me on yourself, and the other account still sees nothing of yours.
   9. Existing large photos are shrunk after a server start.
   10. Sign out: you're back at `/signin`, and Back doesn't show data.
   11. Delete account: the confirmation lists what's deleted, you end up signed out, and signing in again starts fresh.
@@ -319,10 +321,17 @@ The existing family's data is attached to the site owner's account on their firs
 - **Claim across a Family** reuses this phase's Set as me merge (copy missing visits, delete the old Primary Person, become Owner), and adds a request the current Owner must approve. A Person that is already someone's Primary Person can't be Claimed. Giving a family member their own account = they sign up, Join, then Claim their Person, which makes them its Owner.
 - **The 10-People cap** applies per Owner, not per Family.
 - **The auth provider is stored as a column**, so adding another provider is a code change only.
+- **Two kinds of access check, and Link/Join widens only one.** In `apps/server/src/access.ts`:
+  - **Visibility** (the private `viewablePeopleWhere`): the People list, the bulk visit maps, a Person's visit and country reads (`requireViewablePerson`) and photos (`findViewablePersonByPhoto`). Link widens these, so Linked Users see photos too without touching the photo route.
+  - **Edit** (the private `editablePeopleWhere`, reached through `requireEditablePerson` / `findEditablePerson`): marking visits, renaming, recoloring, deleting and photo upload. Join widens these.
+  - **Ownership** (the private `ownedPeopleWhere`): the cap (`countOwnedPeople`), Set as me (`requireOwnedPerson` / `findOwnedPerson`) and Delete account (`listOwnedPeople`, plus the User → Person cascade). These must stay ownership-only. Deleting your account must never remove someone else's People that you could merely see or edit.
+- **Join must protect every User's Primary Person, not just your own.** Today `deletePersonUnlessPrimary` (`apps/server/src/primaryPerson.ts`) refuses only if the Person is the *deleting* User's Primary Person. That's enough while edit means own. Once Join widens edit, a Family member could otherwise delete another User's Primary Person, and `onDelete: SetNull` would leave that User with none, breaking "never deleted on its own". The check must become "is this Person anyone's Primary Person?"
+- **Adoption is a one-time migration path.** Once no Legacy People are left it does nothing on each sign-in, so a later phase can remove it (along with `LEGACY_DATA_OWNER_EMAIL`) after production has been Adopted.
 
 ## Further Notes
 
-- **Google setup (done by the user, not by Claude):** create a Google Cloud project and an OAuth client (web application). Its authorized redirect URIs are `http://localhost:5173/api/auth/google/callback` and `https://<app>.azurewebsites.net/api/auth/google/callback`. The OAuth consent screen needs the privacy page URL, and must be **published to production**: in "Testing" mode only listed test users (up to 100) can sign in. The basic scopes `openid email profile` don't need Google's verification review. The `/wizard` skill is a good fit for scripting this, along with adding the Azure app settings (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_BASE_URL`, `LEGACY_DATA_OWNER_EMAIL`).
+- **Microsoft setup (done by the user, not by Claude):** register an app in **Microsoft Entra ID → App registrations**, with supported account types "any organizational directory and personal Microsoft accounts". Its Web redirect URIs are `http://localhost:5173/api/auth/microsoft/callback` and `https://<app>.azurewebsites.net/api/auth/microsoft/callback`. Create a client secret: it expires (24 months at most), and an expired secret breaks sign-in, so it needs rotating. Branding takes the home page and privacy URLs. Personal accounts can sign in straight away. Some organizations block their members from consenting to apps from unverified publishers, so a work or school account may see "Need admin approval"; publisher verification is out of scope. The steps are in `Documentation/AZURE-SETUP.md` § 6, along with the Azure app settings (`MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `APP_BASE_URL`, `LEGACY_DATA_OWNER_EMAIL`).
+- **Switched from Google mid-phase (2026-10-25, #13).** Phase 12 was built with Google sign-in, then switched to Microsoft before v2.3.0 shipped, at the repo owner's request. No Google Users ever existed outside local testing. The provider column made it a code-only change.
 - **Deploy order:** set the Azure app settings before the deploy that includes this phase. Otherwise the production server will refuse to start (by design). Between the deploy and the owner's first sign-in, existing People exist but nobody can see them.
 - **Free-tier storage:** the F1 tier has about 1 GB of disk. Avatars of 256 px are tens of KB each, so even many Users at 10 People each use only a small part of it.
 - **Related records:** `CONTEXT.md` (glossary); `docs/adr/0001-specs-in-documentation-tickets-in-github.md`; `docs/adr/0002-people-have-one-owner-families-group-users.md`.

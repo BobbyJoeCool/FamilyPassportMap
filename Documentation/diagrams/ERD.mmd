@@ -1,15 +1,20 @@
 %% FamilyPassportMap — Master Entity-Relationship Diagram
 %% This is the single source of truth for the database schema. It must always match
 %% apps/server/prisma/schema.prisma exactly — see CLAUDE.md's "Diagram Sync Requirements".
-%% Implemented as of Phase 8 (migrations 20260812220505_add_person_and_visited_state,
-%% 20260916173026_add_visited_country).
+%% Implemented as of v2.3.0 / Phase 12 (migrations 20260812220505_add_person_and_visited_state,
+%% 20260916173026_add_visited_country, 20261019212746_add_user_and_session,
+%% 20261020153324_add_person_owner, 20261020172320_add_primary_person).
 
 erDiagram
     PERSON ||--o{ VISITED_STATE : "visits"
     PERSON ||--o{ VISITED_COUNTRY : "visits"
+    USER ||--o{ SESSION : "signed in as"
+    USER |o--o{ PERSON : "owns"
+    USER |o--o| PERSON : "is (Primary Person)"
 
     PERSON {
         string id PK "cuid"
+        string ownerId FK "nullable, -> User.id, onDelete Cascade; null only for pre-login People"
         string name
         string colorHex "validated hex color"
         string profilePicturePath "nullable, DATA_DIR/uploads/..."
@@ -30,6 +35,29 @@ erDiagram
         datetime visitedAt
     }
 
+    USER {
+        string id PK "cuid"
+        string authProvider "e.g. microsoft"
+        string authSubject "provider's user id (Microsoft sub)"
+        string email
+        string displayName
+        string avatarUrl "nullable, provider picture URL"
+        string primaryPersonId FK "nullable, unique, -> Person.id, onDelete SetNull"
+        datetime createdAt
+    }
+
+    SESSION {
+        string id PK "SHA-256 hex of the cookie token"
+        string userId FK "-> User.id, onDelete Cascade"
+        datetime expiresAt "slides forward with use"
+        datetime createdAt
+    }
+
+    %% USER (authProvider, authSubject) is unique — one User per provider identity.
+    %% USER.primaryPersonId is unique (one User per Person) and null only before the welcome
+    %% step; deleting that Person sets it back to null.
+    %% Deleting a User cascade-deletes their Sessions and the People they own (and so those
+    %% People's visits). PERSON.ownerId and SESSION.userId are indexed.
     %% Unique constraints: VISITED_STATE (personId, stateCode) and
     %% VISITED_COUNTRY (personId, countryCode) — a person can only have one row per
     %% state, and one row per country.

@@ -22,6 +22,10 @@ In the App Service → **Settings** → **Environment variables**, add:
 |------|-------|---------|
 | `DATA_DIR` | `/home/data` | Persistent storage for SQLite DB + uploaded photos |
 | `NODE_ENV` | `production` | Tells Express to serve the built frontend |
+| `MICROSOFT_CLIENT_ID` | the app registration's Application (client) ID | Microsoft sign-in (see step 6). **Required**: the server refuses to start without it |
+| `MICROSOFT_CLIENT_SECRET` | the client secret's **Value** | Microsoft sign-in. **Required**. Expires; see step 6 |
+| `APP_BASE_URL` | `https://<app-name>.azurewebsites.net` | The address people open the app at, used to build Microsoft's redirect URI. **Required** |
+| `LEGACY_DATA_OWNER_EMAIL` | your **personal** Microsoft account's email | The site owner. On their sign-in they Adopt the People recorded before login (People with no Owner). Matched case-insensitively, and only for a personal Microsoft account (never a work or school one). If unset, nobody Adopts them and they stay invisible. |
 
 The `/home` directory persists across restarts and redeploys on Azure App Service. Never use `/tmp` — it's wiped on restart.
 
@@ -73,12 +77,30 @@ Then push to `main`, or re-run the latest **Deploy to Azure** run from the repo'
 ### 5. Verify
 
 After the first deploy:
-- Visit `https://<app-name>.azurewebsites.net` — People, and the US and World sections (each with Map / Compare / List), should work.
+- Visit `https://<app-name>.azurewebsites.net`. You should land on the sign-in page. After signing in with Microsoft and finishing the welcome step, People and the US and World sections (each with Map / Compare / List) should work.
 - Add a person and mark some states, then restart the App Service from the Azure portal — data should persist.
 - On Chrome/Edge, the "Install app" prompt should appear (PWA).
 
+### 6. Microsoft sign-in (v2.3.0 and later)
+
+Sign-in uses a Microsoft Entra app registration. Set it up once, in the [Azure portal](https://portal.azure.com/):
+
+1. **Microsoft Entra ID → App registrations → New registration**:
+   - Name: `FamilyPassportMap`;
+   - Supported account types: **Accounts in any organizational directory and personal Microsoft accounts**;
+   - Redirect URI: platform **Web**, `http://localhost:5173/api/auth/microsoft/callback` (local development).
+2. From **Overview**, copy the **Application (client) ID**.
+3. **Authentication → Web → Add URI**: `https://<app-name>.azurewebsites.net/api/auth/microsoft/callback`, then **Save**.
+4. **Certificates & secrets → New client secret**. Copy its **Value** (not the Secret ID) straight away: it's shown only once. Secrets expire (24 months at most), and an expired secret makes every sign-in fail, so set a reminder to create a new one and update the app setting before then.
+5. **Branding & properties**: set the home page URL (`https://<app-name>.azurewebsites.net`) and the privacy statement URL (`https://<app-name>.azurewebsites.net/privacy`), then **Save**.
+6. Put the client ID and secret in the local `apps/server/.env` as `MICROSOFT_CLIENT_ID` and `MICROSOFT_CLIENT_SECRET` (with `APP_BASE_URL=http://localhost:5173`), and in the App Service settings from step 2.
+
+The scopes (`openid email profile`) need no API-permission changes. Personal Microsoft accounts can sign in straight away. Some organizations block their members from consenting to apps from unverified publishers, so a work or school account may see "Need admin approval".
+
+**Deploy order for v2.3.0:** add `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `APP_BASE_URL` and `LEGACY_DATA_OWNER_EMAIL` to the App Service **before** pushing the release to `main`. Without the first three, the new server refuses to start (by design). The deploy runs the new migrations on its own. Until the site owner (the `LEGACY_DATA_OWNER_EMAIL` account) first signs in, the People recorded before login exist but nobody can see them. That first sign-in Adopts them, and the owner can then use **Set as me** on the Person who is them.
+
 ## Architecture notes
 
-- **Single App Service** runs one Node.js process that serves both the Express API (`/api/*`, `/uploads/*`) and the Vite-built frontend (all other routes fall through to `index.html` for client-side routing).
+- **Single App Service** runs one Node.js process that serves both the Express API (`/api/*`), the private photos (`/uploads/*`, only to a signed-in User who can view the photo's Person) and the Vite-built frontend (all other routes fall through to `index.html` for client-side routing).
 - **SQLite** is safe because F1 tier is always a single instance — no concurrent writer risk.
 - **No custom domain or SSL** on F1 tier — the default `*.azurewebsites.net` domain with Azure-managed HTTPS is used.

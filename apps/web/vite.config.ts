@@ -27,7 +27,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//],
+        // Never answer API calls or photo URLs with the cached app shell: both must reach the
+        // server (photos are private, and a signed-out photo URL must come back 404).
+        navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
       },
     }),
   ],

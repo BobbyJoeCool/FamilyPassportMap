@@ -16,13 +16,17 @@
     "@prisma/adapter-better-sqlite3": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "better-sqlite3": "^13.0.3",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "jose": "6.2.12",
     "multer": "^2.2.0",
-    "prisma": "^7.9.1"
+    "prisma": "^7.9.1",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.2.0",
     "@types/node": "^24.0.0",

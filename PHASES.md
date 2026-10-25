@@ -31,6 +31,14 @@ A second, parallel tracking system — countries visited, on a world map zoomed 
 | — | v2.1.0 | Map Legibility: darker borders + country codes | (no spec doc — small, self-contained addition; details in `CHANGELOG.md`) | **Complete (v2.1.0 shipped)** |
 | — | v2.2.0 | Navigation: People / US / World with shared sub-tabs | (no spec doc — small, self-contained change by agreement with the user; details in `CHANGELOG.md`. Supersedes the nav described in Phases 9–10: `WorldTabs` became the shared `SectionTabs`, and US pages moved to `/us/*`) | **Complete (v2.2.0 shipped)** |
 
+## Post-v2.0: Accounts
+
+Login, per-User data, and (later) Link/Join between Users. Domain terms are in [`CONTEXT.md`](CONTEXT.md); ownership model in [ADR 0002](docs/adr/0002-people-have-one-owner-families-group-users.md). Per [ADR 0001](docs/adr/0001-specs-in-documentation-tickets-in-github.md), each phase's spec lives in `Documentation/` and its implementation tickets are GitHub issues linked from the spec.
+
+| Phase | Version | Name | Spec doc | Status |
+|---|---|---|---|---|
+| 12 | v2.3.0 | Login & Accounts (Microsoft sign-in, Primary Person, per-User data) | [Documentation/Phase-12-Login-Accounts.md](Documentation/Phase-12-Login-Accounts.md) (tickets: [#1–#13](https://github.com/BobbyJoeCool/FamilyPassportMap/issues)) | **Complete (v2.3.0 shipped)**. All tickets built, the automated tests pass, and the manual local checklist passed (2026-10-25). Sign-in was switched from Google to Microsoft mid-phase (#13). |
+
 ## Versioning convention
 
 - **Phase 0** is environment/tooling setup only — no user-facing behavior, so it doesn't get its own `0.x.0` tag.
@@ -43,7 +51,7 @@ A second, parallel tracking system — countries visited, on a world map zoomed 
 
 These came up during initial design and were deliberately deferred, not forgotten:
 - Countries / world map support — **no longer deferred**: picked up as the post-v1.0 round above, starting with Phase 8
-- Login / authentication / multi-household accounts
+- Login / authentication / multi-household accounts — **no longer deferred**: picked up as Phase 12 (v2.3.0). Link/Join between Users comes in a later phase.
 - Blended/overlap coloring in Compare view (v1 renders separate maps side by side)
 - Native desktop packaging (Electron) — v1 is a responsive, installable PWA hosted on Azure instead
 
