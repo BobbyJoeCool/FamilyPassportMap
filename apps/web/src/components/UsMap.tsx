@@ -15,11 +15,12 @@ const CODE_TO_NAME: Record<string, string> = Object.fromEntries(
 
 /**
  * States too compact to place a label inside (RI, DE): the abbreviation is rendered as an
- * Annotation with a connector line offset by [dx, dy] from the centroid.
+ * Annotation with a connector line offset by [dx, dy] from the centroid. The offsets are
+ * the shortest that keep the label over open water, at least 2 units off any coast.
  */
 const ANNOTATION_OFFSETS: Record<string, [number, number]> = {
-  RI: [28, 2],
-  DE: [33, 0],
+  RI: [10, 8],
+  DE: [10, 0],
 };
 
 /**
