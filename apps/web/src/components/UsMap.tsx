@@ -31,7 +31,8 @@ const ANNOTATION_OFFSETS: Record<string, [number, number]> = {
  */
 const CENTROID_NUDGES: Record<string, [number, number]> = {
   FL: [1.5, -1],
-  MI: [1, 2],
+  // MI: into the middle of the Lower Peninsula (the old nudge put it off the Upper Peninsula's edge).
+  MI: [0.72, -1.58],
   LA: [-1, 0.5],
   HI: [1, 1],
   CA: [0.6, -1.21],
