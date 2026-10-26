@@ -203,7 +203,9 @@ export function UsMap({ visitedStateCodes, color, onToggleState }: UsMapProps) {
                         style={{
                           fontSize: 8,
                           fontWeight: 600,
-                          fill: "#ffffff",
+                          // The label sits off the map, over the page background, so it takes the
+                          // theme's text color (white was invisible in light mode).
+                          fill: "var(--color-text)",
                           pointerEvents: "none",
                         }}
                       >
