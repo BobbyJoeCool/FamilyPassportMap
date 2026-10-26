@@ -40,7 +40,9 @@ const CENTROID_NUDGES: Record<string, [number, number]> = {
   CT: [0.19, 0.03],
   MA: [-0.87, 0.13],
   NJ: [-0.21, -0.6],
-  MD: [-0.27, 0.33],
+  // MD is long and thin: placed where the wide "MD" label clears both the Potomac and
+  // the Pennsylvania line, rather than at the point farthest from the border.
+  MD: [-0.3, 0.41],
   ID: [0, 0.5],
   AK: [0, 0],
 };
