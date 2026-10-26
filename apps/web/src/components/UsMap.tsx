@@ -27,9 +27,9 @@ const ANNOTATION_OFFSETS: Record<string, [number, number]> = {
 /**
  * Manual centroid nudges, in degrees [longitude, latitude], for states whose geographic
  * centroid doesn't land in a visually centered spot on the AlbersUsa projection (e.g. FL
- * panhandle, MI upper/lower peninsula, LA coastline). CA, VT, NH, CT, MA, NJ and MD move
- * the label to the point farthest from the state's border on the projected map, so the
- * label sits fully inside even the narrow eastern states.
+ * panhandle, MI upper/lower peninsula, LA coastline). CA, VT, NH, CT, MA and NJ move the
+ * label to the point farthest from the state's border on the projected map, so the label
+ * sits fully inside even the narrow eastern states (MD's entry explains its own spot).
  */
 const CENTROID_NUDGES: Record<string, [number, number]> = {
   FL: [1.5, -1],
