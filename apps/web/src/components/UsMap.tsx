@@ -14,31 +14,33 @@ const CODE_TO_NAME: Record<string, string> = Object.fromEntries(
 );
 
 /**
- * Small northeast states that are too compact to place a label inside — the abbreviation
+ * Small eastern states that are too compact to place a label inside — the abbreviation
  * is rendered as an Annotation with a connector line offset by [dx, dy] from the centroid.
  */
 const ANNOTATION_OFFSETS: Record<string, [number, number]> = {
-  VT: [35, -8],
-  NH: [34, 2],
   MA: [36, -1],
   RI: [28, 2],
-  CT: [35, 10],
   NJ: [34, 1],
   DE: [33, 0],
   MD: [47, 10],
 };
 
 /**
- * Manual centroid nudges for states whose geographic centroid doesn't land in a
- * visually centered spot on the AlbersUsa projection (e.g. FL panhandle, MI
- * upper/lower peninsula, LA coastline).
+ * Manual centroid nudges, in degrees [longitude, latitude], for states whose geographic
+ * centroid doesn't land in a visually centered spot on the AlbersUsa projection (e.g. FL
+ * panhandle, MI upper/lower peninsula, LA coastline). CA, VT, NH and CT move the label to
+ * the point farthest from the state's border on the projected map, so the label sits
+ * fully inside even the narrow New England states.
  */
 const CENTROID_NUDGES: Record<string, [number, number]> = {
   FL: [1.5, -1],
   MI: [1, 2],
   LA: [-1, 0.5],
   HI: [1, 1],
-  CA: [0, 1.5],
+  CA: [0.6, -1.21],
+  VT: [0.03, 0.46],
+  NH: [-0.1, -0.44],
+  CT: [0.19, 0.03],
   ID: [0, 0.5],
   AK: [0, 0],
 };
