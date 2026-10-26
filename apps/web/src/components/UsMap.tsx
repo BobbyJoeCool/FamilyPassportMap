@@ -14,34 +14,51 @@ const CODE_TO_NAME: Record<string, string> = Object.fromEntries(
 );
 
 /**
- * Small northeast states that are too compact to place a label inside — the abbreviation
- * is rendered as an Annotation with a connector line offset by [dx, dy] from the centroid.
+ * States too compact to place a label inside (RI, DE): the abbreviation is rendered as an
+ * Annotation with a connector line offset by [dx, dy] from the centroid. The offsets are
+ * the shortest that keep the label over open water, at least 3 units off any coast (DE
+ * also angles away from New Jersey so its label isn't read as NJ's).
  */
 const ANNOTATION_OFFSETS: Record<string, [number, number]> = {
-  VT: [35, -8],
-  NH: [34, 2],
-  MA: [36, -1],
-  RI: [28, 2],
-  CT: [35, 10],
-  NJ: [34, 1],
-  DE: [33, 0],
-  MD: [47, 10],
+  RI: [10, 9.5],
+  DE: [10, 8.5],
 };
 
 /**
- * Manual centroid nudges for states whose geographic centroid doesn't land in a
- * visually centered spot on the AlbersUsa projection (e.g. FL panhandle, MI
- * upper/lower peninsula, LA coastline).
+ * Manual centroid nudges, in degrees [longitude, latitude], for states whose geographic
+ * centroid doesn't land in a visually centered spot on the AlbersUsa projection (e.g. FL
+ * panhandle, MI upper/lower peninsula, LA coastline). CA, VT, NH, CT, MA and NJ move the
+ * label to the point farthest from the state's border on the projected map, so the label
+ * sits fully inside even the narrow eastern states (MD's entry explains its own spot).
  */
 const CENTROID_NUDGES: Record<string, [number, number]> = {
   FL: [1.5, -1],
-  MI: [1, 2],
+  // MI: into the middle of the Lower Peninsula (the old nudge put it off the Upper Peninsula's edge).
+  MI: [0.72, -1.58],
   LA: [-1, 0.5],
   HI: [1, 1],
-  CA: [0, 1.5],
+  CA: [0.6, -1.21],
+  VT: [0.03, 0.46],
+  NH: [-0.1, -0.44],
+  CT: [0.19, 0.03],
+  MA: [-0.87, 0.13],
+  NJ: [-0.21, -0.6],
+  // MD is long and thin: placed where the wide "MD" label clears both the Potomac and
+  // the Pennsylvania line, rather than at the point farthest from the border.
+  MD: [-0.3, 0.41],
   ID: [0, 0.5],
   AK: [0, 0],
 };
+
+/** The in-state label size, in map units. */
+const LABEL_FONT_SIZE = 9;
+
+/**
+ * States whose label only fits inside at a smaller size: at the normal size the letters
+ * would touch the state's border.
+ */
+const SMALL_LABEL_FONT_SIZE = 7;
+const SMALL_LABEL_STATES = new Set(["MA", "NJ", "MD"]);
 
 interface UsMapProps {
   visitedStateCodes: string[];
@@ -174,7 +191,7 @@ export function UsMap({ visitedStateCodes, color, onToggleState }: UsMapProps) {
                   : [centroid[0], centroid[1]];
 
                 const offsets = ANNOTATION_OFFSETS[stateCode];
-                // Small NE states get an Annotation with a connector line.
+                // States too small for an inside label get an Annotation with a connector line.
                 if (offsets) {
                   return (
                     <Annotation
@@ -191,7 +208,9 @@ export function UsMap({ visitedStateCodes, color, onToggleState }: UsMapProps) {
                         style={{
                           fontSize: 8,
                           fontWeight: 600,
-                          fill: "#ffffff",
+                          // The label sits off the map, over the page background, so it takes the
+                          // theme's text color (white was invisible in light mode).
+                          fill: "var(--color-text)",
                           pointerEvents: "none",
                         }}
                       >
@@ -201,14 +220,14 @@ export function UsMap({ visitedStateCodes, color, onToggleState }: UsMapProps) {
                   );
                 }
 
-                // Regular states — label at the centroid.
+                // Regular states — label at the (nudged) centroid, smaller where space is tight.
                 return (
                   <Marker key={`label-${stateCode}`} coordinates={adjustedCentroid}>
                     <text
                       textAnchor="middle"
                       alignmentBaseline="central"
                       style={{
-                        fontSize: 9,
+                        fontSize: SMALL_LABEL_STATES.has(stateCode) ? SMALL_LABEL_FONT_SIZE : LABEL_FONT_SIZE,
                         fontWeight: 600,
                         fill: textColor,
                         pointerEvents: "none",
