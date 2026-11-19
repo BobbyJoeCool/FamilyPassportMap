@@ -6,15 +6,15 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 
 *Shown with demo data (fictional family members).*
 
-![US map: one person's visited states filled in with their color](Documentation/screenshots/us-map.png)
+![US map: one person's visited states filled in with their color](docs/screenshots/us-map.png)
 
 | Compare family members side by side | Every state, with who's been there |
 |---|---|
-| ![US Compare view](Documentation/screenshots/us-compare.png) | ![US List view](Documentation/screenshots/us-list.png) |
+| ![US Compare view](docs/screenshots/us-compare.png) | ![US List view](docs/screenshots/us-list.png) |
 | **World map, zoomed to one continent** | **People, with per-person counters** |
-| ![World Map view zoomed to Europe](Documentation/screenshots/world-map.png) | ![People page](Documentation/screenshots/people.png) |
+| ![World Map view zoomed to Europe](docs/screenshots/world-map.png) | ![People page](docs/screenshots/people.png) |
 
-<p align="center"><img src="Documentation/screenshots/mobile.png" alt="The app at phone width with bottom navigation" width="260"></p>
+<p align="center"><img src="docs/screenshots/mobile.png" alt="The app at phone width with bottom navigation" width="260"></p>
 <p align="center"><em>The same app on a phone, with mobile bottom navigation.</em></p>
 
 ## What it does
@@ -55,7 +55,7 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 
 - [`PHASES.md`](PHASES.md) — the phased build plan from initial setup through v1.0.0 (US states), v2.0.0 (countries/world map) and v2.3.0 (login and accounts), with version numbers per phase
 - [`CONTEXT.md`](CONTEXT.md) and [`docs/adr/`](docs/adr/) — the domain glossary (User, Person, Owner, Primary Person…) and the architecture decisions behind them
-- [`Documentation/`](Documentation/) — one self-contained design spec per phase
+- [`docs/`](docs/) — one self-contained design spec per phase
 - [`CHANGELOG.md`](CHANGELOG.md) — what shipped in each version
 - `.claude/CLAUDE.md` — local, gitignored working instructions for Claude Code when developing this repo
 - `DevNotes/` — local, gitignored working notes and logs (not part of the shipped app)

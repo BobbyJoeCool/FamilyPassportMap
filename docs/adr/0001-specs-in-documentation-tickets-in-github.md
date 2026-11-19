@@ -1,6 +1,6 @@
-# Specs stay in Documentation/, tickets go to GitHub Issues
+# Specs stay in docs/, tickets go to GitHub Issues
 
-Starting with the login feature (Phase 12), a phase's spec is still written as a self-contained `Documentation/Phase-N-*.md`, which can be designed in Claude Desktop without the repo. Its implementation tickets are GitHub issues, linked from that spec and from the phase's `PHASES.md` row. We kept the spec local because the whole doc workflow in `.claude/CLAUDE.md` (documentation sync, decisions to carry forward) depends on it. Tickets moved to GitHub so they get native blocking links and a clear next task for `/implement`.
+Starting with the login feature (Phase 12), a phase's spec is still written as a self-contained `docs/Phase-N-*.md`, which can be designed in Claude Desktop without the repo. Its implementation tickets are GitHub issues, linked from that spec and from the phase's `PHASES.md` row. We kept the spec local because the whole doc workflow in `.claude/CLAUDE.md` (documentation sync, decisions to carry forward) depends on it. Tickets moved to GitHub so they get native blocking links and a clear next task for `/implement`.
 
 ## Considered Options
 

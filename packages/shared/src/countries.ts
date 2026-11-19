@@ -6,7 +6,7 @@
 //
 // Scope: the 193 UN member states plus the 2 UN observer states (Vatican City, Palestine)
 // = 195 entries. No dependent territories, no partially-recognized states — see
-// Documentation/Phase-8-World-Data-Layer.md.
+// docs/Phase-8-World-Data-Layer.md.
 
 /** The six inhabited continents. Antarctica is deliberately excluded — nobody's tracking visits there. */
 export type Continent =
@@ -35,7 +35,7 @@ export interface Country {
 // Continent assignment is a convention, not something ISO 3166 defines. The transcontinental
 // and otherwise arguable calls (Russia -> Europe, Turkey/Kazakhstan/Azerbaijan/Georgia/Armenia
 // -> Asia, Cyprus -> Europe, Egypt -> Africa, Timor-Leste -> Asia, Caribbean -> North America)
-// are fixed, documented decisions from Documentation/Phase-8-World-Data-Layer.md — don't
+// are fixed, documented decisions from docs/Phase-8-World-Data-Layer.md — don't
 // "correct" them here without updating that doc.
 export const COUNTRIES: Country[] = [
   { code: "AF", alpha3: "AFG", numericCode: "004", name: "Afghanistan", continent: "Asia" },

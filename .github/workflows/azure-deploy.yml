@@ -16,7 +16,7 @@ jobs:
 
     steps:
       # Fail fast with a clear message instead of an opaque login error when the Azure IDs
-      # haven't been added as repository variables (see Documentation/AZURE-SETUP.md).
+      # haven't been added as repository variables (see docs/AZURE-SETUP.md).
       - name: Check deploy configuration
         env:
           AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
@@ -24,7 +24,7 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
         run: |
           if [ -z "$AZURE_CLIENT_ID" ] || [ -z "$AZURE_TENANT_ID" ] || [ -z "$AZURE_SUBSCRIPTION_ID" ]; then
-            echo "::error::Repository variables AZURE_CLIENT_ID, AZURE_TENANT_ID, and AZURE_SUBSCRIPTION_ID must all be set. See Documentation/AZURE-SETUP.md, step 4."
+            echo "::error::Repository variables AZURE_CLIENT_ID, AZURE_TENANT_ID, and AZURE_SUBSCRIPTION_ID must all be set. See docs/AZURE-SETUP.md, step 4."
             exit 1
           fi
 

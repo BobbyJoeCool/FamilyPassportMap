@@ -15,7 +15,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 - **Up to 10 People** per User, yourself included. When you reach it, the add form is disabled.
 - **Delete account** in the account menu permanently deletes your account, all your People, their visits and photos, and every session, after a confirmation listing exactly that. Signing in again starts fresh.
 - **Existing data is kept.** The People recorded before login (Legacy People) are **Adopted** by the site owner, the User whose personal Microsoft account's email matches the new `LEGACY_DATA_OWNER_EMAIL` setting, on their sign-in. A work or school account with that email doesn't qualify, since its directory can set any email. Until then nobody can see them.
-- **Deploying:** add the new App Service settings **before** this release deploys. The server refuses to start without `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` and `APP_BASE_URL`, and `LEGACY_DATA_OWNER_EMAIL` decides who Adopts the existing data. The steps and the deploy order are in `Documentation/AZURE-SETUP.md`.
+- **Deploying:** add the new App Service settings **before** this release deploys. The server refuses to start without `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` and `APP_BASE_URL`, and `LEGACY_DATA_OWNER_EMAIL` decides who Adopts the existing data. The steps and the deploy order are in `docs/AZURE-SETUP.md`.
 - **Under the hood:**
   - new `User` and `Session` models, `Person.ownerId` and `User.primaryPersonId` (ERD updated);
   - one access-policy module (`apps/server/src/access.ts`) decides every "can this User see or change this Person?";
@@ -27,7 +27,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
     - It fails fast with a clear message if the `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID` repository variables are missing.
     - The app name falls back to `family-passport-map`.
     - Removed `startup-command`, which the action rejects with publish-profile auth; it's already set in the App Service.
-    - `Documentation/AZURE-SETUP.md` gives the correct startup command (`bash startup.sh`, not `npm start`) and the one-time OIDC setup commands.
+    - `docs/AZURE-SETUP.md` gives the correct startup command (`bash startup.sh`, not `npm start`) and the one-time OIDC setup commands.
 
 ## [2.2.0] — 2026-09-16 — Navigation: People / US / World
 
@@ -57,7 +57,7 @@ Stabilization pass over Phase 11, completing the World round (Phases 8–11). No
 - **Code-splitting**: the World pages are lazy-loaded, so the world topology no longer weighs down the US pages (main JS chunk 1,330 kB → 556 kB).
 - **Copy**: the PWA manifest and package descriptions now mention countries.
 
-Full scope and acceptance criteria: [`Documentation/Phase-11-World-Polish-Hardening.md`](Documentation/Phase-11-World-Polish-Hardening.md)
+Full scope and acceptance criteria: [`docs/Phase-11-World-Polish-Hardening.md`](docs/Phase-11-World-Polish-Hardening.md)
 
 ## [1.4.0] — 2026-09-16 — World Compare & World List (Phase 10)
 
@@ -66,7 +66,7 @@ Full scope and acceptance criteria: [`Documentation/Phase-11-World-Polish-Harden
 - **World sub-tabs** now show Map / Compare / List.
 - **People page**: each person shows both "n/50 states" and "n/195 countries" badges. The delete confirmation now mentions that visited countries are removed too.
 
-Full scope and acceptance criteria: [`Documentation/Phase-10-World-Compare-List.md`](Documentation/Phase-10-World-Compare-List.md)
+Full scope and acceptance criteria: [`docs/Phase-10-World-Compare-List.md`](docs/Phase-10-World-Compare-List.md)
 
 ## [1.3.0] — 2026-09-16 — World Map (Phase 9)
 
@@ -78,7 +78,7 @@ The first World UI: a new **World 🌍** section with an interactive world map, 
 - **Reuse**: `StateCounter` gained `label` and `total` props for the countries variant; new `api/countries.ts` client.
 - **Dependency**: `world-atlas@2.0.2`.
 
-Full scope and acceptance criteria: [`Documentation/Phase-9-World-Map.md`](Documentation/Phase-9-World-Map.md)
+Full scope and acceptance criteria: [`docs/Phase-9-World-Map.md`](docs/Phase-9-World-Map.md)
 
 ## [1.2.0] — 2026-09-16 — World Data Layer & Countries API (Phase 8)
 
@@ -89,7 +89,7 @@ First of four phases adding country tracking on a world map (→ v2.0.0). Backen
 - **API**: `GET/PUT/DELETE /api/people/:id/countries[/:countryCode]` and bulk `GET /api/countries`, mirroring the visits endpoints.
 - **Tests**: 19 new tests (42 total), including country/state independence and cascade delete.
 
-Full scope and acceptance criteria: [`Documentation/Phase-8-World-Data-Layer.md`](Documentation/Phase-8-World-Data-Layer.md)
+Full scope and acceptance criteria: [`docs/Phase-8-World-Data-Layer.md`](docs/Phase-8-World-Data-Layer.md)
 
 ## [1.1.0] — 2026-09-16 — Visited-State Counter
 
@@ -110,7 +110,7 @@ The last build phase before v1.0.0 — hardens everything from Phases 1–6 with
 - **API test suite**: 23 automated tests (Vitest + Supertest) covering people CRUD and visits CRUD, including validation failures, 404s, cascade delete, idempotency, and state-code normalization
 - **Refactored**: Express app extracted into `apps/server/src/app.ts` for test importability; `index.ts` is now just the listener
 
-Full scope and acceptance criteria: [`Documentation/Phase-7-Polish-Hardening.md`](Documentation/Phase-7-Polish-Hardening.md)
+Full scope and acceptance criteria: [`docs/Phase-7-Polish-Hardening.md`](docs/Phase-7-Polish-Hardening.md)
 
 ## [0.6.0] — 2026-08-24 — Azure Deployment Pipeline
 
@@ -119,9 +119,9 @@ Everything needed to deploy the app to Azure App Service's free tier.
 - Express serves the Vite-built frontend in production (`NODE_ENV=production`), so one App Service handles both API and web
 - GitHub Actions workflow (`.github/workflows/azure-deploy.yml`): build + deploy to Azure on every push to `main`
 - Root `npm start` script for Azure startup
-- Manual setup guide: [`Documentation/AZURE-SETUP.md`](Documentation/AZURE-SETUP.md) — App Service creation, `DATA_DIR` env var, publish profile secret
+- Manual setup guide: [`docs/AZURE-SETUP.md`](docs/AZURE-SETUP.md) — App Service creation, `DATA_DIR` env var, publish profile secret
 
-Full scope and acceptance criteria: [`Documentation/Phase-6-Azure-Deployment.md`](Documentation/Phase-6-Azure-Deployment.md)
+Full scope and acceptance criteria: [`docs/Phase-6-Azure-Deployment.md`](docs/Phase-6-Azure-Deployment.md)
 
 ## [0.5.0] — 2026-08-24 — Responsive Design & PWA Packaging
 
@@ -134,7 +134,7 @@ The app now looks and works well on phone, tablet, and desktop, and is installab
 - PWA: `vite-plugin-pwa` with web app manifest, 192/512px icons, service worker for offline shell caching
 - Default route changed from `/people` to `/map`
 
-Full scope and acceptance criteria: [`Documentation/Phase-5-Responsive-PWA.md`](Documentation/Phase-5-Responsive-PWA.md)
+Full scope and acceptance criteria: [`docs/Phase-5-Responsive-PWA.md`](docs/Phase-5-Responsive-PWA.md)
 
 ## [0.4.0] — 2026-08-23 — List View
 
@@ -143,7 +143,7 @@ All 50 states in one scannable list, with avatar icons showing who's visited eac
 - Web UI: List page — alphabetical table of all 50 US states, each row showing `PersonAvatar` icons for every person who has visited that state (photo if uploaded, colored-circle-with-initials fallback otherwise)
 - No new backend endpoints — reuses `GET /api/visits` (Phase 3) and `GET /api/people` (Phase 1)
 
-Full scope and acceptance criteria: [`Documentation/Phase-4-List-View.md`](Documentation/Phase-4-List-View.md)
+Full scope and acceptance criteria: [`docs/Phase-4-List-View.md`](docs/Phase-4-List-View.md)
 
 ## [0.3.0] — 2026-08-23 — Compare View (Side-by-Side)
 
@@ -152,7 +152,7 @@ Select multiple people and see their maps rendered next to each other for easy v
 - API: `GET /api/visits` — bulk endpoint returning all visited states grouped by person (`{ personId, stateCodes[] }[]`), used by Compare (and later List) views to avoid per-person fetches
 - Web UI: Compare page — multi-select checkboxes for people, side-by-side read-only `UsMap` instances colored per-person, deselect to remove a map
 
-Full scope and acceptance criteria: [`Documentation/Phase-3-Compare-View.md`](Documentation/Phase-3-Compare-View.md)
+Full scope and acceptance criteria: [`docs/Phase-3-Compare-View.md`](docs/Phase-3-Compare-View.md)
 
 ## [0.2.0] — 2026-08-13 — Interactive Map (Single-Person View)
 
@@ -162,7 +162,7 @@ The core interaction of the whole app: pick a person, click states, watch them f
 - Shared canonical US states list + FIPS↔USPS mapping in `packages/shared`
 - Web UI: Map page — person selector, click-to-toggle US map (`react-simple-maps`), colored per-person, persists immediately with optimistic UI and failure reconciliation
 
-Full scope and acceptance criteria: [`Documentation/Phase-2-Interactive-Map.md`](Documentation/Phase-2-Interactive-Map.md)
+Full scope and acceptance criteria: [`docs/Phase-2-Interactive-Map.md`](docs/Phase-2-Interactive-Map.md)
 
 ## [0.1.0] — 2026-08-12 — Data Layer & People Management
 
@@ -174,10 +174,10 @@ First functional release. No map, compare, or list views yet — this release la
 - Shared TypeScript types/validation for `Person` in `packages/shared`
 - Web UI: People management page — add, edit, and delete a family member with a required color and an optional profile picture
 
-Full scope and acceptance criteria: [`Documentation/Phase-1-Data-Layer-People.md`](Documentation/Phase-1-Data-Layer-People.md)
+Full scope and acceptance criteria: [`docs/Phase-1-Data-Layer-People.md`](docs/Phase-1-Data-Layer-People.md)
 
 ## [0.0.0] — Phase 0 — Environment & Tech Stack Setup
 
 No user-facing behavior. Monorepo scaffolding (npm workspaces: `apps/server`, `apps/web`, `packages/shared`), Express + Prisma/SQLite skeleton, Vite + React skeleton, ESLint/Prettier, CI (lint + build on push/PR).
 
-Full scope: [`Documentation/Phase-0-Environment-Setup.md`](Documentation/Phase-0-Environment-Setup.md)
+Full scope: [`docs/Phase-0-Environment-Setup.md`](docs/Phase-0-Environment-Setup.md)

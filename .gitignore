@@ -87,7 +87,7 @@ apps/server/prisma/*.db-journal
 /data/
 /apps/server/data/
 
-# Uploaded profile pictures stored locally in dev (see Documentation/Phase-1 doc)
+# Uploaded profile pictures stored locally in dev (see docs/Phase-1 doc)
 /apps/server/uploads/
 
 # ==============================

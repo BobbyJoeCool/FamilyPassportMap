@@ -47,7 +47,7 @@ Get the app live on Azure's free tier, with data that survives restarts and rede
 ### Manual one-time setup (user does this outside Claude Code)
 
 Document these steps clearly for the user, since none of this can be done from within the repo:
-1. Create a Linux App Service on the **F1 (Free)** pricing tier, matching the Node LTS version `apps/server/package.json`'s `engines.node` targets at the time this phase is built (Node 24 as of Phase 0 — see `Documentation/Phase-0-Environment-Setup.md`). Record the app name and region once created.
+1. Create a Linux App Service on the **F1 (Free)** pricing tier, matching the Node LTS version `apps/server/package.json`'s `engines.node` targets at the time this phase is built (Node 24 as of Phase 0 — see `docs/Phase-0-Environment-Setup.md`). Record the app name and region once created.
 2. In the App Service's Configuration settings, add an application setting `DATA_DIR=/home/data`.
 3. Download the App Service's publish profile and add it as a GitHub repository secret (e.g. `AZURE_WEBAPP_PUBLISH_PROFILE`) for the deploy workflow to use.
 
@@ -69,5 +69,5 @@ Document these steps clearly for the user, since none of this can be done from w
 - **Production `DATA_DIR` path**: `/home/data` (set via Azure App Service application settings). The SQLite DB and `uploads/` folder live here. This persists across restarts and redeploys.
 - **Deploy trigger is push-to-`main`** via `.github/workflows/azure-deploy.yml` — uses `azure/webapps-deploy@v3` with publish profile stored as `AZURE_WEBAPP_PUBLISH_PROFILE` secret and app name as `AZURE_WEBAPP_NAME` variable.
 - **Production serving**: Express serves the Vite-built frontend (`apps/web/dist`) as static files for non-API routes when `NODE_ENV=production`. Root `npm start` runs `NODE_ENV=production node apps/server/dist/index.js`.
-- **Manual setup guide**: `Documentation/AZURE-SETUP.md` documents the one-time Azure provisioning steps (App Service creation, env vars, publish profile, startup command).
+- **Manual setup guide**: `docs/AZURE-SETUP.md` documents the one-time Azure provisioning steps (App Service creation, env vars, publish profile, startup command).
 - **Live URL**: `https://<app-name>.azurewebsites.net` — record the actual app name here once provisioned by the user.
