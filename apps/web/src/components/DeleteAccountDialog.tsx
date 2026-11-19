@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import { deleteAccount } from "../api/auth";
+import { loadPage } from "../navigation";
 
 /**
  * The "Delete account" confirmation: a modal that spells out everything that will be
@@ -27,7 +28,7 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
     setError(null);
     try {
       await deleteAccount();
-      window.location.assign("/signin");
+      loadPage("/signin");
     } catch {
       setDeleting(false);
       setError("Couldn't delete your account. Check your connection and try again.");

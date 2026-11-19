@@ -1,4 +1,5 @@
 import { signInPath } from "../auth/signInPath";
+import { loadPage } from "../navigation";
 
 /**
  * Shared response handler for every API call: parses a successful JSON body, or throws
@@ -30,5 +31,5 @@ export async function handleResponse<T>(response: Response): Promise<T> {
  * A full page load (not a router navigation) so nothing from the old session stays in memory.
  */
 export function redirectToSignIn(): void {
-  window.location.assign(signInPath(window.location.pathname + window.location.search));
+  loadPage(signInPath(window.location.pathname + window.location.search));
 }

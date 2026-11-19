@@ -50,6 +50,7 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 - **Backend:** Node.js + TypeScript (Express), with Microsoft sign-in and server-side sessions
 - **Database:** SQLite via Prisma
 - **Hosting:** Azure App Service (free tier)
+- **Testing:** Vitest unit tests for the server, the shared package and the web app (React Testing Library), run with `npm test`; Playwright end-to-end tests of every user flow against local servers, run with `npm run test:e2e`
 
 ## Project structure & docs
 
@@ -57,6 +58,7 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 - [`CONTEXT.md`](CONTEXT.md) and [`docs/adr/`](docs/adr/) — the domain glossary (User, Person, Owner, Primary Person…) and the architecture decisions behind them
 - [`docs/`](docs/) — one self-contained design spec per phase
 - [`CHANGELOG.md`](CHANGELOG.md) — what shipped in each version
+- [`e2e/`](e2e/) — Playwright end-to-end tests, one spec per user flow, with a fake sign-in so they never reach Microsoft (plan: [`docs/test-plan.md`](docs/test-plan.md))
 - `.claude/CLAUDE.md` — local, gitignored working instructions for Claude Code when developing this repo
 - `DevNotes/` — local, gitignored working notes and logs (not part of the shipped app)
 

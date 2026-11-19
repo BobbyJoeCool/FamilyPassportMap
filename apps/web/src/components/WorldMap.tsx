@@ -396,6 +396,7 @@ export function WorldMap({ visitedCountryCodes, color, view, onToggleCountry }: 
                 <Geography
                   key={geo.rsmKey}
                   geography={geo}
+                  data-country-code={countryCode}
                   onClick={() => {
                     // Clicks only count when zoomed into a continent with a handler attached.
                     if (interactive) onToggleCountry?.(countryCode);
@@ -497,6 +498,7 @@ export function WorldMap({ visitedCountryCodes, color, view, onToggleCountry }: 
                     cy={y + dy}
                     r={MARKER_HIT_RADIUS}
                     fill="transparent"
+                    data-country-code={countryCode}
                     style={{ cursor: interactive ? "pointer" : "default" }}
                     onClick={() => {
                       // Same rule as polygons: only a continent view with a handler toggles.

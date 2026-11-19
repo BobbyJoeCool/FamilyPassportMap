@@ -4,11 +4,15 @@ import { safeReturnTo, type SignInError } from "@familypassportmap/shared";
 import { adoptLegacyPeople } from "../access.js";
 import { prisma } from "../db.js";
 import { isLegacyDataOwner } from "./config.js";
+import { e2eAuthRouter, fakeAuthorizationUrl, fakeIdentityFromCode, isE2eFakeAuthEnabled } from "./e2eFakeAuth.js";
 import { microsoftAuthorizationUrl, microsoftIdentityFromCode } from "./microsoft.js";
 import { createSession, deleteSession, readSessionToken, SESSION_COOKIE, sessionCookieOptions } from "./sessions.js";
 
 /** Router for `/api/auth` — Microsoft sign-in and sign-out. Public (no session required). */
 export const authRouter = Router();
+
+// The E2E-only fake sign-in page (a 404 unless E2E_FAKE_AUTH=true outside production).
+authRouter.use("/e2e", e2eAuthRouter);
 
 /** Where a User with no Primary Person yet is sent after signing in. */
 const WELCOME_PATH = "/welcome";
@@ -68,7 +72,8 @@ authRouter.get("/microsoft", (req, res) => {
   const state = crypto.randomBytes(16).toString("base64url");
   const returnTo = safeReturnTo(req.query.returnTo);
   res.cookie(PENDING_SIGN_IN_COOKIE, JSON.stringify({ state, returnTo }), pendingCookieOptions());
-  res.redirect(microsoftAuthorizationUrl(state));
+  // E2E runs sign in through the local fake page instead of Microsoft.
+  res.redirect(isE2eFakeAuthEnabled() ? fakeAuthorizationUrl(state) : microsoftAuthorizationUrl(state));
 });
 
 /**
@@ -95,7 +100,8 @@ authRouter.get("/microsoft/callback", async (req, res) => {
 
   let identity;
   try {
-    identity = await microsoftIdentityFromCode(code);
+    // Under E2E fake sign-in the code is a test user name, not a Microsoft code.
+    identity = await (isE2eFakeAuthEnabled() ? fakeIdentityFromCode(code) : microsoftIdentityFromCode(code));
   } catch (error) {
     console.error("Microsoft sign-in failed:", error);
     res.redirect(signInErrorPath("failed"));

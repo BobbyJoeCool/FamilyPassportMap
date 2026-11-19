@@ -133,3 +133,13 @@ build/Release
 # DevNotes (local scratch space — see README)
 # ==============================
 /DevNotes/
+
+# ==============================
+# End-to-end tests (Playwright)
+# ==============================
+/e2e/test-data/
+/e2e/.auth/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
