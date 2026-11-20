@@ -92,3 +92,41 @@ export async function signIn(name: string): Promise<TestAgent> {
   }
   return agent;
 }
+
+/** A fake Google or GitHub identity, as their faked adapters return it (see tests/setup.ts). */
+export interface FakeProviderIdentity {
+  subject: string;
+  email: string | null;
+  name: string | null;
+  avatarUrl: string | null;
+}
+
+/**
+ * Encodes a fake Google or GitHub identity as an authorization "code" for their faked adapters.
+ * @param identity - what the provider should report.
+ * @returns the code to pass to the callback.
+ */
+export function providerCode(identity: FakeProviderIdentity): string {
+  return Buffer.from(JSON.stringify(identity)).toString("base64url");
+}
+
+/**
+ * Walks a provider round trip (start → provider → callback) with a faked adapter.
+ * @param agent - the cookie-keeping agent.
+ * @param provider - "microsoft", "google" or "github".
+ * @param code - what the provider hands back (see `fakeCode` / `providerCode`).
+ * @param intent - "sign-in" (default) or "add".
+ * @returns the callback's response (a redirect).
+ */
+export async function completeProviderRoundTrip(
+  agent: TestAgent,
+  provider: string,
+  code: string,
+  intent: "sign-in" | "add" = "sign-in",
+) {
+  const start = await agent.get(`/api/auth/${provider}`).query({ intent });
+  // Starting always redirects to the provider; anything else is a broken test setup.
+  if (start.status !== 302) throw new Error(`${provider} start returned ${start.status}`);
+  const state = new URL(start.headers.location).searchParams.get("state");
+  return agent.get(`/api/auth/${provider}/callback`).query({ code, state });
+}

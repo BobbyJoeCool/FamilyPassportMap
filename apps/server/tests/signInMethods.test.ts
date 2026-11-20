@@ -49,12 +49,15 @@ async function userIdFor(name: string): Promise<string> {
 
 describe("GET /api/auth/methods", () => {
   it("lists only the providers that are set up, and whether email codes are", async () => {
+    // Tests set every provider up (tests/setup.ts); take Google and GitHub away for this one.
+    for (const key of ["GOOGLE_CLIENT_ID", "GITHUB_CLIENT_SECRET"]) delete process.env[key];
     const res = await newAgent().get("/api/auth/methods");
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ providers: ["microsoft"], emailCodes: false, passkeys: true });
   });
 
   it("adds a provider once both its id and secret are set", async () => {
+    for (const key of ["GOOGLE_CLIENT_ID", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"]) delete process.env[key];
     process.env.GITHUB_CLIENT_ID = "id";
     expect((await newAgent().get("/api/auth/methods")).body.providers).toEqual(["microsoft"]);
     process.env.GITHUB_CLIENT_SECRET = "secret";
@@ -64,6 +67,7 @@ describe("GET /api/auth/methods", () => {
 
 describe("Provider start routes", () => {
   it("are 404 for a provider that isn't set up", async () => {
+    delete process.env.GOOGLE_CLIENT_SECRET;
     expect((await newAgent().get("/api/auth/google")).status).toBe(404);
   });
 

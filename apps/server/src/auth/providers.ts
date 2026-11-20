@@ -1,4 +1,6 @@
 import type { Provider } from "@familypassportmap/shared";
+import { githubAuthorizationUrl, githubIdentityFromCode } from "./github.js";
+import { googleAuthorizationUrl, googleIdentityFromCode } from "./google.js";
 import { microsoftAuthorizationUrl, microsoftIdentityFromCode } from "./microsoft.js";
 
 // The provider registry (Phase 13): one adapter per provider, each the ONLY code that talks to its
@@ -55,19 +57,15 @@ const ADAPTERS: Record<Provider, ProviderAdapter> = {
     },
   },
   google: {
-    authorizationUrl: () => {
-      throw new Error("Google sign-in isn't built yet");
-    },
-    identityFromCode: async () => {
-      throw new Error("Google sign-in isn't built yet");
+    authorizationUrl: (state) => googleAuthorizationUrl(state),
+    async identityFromCode(code) {
+      return { ...(await googleIdentityFromCode(code)), isPersonalMicrosoftAccount: false };
     },
   },
   github: {
-    authorizationUrl: () => {
-      throw new Error("GitHub sign-in isn't built yet");
-    },
-    identityFromCode: async () => {
-      throw new Error("GitHub sign-in isn't built yet");
+    authorizationUrl: (state) => githubAuthorizationUrl(state),
+    async identityFromCode(code) {
+      return { ...(await githubIdentityFromCode(code)), isPersonalMicrosoftAccount: false };
     },
   },
 };
