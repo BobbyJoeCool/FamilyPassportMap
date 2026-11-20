@@ -30,6 +30,18 @@ _Avoid_: Household, group
 A User making an existing Person their Primary Person. They become its Owner, any visits on their old Primary Person are merged in, and the old one is deleted. Claiming a Person someone else owns needs that Owner's approval. Giving a family member their own account means they sign up, Join, and Claim their Person.
 _Avoid_: Hand off, convert, promote, "make an account from"
 
+**Sign-in method**:
+One way a User can sign in: a Microsoft, Google or GitHub account, a passkey, or an email address that receives Email codes. A User has one or more, and each belongs to exactly one User. Accounts are never merged.
+_Avoid_: Login, identity, credential, provider (a provider is only Microsoft, Google or GitHub)
+
+**Email code**:
+A short one-time code sent to an email address, typed in to prove the person controls that address.
+_Avoid_: Magic link, OTP, password
+
+**Guest demo**:
+A separate copy of the web app on GitHub Pages that runs entirely in the browser with a made-up family. Nothing is saved, and a reload starts it over.
+_Avoid_: Demo account, sandbox, trial
+
 ### People
 
 **Person**:

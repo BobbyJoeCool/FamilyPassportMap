@@ -1,4 +1,5 @@
 import type { Person } from "@familypassportmap/shared";
+import { photoUrl } from "../api/photos";
 
 /**
  * Renders a person's avatar: their uploaded profile picture if they have one, otherwise
@@ -14,7 +15,7 @@ export function PersonAvatar({ person, size = 40 }: { person: Person; size?: num
   if (person.profilePicturePath) {
     return (
       <img
-        src={`/${person.profilePicturePath}`}
+        src={photoUrl(person.profilePicturePath)}
         alt={person.name}
         style={{ ...style, objectFit: "cover" }}
       />

@@ -6,6 +6,8 @@ import { ComparePage } from "./pages/ComparePage";
 import { ListPage } from "./pages/ListPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { UserMenu } from "./components/UserMenu";
+import { DemoBanner } from "./components/DemoBanner";
+import { isDemo } from "./demoMode";
 import { SectionTabs } from "./components/SectionTabs";
 import { SignInPage } from "./pages/SignInPage";
 import { WelcomePage } from "./pages/WelcomePage";
@@ -89,6 +91,9 @@ function AppShell({ currentUser }: { currentUser: CurrentUserResponse }) {
 
   return (
     <div className="min-h-screen flex flex-col pb-16 md:pb-0">
+      {/* The guest demo says, on every page, that nothing is kept. */}
+      {isDemo() && <DemoBanner />}
+
       {/* Desktop top nav */}
       <nav className="hidden md:flex items-center gap-2 px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
         <span className="font-bold text-lg text-[var(--color-text-heading)] mr-4">🗺️ FamilyPassportMap</span>
@@ -171,6 +176,12 @@ function AppShell({ currentUser }: { currentUser: CurrentUserResponse }) {
 function App() {
   const location = useLocation();
   const currentUserState = useCurrentUser();
+
+  // The guest demo has no sign-in and its Guest already has a Primary Person, so neither page
+  // has anything to do there: go straight to the app.
+  if (isDemo() && (location.pathname === "/signin" || location.pathname === "/welcome")) {
+    return <Navigate to={DEFAULT_LANDING_PATH} replace />;
+  }
 
   // The sign-in page never shows app chrome. Someone already signed in skips past it.
   if (location.pathname === "/signin") {

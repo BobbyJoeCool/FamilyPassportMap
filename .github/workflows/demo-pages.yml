@@ -1,0 +1,59 @@
+# Publishes the guest demo (docs/Phase-14-Guest-Demo.md) to GitHub Pages on every push to main, and
+# on demand. The demo runs entirely in the browser with a made-up family; nothing here talks to the
+# real server. One-time setup: repo Settings → Pages → Source: "GitHub Actions".
+name: Guest demo (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One Pages deployment at a time; a newer push waits rather than cancelling one mid-deploy.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # The shared package and Prisma client must be built before the unit tests can run.
+      - run: npm run build
+
+      - run: npm test
+
+      # Gives the site's base path: "/FamilyPassportMap" on bobbyjoecool.github.io, "" on a custom domain.
+      - id: pages
+        uses: actions/configure-pages@v6
+
+      - run: npm run build:demo
+        env:
+          DEMO_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: apps/web/dist-demo
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

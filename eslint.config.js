@@ -9,6 +9,7 @@ export default tseslint.config(
   {
     ignores: [
       "**/dist/**",
+      "**/dist-demo/**",
       "**/build/**",
       "**/node_modules/**",
       "**/generated/**",
@@ -22,7 +23,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   // apps/server, packages/shared, the E2E tests and tool configs: Node code
   {
-    files: ["apps/server/**/*.ts", "packages/shared/**/*.ts", "e2e/**/*.{ts,mjs}", "*.config.ts", "apps/web/*.config.ts"],
+    files: ["apps/server/**/*.ts", "packages/shared/**/*.ts", "e2e/**/*.{ts,mjs}", "*.config.ts", "apps/web/*.config.ts", "apps/web/scripts/**/*.mjs"],
     languageOptions: {
       globals: globals.node,
     },

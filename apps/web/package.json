@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/check-no-demo-code.mjs",
+    "build:demo": "tsc -b && vite build --mode demo",
     "preview": "vite preview",
     "test": "vitest run"
   },
