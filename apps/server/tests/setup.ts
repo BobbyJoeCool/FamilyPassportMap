@@ -49,6 +49,23 @@ vi.mock("../src/auth/github.js", () => ({
   githubIdentityFromCode: decodeFakeCode,
 }));
 
+// No email leaves a test: sendMail records into an in-memory outbox tests read and clear.
+vi.mock("../src/auth/mailer.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/auth/mailer.js")>();
+  const outbox: import("../src/auth/mailer.js").MailMessage[] = [];
+  return {
+    ...actual,
+    outbox,
+    /**
+     * Records the message instead of sending it.
+     * @param message - the email.
+     */
+    sendMail: async (message: import("../src/auth/mailer.js").MailMessage) => {
+      outbox.push(message);
+    },
+  };
+});
+
 // Every provider counts as set up in tests (each adapter is faked above or below), so their start
 // routes exist. Tests about disabled providers clear these for themselves.
 process.env.MICROSOFT_CLIENT_ID = "test-microsoft-id";
@@ -89,6 +106,9 @@ async function getPrisma() {
 }
 
 beforeEach(async () => {
+  // Every test starts with an empty outbox and fresh rate limits.
+  (await import("../src/auth/mailer.js")).outbox.length = 0;
+  (await import("../src/auth/rateLimit.js")).resetRateLimits();
   const prisma = await getPrisma();
   await prisma.visitedState.deleteMany();
   await prisma.visitedCountry.deleteMany();

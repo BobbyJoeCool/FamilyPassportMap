@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { isProvider, PROVIDER_LABELS, type Provider } from "@familypassportmap/shared";
+import { outbox } from "./mailer.js";
 import type { ProviderIdentity } from "./providers.js";
 
 // The E2E-only stand-in for every sign-in provider (Microsoft, Google, GitHub). Playwright drives a real browser, which can't use
@@ -104,4 +105,24 @@ e2eAuthRouter.get("/authorize", (req, res, next) => {
     </form>
   </body>
 </html>`);
+});
+
+/**
+ * `GET /api/auth/e2e/outbox?to=<address>` — the newest email "sent" to an address during an E2E
+ * run (nothing is really sent then), so a test can read the Email code. 404 when there's none.
+ */
+e2eAuthRouter.get("/outbox", (req, res, next) => {
+  // Off (always in production): behave as if the route doesn't exist.
+  if (!isE2eFakeAuthEnabled()) {
+    next();
+    return;
+  }
+  const to = typeof req.query.to === "string" ? req.query.to.trim().toLowerCase() : "";
+  // Newest first: the last message pushed for that address.
+  const message = [...outbox].reverse().find((candidate) => candidate.to === to);
+  if (!message) {
+    res.sendStatus(404);
+    return;
+  }
+  res.json(message);
 });

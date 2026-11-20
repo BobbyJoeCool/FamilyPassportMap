@@ -1,4 +1,5 @@
 // Sign-in rules shared by the server (which enforces them) and the web app (which follows them).
+import { z } from "zod";
 
 /** Where a signed-in User lands when no (valid) return path was given. */
 export const DEFAULT_LANDING_PATH = "/us/map";
@@ -77,4 +78,46 @@ export function safeReturnTo(value: unknown): string {
     return value;
   }
   return DEFAULT_LANDING_PATH;
+}
+
+// --- Email codes (Phase 13) ---
+
+/** What an email code is for: signing in (or up), or adding the address to the signed-in account. */
+export const EMAIL_CODE_PURPOSES = ["sign-in", "add-email"] as const;
+export type EmailCodePurpose = (typeof EMAIL_CODE_PURPOSES)[number];
+
+/** Shown (400) for an address that isn't a valid email. */
+export const INVALID_EMAIL_MESSAGE = "Enter a valid email address.";
+
+/** Shown (400) for a wrong, expired, used-up or malformed code. */
+export const EMAIL_CODE_FAILED_MESSAGE = "That code didn't work. Check it or send a new one.";
+
+/** An email address as the app stores it: trimmed and lowercased, so one address is one subject. */
+export const emailAddressSchema = z
+  .string(INVALID_EMAIL_MESSAGE)
+  .trim()
+  .toLowerCase()
+  .max(254, INVALID_EMAIL_MESSAGE)
+  .pipe(z.email(INVALID_EMAIL_MESSAGE));
+
+/** Body of `POST /api/auth/email/start`. */
+export const emailCodeStartSchema = z.object({
+  email: emailAddressSchema,
+  purpose: z.enum(EMAIL_CODE_PURPOSES),
+});
+export type EmailCodeStartInput = z.infer<typeof emailCodeStartSchema>;
+
+/** Body of `POST /api/auth/email/verify`. The code is exactly 6 digits. */
+export const emailCodeVerifySchema = z.object({
+  email: emailAddressSchema,
+  code: z.string(EMAIL_CODE_FAILED_MESSAGE).trim().regex(/^\d{6}$/, EMAIL_CODE_FAILED_MESSAGE),
+  purpose: z.enum(EMAIL_CODE_PURPOSES),
+  returnTo: z.string().optional(),
+});
+export type EmailCodeVerifyInput = z.infer<typeof emailCodeVerifySchema>;
+
+/** Response of a successful sign-in through `POST /api/auth/email/verify` (or a passkey). */
+export interface SignInResult {
+  /** Where to go next: the welcome step, or the page the User was headed for. */
+  redirectTo: string;
 }
