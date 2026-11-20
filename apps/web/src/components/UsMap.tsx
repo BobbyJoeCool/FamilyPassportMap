@@ -140,6 +140,7 @@ export function UsMap({ visitedStateCodes, color, onToggleState }: UsMapProps) {
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
+                    data-state-code={stateCode}
                     onClick={() => onToggleState?.(stateCode)}
                     onMouseEnter={() => setHoveredState(stateCode)}
                     onMouseLeave={() => setHoveredState(null)}

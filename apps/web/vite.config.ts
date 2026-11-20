@@ -34,9 +34,11 @@ export default defineConfig({
     }),
   ],
   server: {
+    // The API server the dev server forwards to. The E2E run points it at its own server
+    // (API_PROXY_TARGET), so tests never touch the normal dev server's data.
     proxy: {
-      "/api": "http://localhost:3001",
-      "/uploads": "http://localhost:3001",
+      "/api": process.env.API_PROXY_TARGET ?? "http://localhost:3001",
+      "/uploads": process.env.API_PROXY_TARGET ?? "http://localhost:3001",
     },
   },
 });

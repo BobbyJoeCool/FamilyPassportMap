@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from "react";
 import { DEFAULT_LANDING_PATH } from "@familypassportmap/shared";
 import { createPrimaryPerson, signOut } from "../api/auth";
+import { loadPage } from "../navigation";
 
 const DEFAULT_COLOR = "#3366cc";
 
@@ -60,7 +61,7 @@ export function WelcomePage({ suggestedName }: { suggestedName: string }) {
     try {
       // Null means welcome was already finished (e.g. in another tab): done either way.
       await createPrimaryPerson({ name: name.trim(), colorHex: color });
-      window.location.assign(DEFAULT_LANDING_PATH);
+      loadPage(DEFAULT_LANDING_PATH);
     } catch (error) {
       setSubmitting(false);
       setErrors({ submit: error instanceof Error ? error.message : "Couldn't save. Please try again." });
@@ -72,7 +73,7 @@ export function WelcomePage({ suggestedName }: { suggestedName: string }) {
     setSigningOut(true);
     try {
       await signOut();
-      window.location.assign("/signin");
+      loadPage("/signin");
     } catch {
       setSigningOut(false);
       setErrors({ submit: "Couldn't sign out. Check your connection and try again." });

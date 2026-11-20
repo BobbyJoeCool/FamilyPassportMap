@@ -1,12 +1,12 @@
 // FamilyPassportMap database schema.
 // Whenever a model, field, relation, or constraint changes here, update
-// Documentation/diagrams/ERD.mmd in the same change — see CLAUDE.md's Diagram Sync Requirements.
+// docs/diagrams/ERD.mmd in the same change — see CLAUDE.md's Diagram Sync Requirements.
 //
 // The datasource URL is NOT set here — Prisma 7 reads it from prisma.config.ts
 // (which loads DATABASE_URL from .env). Connecting also requires an explicit driver
 // adapter (@prisma/adapter-better-sqlite3) when instantiating PrismaClient — Prisma 7
 // removed the old "just works" bundled query engine. See prisma.config.ts and
-// Documentation/Phase-1-Data-Layer-People.md.
+// docs/Phase-1-Data-Layer-People.md.
 
 generator client {
   provider = "prisma-client-js"
@@ -46,7 +46,7 @@ model VisitedState {
 
 // Country visits are deliberately a separate, parallel model to VisitedState rather than a
 // shared "visited place" table — country tracking and state tracking are fully independent
-// features that share nothing but Person. See Documentation/Phase-8-World-Data-Layer.md.
+// features that share nothing but Person. See docs/Phase-8-World-Data-Layer.md.
 model VisitedCountry {
   id          String   @id @default(cuid())
   personId    String

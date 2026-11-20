@@ -83,7 +83,7 @@ model VisitedCountry {
 
 This is a deliberate structural copy of `VisitedState` rather than a generalized "visited place" table. **Country tracking and state tracking are fully independent**: marking the US as a visited country does not check any states, and checking every state does not mark the US visited. No derivation in either direction, ever.
 
-Create and apply a migration for it. Update `Documentation/diagrams/ERD.mmd` in the same change (per `CLAUDE.md`'s Diagram Sync Requirements) — it gains a `PERSON ||--o{ VISITED_COUNTRY` relationship alongside the existing one.
+Create and apply a migration for it. Update `docs/diagrams/ERD.mmd` in the same change (per `CLAUDE.md`'s Diagram Sync Requirements) — it gains a `PERSON ||--o{ VISITED_COUNTRY` relationship alongside the existing one.
 
 ### Country reference data (`packages/shared/src/countries.ts`)
 
@@ -177,7 +177,7 @@ Mirror `visits.test.ts` case for case: empty-initially, mark, idempotent re-mark
 - All four endpoints behave as specified, including the 400/404/idempotency cases.
 - The full server test suite passes (the pre-existing 23 tests plus the new country tests).
 - Marking countries has zero effect on visited states, and vice versa.
-- `Documentation/diagrams/ERD.mmd` matches the post-migration schema exactly.
+- `docs/diagrams/ERD.mmd` matches the post-migration schema exactly.
 
 ## Decisions to carry forward to Phase 9
 

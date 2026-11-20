@@ -17,7 +17,9 @@ export const SECTION_TABS = [
  * @returns the section and tab path, or null for routes outside both sections (e.g. "/people").
  */
 export function parseSectionPath(pathname: string): { section: Section; tab: string } | null {
-  const match = /^\/(us|world)(?:\/([^/]+))?/.exec(pathname);
+  // The section name must end at a "/" or the end of the path, so "/usa" or "/worldwide" isn't
+  // read as a section.
+  const match = /^\/(us|world)(?:\/([^/]+))?(?=\/|$)/.exec(pathname);
   // Not inside /us or /world — no section tabs apply.
   if (!match) return null;
   return { section: match[1] as Section, tab: match[2] ?? "map" };

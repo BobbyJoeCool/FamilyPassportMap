@@ -1,12 +1,18 @@
 import "dotenv/config";
 import { app } from "./app.js";
 import { missingAuthSettings } from "./auth/config.js";
+import { isE2eFakeAuthMisconfigured } from "./auth/e2eFakeAuth.js";
 import { UPLOADS_DIR } from "./env.js";
 import { shrinkOversizedPhotos } from "./photos.js";
 
 // Prefer the platform-assigned PORT (e.g. Azure App Service) if present; otherwise use
 // the local development default.
 const port = process.env.PORT ? Number(process.env.PORT) : 3001;
+
+// The E2E fake sign-in lets anyone sign in as anyone. Never allow it near production.
+if (isE2eFakeAuthMisconfigured()) {
+  throw new Error("Refusing to start: E2E_FAKE_AUTH must never be set in production");
+}
 
 // Production must be able to sign people in. Refuse to start without the Microsoft settings, so a
 // misconfigured deploy fails at startup instead of on someone's first sign-in. (Local runs and

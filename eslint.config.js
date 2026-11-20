@@ -13,13 +13,16 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/generated/**",
       "apps/server/data/**",
+      "e2e/test-data/**",
+      "test-results/**",
+      "playwright-report/**",
     ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  // apps/server, packages/shared: Node code
+  // apps/server, packages/shared, the E2E tests and tool configs: Node code
   {
-    files: ["apps/server/**/*.ts", "packages/shared/**/*.ts"],
+    files: ["apps/server/**/*.ts", "packages/shared/**/*.ts", "e2e/**/*.{ts,mjs}", "*.config.ts", "apps/web/*.config.ts"],
     languageOptions: {
       globals: globals.node,
     },

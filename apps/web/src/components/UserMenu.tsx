@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { SignedInUser } from "@familypassportmap/shared";
 import { signOut } from "../api/auth";
 import { DeleteAccountDialog } from "./DeleteAccountDialog";
+import { loadPage } from "../navigation";
 
 /**
  * The signed-in User's avatar (and name, on wide screens), opening a small menu with their
@@ -24,7 +25,7 @@ export function UserMenu({ user }: { user: SignedInUser }) {
     setSignOutError(null);
     try {
       await signOut();
-      window.location.assign("/signin");
+      loadPage("/signin");
     } catch {
       setSigningOut(false);
       setSignOutError("Couldn't sign out. Check your connection and try again.");
