@@ -1,0 +1,15 @@
+# Never copied into the Docker image (see Dockerfile). Keeps the build context small and keeps local
+# data, secrets and build output out of the image: the image builds everything fresh.
+**/node_modules
+**/dist
+**/dist-demo
+**/.env
+.git
+.github
+.claude
+DevNotes
+apps/server/data
+e2e/test-data
+e2e/.auth
+test-results
+playwright-report
