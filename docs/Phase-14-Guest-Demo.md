@@ -4,11 +4,16 @@
 >
 > **Where the tickets live:** per ADR 0001, this spec stays here and its implementation tickets are GitHub issues linked from this doc and from the `PHASES.md` row. Tickets are cut once Bob approves this spec.
 
-**Status:** Draft, written 2026-11-19 from Bob's answers. The questions still open are listed at the end.
+**Status:** Built 2026-11-19 on branch `phase-14-guest-demo`, pending Bob's manual checklist and the first Pages publish. Both open questions are answered (see the end). Where the build differs from the first draft, this doc was updated to match, and the changes are listed under "Changes made while building".
 
 ## Tickets
 
-Not cut yet.
+- [#20 Phase 14 — Guest Demo on GitHub Pages](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/20) (parent)
+- [#21 Phase 14.1 — In-browser fake API and sample family](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/21)
+- [#22 Phase 14.2 — API contract tests (real server vs fake API)](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/22)
+- [#23 Phase 14.3 — Demo build and web app changes](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/23)
+- [#24 Phase 14.4 — Demo E2E tests](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/24)
+- [#25 Phase 14.5 — GitHub Pages workflow, README link and release docs](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/25)
 
 ## App overview (full context)
 
@@ -57,15 +62,17 @@ Build the same web app a second way, with a `demo` build flag. In the demo build
 
 ### Build flag
 
-- `VITE_DEMO=true` at build time makes a demo build. `npm run build:demo` in `apps/web` produces it in `apps/web/dist-demo/`. The normal build is unchanged and contains none of the demo code (it's loaded only behind the flag, so Vite drops it).
+- `VITE_DEMO=true` at build time makes a demo build. `npm run build:demo` (root or `apps/web`) runs `vite build --mode demo`, which sets it, and produces the demo in `apps/web/dist-demo/`. The normal build is unchanged and contains none of the demo code (it's loaded only behind the flag, so Vite drops it). The normal web build now ends with `apps/web/scripts/check-no-demo-code.mjs`, which fails the build if a marker string from `src/demo/` turns up in `dist/`.
+- The demo's base path comes from the `DEMO_BASE_PATH` environment variable at build time (default `/`).
 
 ### The in-browser fake API
 
 - **One seam:** in a demo build, `main.tsx` installs a replacement `fetch` before the app renders. Requests whose path starts with `/api/` or `/uploads/` go to the fake API; everything else goes to the real `fetch`. The `apps/web/src/api/` modules and every page stay unchanged.
-- **Lives in** `apps/web/src/demo/`: `fakeApi.ts` (routing and handlers), `seed.ts` (the sample family), `store.ts` (in-memory state).
+- **Lives in** `apps/web/src/demo/`: `fakeApi.ts` (routing and handlers), `seed.ts` (the sample family), `store.ts` (in-memory state), `photo.ts` (canvas shrinking) and `install.ts` (puts the fake API in front of `fetch` and sets the photo URLs).
+- **Photo URLs:** an `<img>` request doesn't go through `fetch`, so the replacement `fetch` alone can't show photos. `PersonAvatar` gets its `src` from `photoUrl()` in `apps/web/src/api/photos.ts`. The normal app returns `/uploads/<file>` as before; the demo swaps in a resolver that returns a `blob:` URL for each in-memory photo. This is the one change to `apps/web/src/api/`.
 - **State is in memory only.** No `localStorage`, `sessionStorage` or IndexedDB, so a reload always starts from the seed.
 - **Routes it answers** (same paths, status codes, bodies and error messages as the real server):
-  - `GET /api/me` → a Guest User with a Primary Person (so the welcome step never shows).
+  - `GET /api/me` → a Guest User (`displayName` "Guest", empty email) with a Primary Person (so the welcome step never shows). `POST /api/me/primary-person` answers like the server does once welcome is done (`409`), and `GET /api/health` answers `{ status: "ok" }`.
   - People: list, create, rename/recolor, delete, photo upload, claim, allowance.
   - State and country visits: per Person get/put/delete, and the bulk maps.
   - `GET /uploads/<file>` → the photo's bytes.
@@ -76,8 +83,8 @@ Build the same web app a second way, with a `demo` build flag. In the demo build
 
 ### Sample family
 
-- Four made-up People, one of them "You", each with a distinct color and a mix of visits: "You" with about 20 states and 8 countries, the others fewer, with some overlap so Compare is interesting and at least one Person on every continent.
-- No photos of real people. Each Person gets an original illustrated avatar (simple SVG faces or monograms) bundled with the demo build, or no photo.
+- Bob chose the Simpsons' names: **Homer** ("You", 20 states and 8 countries), **Marge** (12 and 5), **Bart** (8 and 3) and **Lisa** (10 and 6), each with a distinct color. Their visits overlap so Compare is interesting, and between them every continent has a visit.
+- Names only, no pictures of the characters. Marge and Lisa get an original "passport stamp" monogram avatar (an SVG generated in `seed.ts`); Homer and Bart show the app's usual initials, so both kinds of avatar appear.
 - Names and visits live in `seed.ts`.
 
 ### Web app changes in demo builds
@@ -90,8 +97,8 @@ Build the same web app a second way, with a `demo` build flag. In the demo build
 
 ### GitHub Pages hosting
 
-- **Workflow** `.github/workflows/demo-pages.yml`: on push to `main` (and manual run), `npm ci`, `npm test`, `npm run build:demo`, then upload and deploy with the official Pages actions.
-- **Base path:** read from the Pages config (`/FamilyPassportMap/` on `bobbyjoecool.github.io`, or `/` on a custom domain), passed to Vite's `base` and to `BrowserRouter`'s `basename`.
+- **Workflow** `.github/workflows/demo-pages.yml`: on push to `main` (and manual run), `npm ci`, `npm run build` (the unit tests need the shared package and Prisma client built), `npm test`, `npm run build:demo`, then upload and deploy with the official Pages actions (`configure-pages@v6`, `upload-pages-artifact@v5`, `deploy-pages@v5`).
+- **Base path:** read from the Pages config by `configure-pages` and passed to the build as `DEMO_BASE_PATH` (`/FamilyPassportMap/` on `bobbyjoecool.github.io`, or `/` on a custom domain), passed to Vite's `base` and to `BrowserRouter`'s `basename`.
 - **Deep links:** the build copies `index.html` to `404.html`, so opening `/us/compare` directly (or reloading on it) loads the app instead of GitHub's 404 page.
 - **README:** a "Try the demo" link near the top, next to the screenshots.
 
@@ -99,7 +106,8 @@ Build the same web app a second way, with a `demo` build flag. In the demo build
 
 - **Contract tests (the important ones):** a shared set of API scenarios (create, rename, cap, primary-delete refusal, claim merge, visit add/remove, bulk maps, bad input) runs twice: once against the real server through Supertest, once against the fake API by calling its `fetch`. Both must produce the same statuses and bodies. That's what stops the demo from quietly drifting from the real rules.
 - **Unit tests:** the seed is valid (every code exists in the shared reference data, colors are hex, exactly one Primary Person); state resets when the store is recreated; photo resizing produces 256×256.
-- **E2E:** a Playwright project that runs against `vite preview` of the demo build: lands on the map with no sign-in, the banner shows, add a Person and mark a state, reload and they're gone, the 10-People cap, sign-in routes redirect, a deep link loads.
+- **Where the contract lives:** `packages/shared/contract/apiScenarios.ts` (outside `src/`, so it isn't part of the shared package's build). The server runs it in `apps/server/tests/apiContract.test.ts` and the web app in `apps/web/src/demo/apiContract.test.ts`. Ids and timestamps are checked for shape only; everything else must match exactly.
+- **E2E:** a Playwright `demo` project (`e2e/demo/demo.spec.ts`) that runs against the built demo, served by `e2e/demo-pages-server.mjs` the way GitHub Pages serves it: under `/FamilyPassportMap/`, with `404.html` and a `404` status for any path that isn't a file. (`vite preview` would answer `index.html` with a `200` and hide a missing `404.html`.) It covers: lands on the map with no sign-in, the banner shows, add a Person and mark a state, reload and they're gone, the 10-People cap, Set as me, photo upload shrunk to 256×256, the seed avatars, the Guest-only menu and demo privacy text, sign-in routes redirect, a deep link loads, no service worker, no API request reaches the network, and phone width.
 - The existing unit and E2E suites keep running against the normal build unchanged.
 
 ## Out of Scope
@@ -126,14 +134,23 @@ Build the same web app a second way, with a `demo` build flag. In the demo build
 ## Decisions to carry forward
 
 - **Every new API route needs a fake-API handler and a contract scenario**, or the demo shows that feature as "Not available in the demo." This is the cost of the demo, and it's paid in each later phase.
-- **The demo build flag is the only switch.** Pages and components don't check for demo mode except the sign-in gate, the account menu, the banner and the privacy text.
+- **The demo build flag is the only switch.** Pages and components don't check for demo mode (`isDemo()` in `apps/web/src/demoMode.ts`) except the sign-in gate, the account menu, the banner and the privacy text.
+- **Photos are shown through `photoUrl()`** (`apps/web/src/api/photos.ts`). Any new place that shows a Person's photo must use it, or the demo's photos won't load there.
 
 ## Further Notes
 
 - **Bob does, once:** in the GitHub repo, Settings → Pages → Source: **GitHub Actions**. Optionally a custom subdomain (a `CNAME` record at Porkbun pointing to `bobbyjoecool.github.io`).
 - **Why this instead of FitIQ's approach:** FitIQ's guest is a shared demo login on its live backend, reseeded weekly. That fits FitIQ, which is already hosted on GitHub Pages with Supabase behind it. Here it would mean a public login on Bob's home server and visitors seeing each other's changes.
 
-## Open questions
+## Open questions (answered 2026-11-19)
 
-1. **Demo address:** `bobbyjoecool.github.io/FamilyPassportMap/` (no setup) or a subdomain like `passport-demo.bobbyjoecool.dev`?
-2. **Sample family:** does Bob want particular names or a theme for the made-up family, or should Claude make one up?
+1. **Demo address:** `bobbyjoecool.github.io/FamilyPassportMap/`. The build reads the base path from the Pages config, so a custom subdomain later needs only the DNS record and the Pages setting.
+2. **Sample family:** the Simpsons' names (Homer, Marge, Bart and Lisa), with Homer as "You".
+
+## Changes made while building
+
+- `photoUrl()` helper in `apps/web/src/api/photos.ts`, used by `PersonAvatar`, because `<img>` requests skip `fetch` (Bob's choice).
+- The contract scenarios live in `packages/shared/contract/`.
+- The demo E2E serves the build with a GitHub Pages stand-in instead of `vite preview`, so the `404.html` deep-link fallback and the base path are really tested.
+- The normal build fails if any demo code is found in `dist/`, instead of a one-off search.
+- A root `npm run build:demo` builds the shared package first, as `npm run build` does.

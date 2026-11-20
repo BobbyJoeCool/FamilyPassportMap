@@ -6,6 +6,24 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
+## [2.5.0] — unreleased — Guest Demo (Phase 14)
+
+Built before Phase 13 (v2.4.0, sign-in methods), which hasn't shipped yet.
+
+### Added
+
+- **Guest demo on GitHub Pages** ([bobbyjoecool.github.io/FamilyPassportMap](https://bobbyjoecool.github.io/FamilyPassportMap/)): the whole app running in the browser with a made-up family (Homer as "You", Marge, Bart and Lisa). No sign-in and no server. Everything works as in the real app, including the 10-People cap, "You" can't be deleted, **Set as me**, and photo upload (shrunk to 256×256 in the browser). Nothing is saved, and reloading starts over.
+  - A banner on every page says it's a demo. The account menu has only "Guest" and **Privacy**, and the Privacy page says nothing leaves the browser. `/signin` and `/welcome` go straight to the US map.
+  - No service worker or install prompt, so a visitor never gets a stale cached demo. Deep links work through a `404.html` copy of the app.
+  - Published by `.github/workflows/demo-pages.yml` on every push to `main`. One-time setup: repo Settings → Pages → Source: GitHub Actions.
+- **API contract tests**: one set of scenarios (`packages/shared/contract/apiScenarios.ts`) runs against the real server and the demo's in-browser fake API, so the two can't drift apart.
+- **Demo E2E tests**: a Playwright `demo` project runs against the built demo, served the way GitHub Pages serves it.
+
+### Changed
+
+- `npm run build` for the web app now fails if any guest-demo code is found in the normal build.
+- Profile photos get their URL from `photoUrl()` (`apps/web/src/api/photos.ts`); the real app still loads them from `/uploads/<file>`.
+
 ## [2.3.0] — 2026-10-25 — Login & Accounts (Phase 12)
 
 - **Sign in with Microsoft**: any Microsoft account, personal or work or school. (Built with Google first, then switched before release, #13.) Signed out, every page goes to a sign-in page, which links to a new plain-language **privacy page** (`/privacy`). Sessions last 30 days and renew as you use the app. After an expired session you're sent to sign in, then back to the page you were on. The header gains an account menu (your initial) with your name and email, **Privacy**, **Sign out** and **Delete account**. On phones a slim top bar holds it.
