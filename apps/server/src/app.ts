@@ -9,6 +9,7 @@ import { bulkCountriesRouter, countriesRouter } from "./routes/countries.js";
 import { currentUserRouter } from "./routes/currentUser.js";
 import { peopleRouter } from "./routes/people.js";
 import { photosRouter } from "./routes/photos.js";
+import { signInMethodsRouter } from "./routes/signInMethods.js";
 import { bulkVisitsRouter, visitsRouter } from "./routes/visits.js";
 
 /**
@@ -34,6 +35,7 @@ app.use("/api/auth", authRouter);
 // Everything below under /api requires a signed-in User (health and auth are above, public).
 app.use("/api", requireUser);
 app.use("/api/me", currentUserRouter);
+app.use("/api/me", signInMethodsRouter);
 app.use("/api/people", peopleRouter);
 app.use("/api/people/:id/visits", visitsRouter);
 app.use("/api/visits", bulkVisitsRouter);

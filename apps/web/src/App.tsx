@@ -5,6 +5,7 @@ import { MapPage } from "./pages/MapPage";
 import { ComparePage } from "./pages/ComparePage";
 import { ListPage } from "./pages/ListPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
+import { SignInMethodsPage } from "./pages/SignInMethodsPage";
 import { UserMenu } from "./components/UserMenu";
 import { DemoBanner } from "./components/DemoBanner";
 import { isDemo } from "./demoMode";
@@ -130,6 +131,7 @@ function AppShell({ currentUser }: { currentUser: CurrentUserResponse }) {
             <Route path="/" element={<Navigate to="/us/map" replace />} />
             <Route path="/people" element={<PeoplePage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/account/sign-in" element={<SignInMethodsPage />} />
             {/* Neither section has a page of its own at its root — land on its Map tab. */}
             <Route path="/us" element={<Navigate to="/us/map" replace />} />
             <Route path="/us/map" element={<MapPage />} />

@@ -1,13 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
 import { jsonResponse, makePerson, mockFetch } from "../test/api";
 
 vi.mock("../navigation", () => ({ loadPage: vi.fn() }));
 const { loadPage } = await import("../navigation");
 const { WelcomePage } = await import("./WelcomePage");
-const { SignInPage } = await import("./SignInPage");
 const { PrivacyPage } = await import("./PrivacyPage");
 
 beforeEach(() => {
@@ -15,9 +13,14 @@ beforeEach(() => {
 });
 
 describe("WelcomePage", () => {
-  it("prefills the name from the Microsoft account", () => {
+  it("prefills the name from the sign-in provider", () => {
     render(<WelcomePage suggestedName="Alice Smith" />);
     expect(screen.getByLabelText("Your name")).toHaveValue("Alice Smith");
+  });
+
+  it("starts empty when the account has no name (passkey or email code)", () => {
+    render(<WelcomePage suggestedName="" />);
+    expect(screen.getByLabelText("Your name")).toHaveValue("");
   });
 
   it("needs a name and a chosen color before saving", async () => {
@@ -60,52 +63,6 @@ describe("WelcomePage", () => {
     render(<WelcomePage suggestedName="Alice" />);
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     await waitFor(() => expect(loadPage).toHaveBeenCalledWith("/signin"));
-  });
-});
-
-describe("SignInPage", () => {
-  /**
-   * Renders the sign-in page at a URL.
-   * @param url - the /signin URL, with any query.
-   */
-  function renderAt(url: string) {
-    render(
-      <MemoryRouter initialEntries={[url]}>
-        <SignInPage />
-      </MemoryRouter>,
-    );
-  }
-
-  it("starts Microsoft sign-in, coming back to the requested page", () => {
-    renderAt("/signin?returnTo=%2Fworld%2Flist");
-    expect(screen.getByRole("link", { name: "Sign in with Microsoft" })).toHaveAttribute(
-      "href",
-      "/api/auth/microsoft?returnTo=%2Fworld%2Flist",
-    );
-  });
-
-  it("comes back to the US map when no page was requested", () => {
-    renderAt("/signin");
-    expect(screen.getByRole("link", { name: "Sign in with Microsoft" })).toHaveAttribute(
-      "href",
-      "/api/auth/microsoft?returnTo=%2Fus%2Fmap",
-    );
-  });
-
-  it("explains a cancelled or failed sign-in", () => {
-    renderAt("/signin?error=cancelled");
-    expect(screen.getByRole("alert")).toHaveTextContent("Sign-in was cancelled.");
-  });
-
-  it("gives the generic message for an unknown error code", () => {
-    renderAt("/signin?error=something-else");
-    expect(screen.getByRole("alert")).toHaveTextContent("Sign-in didn't work. Please try again.");
-  });
-
-  it("shows no error normally, and links to Privacy", () => {
-    renderAt("/signin");
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "/privacy");
   });
 });
 

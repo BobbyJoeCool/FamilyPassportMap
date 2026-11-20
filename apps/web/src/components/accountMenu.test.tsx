@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import type { SignedInUser } from "@familypassportmap/shared";
 import { jsonResponse, mockFetch } from "../test/api";
 
 vi.mock("../navigation", () => ({ loadPage: vi.fn() }));
@@ -126,5 +127,45 @@ describe("DeleteAccountDialog", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't delete your account");
     expect(screen.getByRole("button", { name: "Delete my account" })).toBeEnabled();
     expect(loadPage).not.toHaveBeenCalled();
+  });
+});
+
+describe("UserMenu (Phase 13)", () => {
+  /**
+   * Renders the menu for a given User and opens it.
+   * @param overrides - fields to change on the default test User.
+   */
+  async function openMenuFor(overrides: Partial<SignedInUser>) {
+    render(
+      <MemoryRouter>
+        <UserMenu user={{ ...user, ...overrides }} />
+      </MemoryRouter>,
+    );
+    await userEvent.click(screen.getByRole("button"));
+  }
+
+  it("links to Sign-in methods", async () => {
+    await openMenuFor({});
+    expect(screen.getByRole("menuitem", { name: "Sign-in methods" })).toHaveAttribute("href", "/account/sign-in");
+  });
+
+  it("shows the email as the name for an account with no name yet, without repeating it", async () => {
+    await openMenuFor({ displayName: "", email: "ann@mail.test" });
+    expect(screen.getByRole("button", { name: /ann@mail.test/ })).toHaveTextContent("A");
+    expect(screen.getByRole("menu").textContent?.match(/ann@mail\.test/g)).toHaveLength(1);
+  });
+
+  it("shows 'New user' for a passkey account with no name or email", async () => {
+    await openMenuFor({ displayName: "", email: null });
+    expect(screen.getByRole("menu")).toHaveTextContent("New user");
+  });
+
+  it("shows the provider's picture when there is one", () => {
+    render(
+      <MemoryRouter>
+        <UserMenu user={{ ...user, avatarUrl: "https://avatars.test/a.png" }} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button").querySelector("img")).toHaveAttribute("src", "https://avatars.test/a.png");
   });
 });

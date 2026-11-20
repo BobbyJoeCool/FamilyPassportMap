@@ -33,6 +33,7 @@ async function expectPath(path: string) {
 function renderApp(url: string, me: unknown) {
   mockFetch({
     "GET /api/me": me,
+    "GET /api/auth/methods": { providers: ["microsoft"], emailCodes: false, passkeys: true },
     "GET /api/people": [makePerson({ id: "p1", isPrimary: true })],
     "GET /api/people/allowance": { owned: 1, max: 10 },
     "GET /api/people/p1/visits": [],
@@ -51,7 +52,7 @@ function renderApp(url: string, me: unknown) {
 describe("App sign-in gate", () => {
   it("sends a signed-out visitor to sign-in, remembering the page", async () => {
     renderApp("/world/list", jsonResponse(401));
-    expect(await screen.findByRole("link", { name: "Sign in with Microsoft" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Continue with Microsoft" })).toBeInTheDocument();
     await expectPath("/signin?returnTo=%2Fworld%2Flist");
   });
 
