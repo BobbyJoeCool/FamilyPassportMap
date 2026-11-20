@@ -28,6 +28,12 @@ vi.mock("../src/auth/microsoft.js", () => ({
   },
 }));
 
+// Every provider counts as set up in tests (each adapter is faked above or below), so their start
+// routes exist. Tests about disabled providers clear these for themselves.
+process.env.MICROSOFT_CLIENT_ID = "test-microsoft-id";
+process.env.MICROSOFT_CLIENT_SECRET = "test-microsoft-secret";
+process.env.APP_BASE_URL = "http://localhost:5173";
+
 // No keep-alive for test requests. Supertest starts and stops servers constantly; with Node's
 // default keep-alive (Node 19+), a pooled socket can outlive its server and a later request
 // gets a stale or someone else's response (seen as "Parse Error: Expected HTTP/" and as a
@@ -63,6 +69,9 @@ beforeEach(async () => {
   await prisma.visitedCountry.deleteMany();
   await prisma.person.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.emailCode.deleteMany();
+  await prisma.passkey.deleteMany();
+  await prisma.signInMethod.deleteMany();
   await prisma.user.deleteMany();
 });
 

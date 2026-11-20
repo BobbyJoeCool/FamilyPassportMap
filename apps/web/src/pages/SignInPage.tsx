@@ -1,11 +1,12 @@
 import { Link, useSearchParams } from "react-router-dom";
-import { DEFAULT_LANDING_PATH, SIGN_IN_ERRORS, type SignInError } from "@familypassportmap/shared";
+import { DEFAULT_LANDING_PATH, SIGN_IN_ERRORS, TAKEN_MESSAGE, type SignInError } from "@familypassportmap/shared";
 import { microsoftSignInUrl } from "../api/auth";
 
 /** What to tell the visitor for each way sign-in can fail (the `error` query value). */
 const ERROR_MESSAGES: Record<SignInError, string> = {
   cancelled: "Sign-in was cancelled.",
   failed: "Sign-in didn't work. Please try again.",
+  taken: TAKEN_MESSAGE,
 };
 
 /**

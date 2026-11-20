@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@familypassportmap/shared": "^0.0.0",
+    "@simplewebauthn/browser": "14.0.0",
     "@tailwindcss/vite": "^4.3.3",
     "prop-types": "^15.8.1",
     "react": "^19.2.8",

@@ -1,7 +1,7 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 import request from "supertest";
 import { app } from "../src/app.js";
-import { missingAuthSettings } from "../src/auth/config.js";
+import { startupProblems } from "../src/auth/config.js";
 import { completeSignIn, fakeCode, identityFor, newAgent, sessionCookieFrom, signIn } from "./helpers.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -183,16 +183,25 @@ describe("Protected routes", () => {
 });
 
 describe("Sign-in configuration", () => {
-  it("reports every missing Microsoft setting", () => {
-    expect(missingAuthSettings({})).toEqual(["MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET", "APP_BASE_URL"]);
-    expect(missingAuthSettings({ MICROSOFT_CLIENT_ID: "id", MICROSOFT_CLIENT_SECRET: "", APP_BASE_URL: "http://x" })).toEqual([
-      "MICROSOFT_CLIENT_SECRET",
+  const microsoft = { MICROSOFT_CLIENT_ID: "id", MICROSOFT_CLIENT_SECRET: "secret" };
+  const mail = { SMTP_HOST: "h", SMTP_PORT: "587", SMTP_USER: "u", SMTP_PASSWORD: "p", MAIL_FROM: "a@b.c" };
+
+  it("needs APP_BASE_URL and at least one sign-in method", () => {
+    expect(startupProblems({})).toEqual([
+      "missing app setting APP_BASE_URL",
+      expect.stringContaining("no sign-in method is configured"),
     ]);
   });
 
-  it("reports nothing when sign-in is fully configured", () => {
-    expect(
-      missingAuthSettings({ MICROSOFT_CLIENT_ID: "id", MICROSOFT_CLIENT_SECRET: "secret", APP_BASE_URL: "http://localhost:5173" }),
-    ).toEqual([]);
+  it("is satisfied by any one complete provider, or by email codes alone", () => {
+    expect(startupProblems({ APP_BASE_URL: "http://x", ...microsoft })).toEqual([]);
+    expect(startupProblems({ APP_BASE_URL: "http://x", GITHUB_CLIENT_ID: "id", GITHUB_CLIENT_SECRET: "s" })).toEqual([]);
+    expect(startupProblems({ APP_BASE_URL: "http://x", ...mail })).toEqual([]);
+  });
+
+  it("doesn't count a provider missing its secret, or partial mail settings", () => {
+    expect(startupProblems({ APP_BASE_URL: "http://x", MICROSOFT_CLIENT_ID: "id", ...mail, SMTP_PASSWORD: "" })).toEqual([
+      expect.stringContaining("no sign-in method is configured"),
+    ]);
   });
 });

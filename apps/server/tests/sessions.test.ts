@@ -36,7 +36,7 @@ async function setRemaining(token: string, remainingMs: number) {
 
 beforeEach(async () => {
   const user = await prisma.user.create({
-    data: { authProvider: "microsoft", authSubject: "sub-alice", email: "alice@example.com", displayName: "Alice" },
+    data: { email: "alice@example.com", displayName: "Alice" },
   });
   userId = user.id;
 });
