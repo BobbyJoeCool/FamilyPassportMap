@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { isDemo } from "../demoMode";
 
 /**
  * One titled section of the privacy page.
@@ -17,9 +18,23 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 /**
  * The public privacy page: a plain-language summary of what the app stores, who can see it,
  * and how to delete it. Reachable without signing in (linked from the sign-in page), and its
- * URL is the privacy-policy link on the Microsoft app registration's branding page.
+ * URL is the privacy-policy link on the Microsoft app registration's branding page. The guest demo
+ * shows a short notice instead, since nothing leaves the browser there.
  */
 export function PrivacyPage() {
+  // The guest demo stores nothing anywhere, so it has its own short notice instead.
+  if (isDemo()) {
+    return (
+      <article className="max-w-2xl">
+        <h1 className="text-2xl md:text-3xl font-bold mb-6">Privacy</h1>
+        <Section title="This is the guest demo">
+          <p>Everything in the demo happens in your browser. Nothing you type or upload leaves it: there's no account, no server and no tracking, and the demo sets no cookies.</p>
+          <p>Your changes and any photos you add stay in this tab only. Reloading the page or closing the tab throws them away and starts over with the sample family.</p>
+        </Section>
+      </article>
+    );
+  }
+
   return (
     <article className="max-w-2xl">
       <h1 className="text-2xl md:text-3xl font-bold mb-6">Privacy</h1>

@@ -4,13 +4,16 @@ import type { SignedInUser } from "@familypassportmap/shared";
 import { signOut } from "../api/auth";
 import { DeleteAccountDialog } from "./DeleteAccountDialog";
 import { loadPage } from "../navigation";
+import { isDemo } from "../demoMode";
 
 /**
  * The signed-in User's avatar (and name, on wide screens), opening a small menu with their
- * name and email, the privacy page, Sign out, and Delete account.
+ * name and email, the privacy page, Sign out, and Delete account. In the guest demo there's no
+ * account, so the menu has only the Guest's name and Privacy.
  * @param user - the signed-in User.
  */
 export function UserMenu({ user }: { user: SignedInUser }) {
+  const demo = isDemo();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
@@ -50,13 +53,20 @@ export function UserMenu({ user }: { user: SignedInUser }) {
         {/* The sign-in provider's picture when there is one (Microsoft sends none); otherwise the first letter of the name. */}
         {user.avatarUrl ? (
           // no-referrer: avatar hosts can refuse images requested with a Referer.
-          <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" className="w-8 h-8 rounded-full" />
+          <img
+            src={user.avatarUrl}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="w-8 h-8 rounded-full"
+          />
         ) : (
           <span className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--color-primary)] text-white text-sm font-medium">
             {user.displayName.charAt(0).toUpperCase()}
           </span>
         )}
-        <span className="hidden md:inline text-sm text-[var(--color-text-heading)]">{user.displayName}</span>
+        <span className="hidden md:inline text-sm text-[var(--color-text-heading)]">
+          {user.displayName}
+        </span>
       </button>
 
       {/* The menu itself, only while open. */}
@@ -68,7 +78,10 @@ export function UserMenu({ user }: { user: SignedInUser }) {
           {/* The name is hidden next to the avatar on phones, so the menu always shows it. */}
           <div className="px-3 py-2">
             <p className="text-sm text-[var(--color-text-heading)] truncate">{user.displayName}</p>
-            <p className="text-xs text-[var(--color-text-muted)] truncate">{user.email}</p>
+            {/* The demo's Guest has no email address to show. */}
+            {!demo && (
+              <p className="text-xs text-[var(--color-text-muted)] truncate">{user.email}</p>
+            )}
           </div>
           <Link
             to="/privacy"
@@ -78,23 +91,28 @@ export function UserMenu({ user }: { user: SignedInUser }) {
           >
             Privacy
           </Link>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={handleSignOut}
-            disabled={signingOut}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-bg-card)] disabled:opacity-50"
-          >
-            {signingOut ? "Signing out…" : "Sign out"}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={handleDeleteAccountClick}
-            className="w-full text-left px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-bg-card)]"
-          >
-            Delete account
-          </button>
+          {/* Sign out and Delete account need a real account, so the demo leaves them out. */}
+          {!demo && (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-bg-card)] disabled:opacity-50"
+              >
+                {signingOut ? "Signing out…" : "Sign out"}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handleDeleteAccountClick}
+                className="w-full text-left px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-bg-card)]"
+              >
+                Delete account
+              </button>
+            </>
+          )}
           {/* Only after a failed sign-out attempt. */}
           {signOutError && (
             <p role="alert" className="px-3 py-2 text-xs text-[var(--color-danger)]">
