@@ -1,6 +1,7 @@
 import path from "node:path";
 import cookieParser from "cookie-parser";
 import express, { type NextFunction, type Request, type Response } from "express";
+import helmet from "helmet";
 import { Prisma } from "@prisma/client";
 import { loadUser, requireUser } from "./auth/middleware.js";
 import { authRouter } from "./auth/routes.js";
@@ -17,6 +18,7 @@ import { bulkVisitsRouter, visitsRouter } from "./routes/visits.js";
  */
 export const app = express();
 
+app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 // Attach the signed-in User (if any) to API and photo requests. Not run for the static
