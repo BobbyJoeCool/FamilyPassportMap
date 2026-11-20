@@ -4,11 +4,18 @@
 >
 > **Where the tickets live:** per ADR 0001, this spec stays here and its implementation tickets are GitHub issues linked from this doc and from the `PHASES.md` row. Tickets are cut once Bob approves this spec.
 
-**Status:** Draft, written 2026-11-19 from Bob's answers. On 2026-11-20 the Voyager move (formerly `docs/VOYAGER-DEPLOY.md`) was folded in, so this phase covers both: the new sign-in methods and moving the app from Azure to Voyager. The questions still open are listed at the end.
+**Status:** Built 2026-11-20 on branch `phase-13-sign-in-methods` (all code, tests and the Docker image). Waiting on Bob's provider registrations, mail service, manual checklist and the Voyager cutover. The Voyager move (formerly `docs/VOYAGER-DEPLOY.md`) was folded in on 2026-11-20, so this phase covers both. Where the build differs from the first draft, this doc was updated, and the differences are listed under "Changes made while building".
 
 ## Tickets
 
-Not cut yet.
+- [#27 Phase 13 — Sign-in Methods and Move to Voyager](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/27) (parent)
+- [#28 Phase 13.1 — SignInMethod schema and the generalized provider flow](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/28)
+- [#29 Phase 13.2 — Google and GitHub sign-in](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/29)
+- [#30 Phase 13.3 — Email codes](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/30)
+- [#31 Phase 13.4 — Passkeys](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/31)
+- [#32 Phase 13.5 — Sign-in methods page and the new sign-in page](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/32)
+- [#33 Phase 13.6 — Docker image for Voyager](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/33)
+- [#34 Phase 13.7 — Docs, release notes and Bob's go-live plan](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/34)
 
 ## App overview (full context)
 
@@ -93,7 +100,7 @@ Move the app from Azure to Voyager in the same phase, keeping the existing datab
   - `(kind, subject)` is unique, which is what makes "already belongs to another account" a database guarantee.
 - **New `Passkey` model:** `id`, `userId` (cascade), `credentialId` (unique, base64url), `publicKey` (bytes), `signCount`, `transports` (nullable, JSON string), `name`, `createdAt`, `lastUsedAt`. Passkeys get their own table because they carry key material a provider identity doesn't.
 - **New `EmailCode` model:** `id`, `email` (lowercased), `codeHash` (SHA-256), `purpose` (`"sign-in" | "add-email"`), `userId` (nullable; set for `add-email`), `expiresAt`, `attempts`, `createdAt`.
-- **`User`:** drop `authProvider` and `authSubject`. `email` becomes nullable (a passkey-only account has none). `email` and `displayName` stay as display values, refreshed from whichever provider was just used.
+- **`User`:** drop `authProvider` and `authSubject`. `email` becomes nullable (a passkey-only account has none). `email`, `displayName` and `avatarUrl` stay as display values, refreshed from whichever provider was just used (an email code refreshes only the email). `displayName` is `""` when no provider has given a name; the header then shows the email, or "New user" (`userLabel` in `packages/shared`), and the welcome step sets it to the Primary Person's name.
 - **Migration:** one Prisma migration copies each existing User's `(authProvider, authSubject, email)` into a `SignInMethod` row, then drops the two columns. Existing Microsoft sign-ins keep working with no action from anyone.
 - **ERD:** `docs/diagrams/ERD.mmd` is updated in the same change.
 
@@ -101,10 +108,10 @@ Move the app from Azure to Voyager in the same phase, keeping the existing datab
 
 - Same shape as today's Microsoft flow, generalized: `GET /api/auth/:provider?returnTo=<path>&intent=sign-in|add` and `GET /api/auth/:provider/callback`. `state` is checked against a short-lived cookie, as now. The cookie also records the intent.
 - One adapter module per provider (`microsoft.ts` stays; new `google.ts`, `github.ts`), each returning `{ subject, email, name, avatarUrl, emailVerified }`. These are the only code that talks to each provider, and the seam tests fake.
-  - **Google:** OpenID Connect, scopes `openid email profile`, ID token verified with `jose`. `subject` is `sub`.
+  - **Google:** OpenID Connect, scopes `openid email profile`, `prompt=select_account`, ID token verified with `jose` (Google's keys, audience = client id, issuer = Google). `subject` is `sub`. The email is kept only when `email_verified` is true; the picture becomes the header avatar.
   - **GitHub:** OAuth app, scope `read:user user:email`. No ID token, so the adapter calls `GET /user` and `GET /user/emails` with the access token, and uses the primary verified email. `subject` is the numeric user id.
 - **Configured or hidden:** each provider is enabled only when its client id and secret are both set. `GET /api/auth/methods` returns which providers are enabled, and whether email codes and passkeys are available; the sign-in page builds its buttons from that.
-- **Startup rule (replaces Phase 12's):** in production the server refuses to start without `APP_BASE_URL` and at least one enabled sign-in method.
+- **Startup rule (replaces Phase 12's):** in production the server refuses to start without `APP_BASE_URL` and at least one enabled provider or email codes. Passkeys don't count: they need no settings (so counting them would make the rule always pass), and an existing account can't sign in with a passkey it doesn't have yet.
 - **Callback, intent `sign-in`:** find the `SignInMethod` by `(kind, subject)`. Found: sign in as its User and refresh `lastUsedAt` and the User's display values. Not found: create a User and its `SignInMethod` in one transaction, then sign in. Either way, run the legacy adoption check (Microsoft personal accounts only, unchanged) and redirect to `/welcome` or `returnTo` as now.
 - **Callback, intent `add`:** requires a signed-in session. Found on this User: nothing changes. Found on another User: redirect to `/account/sign-in?error=taken`. Not found: attach to this User. Redirect back to `/account/sign-in`.
 
@@ -116,17 +123,18 @@ Move the app from Azure to Voyager in the same phase, keeping the existing datab
   - `sign-in`: on success, sign in as the User who has that email as a sign-in method, or create a new User with it. Responds `{ redirectTo }` (`/welcome` or `returnTo`).
   - `add-email`: on success, attach the email to the signed-in User.
   - Wrong or expired code: `400 { error: "That code didn't work. Check it or send a new one." }`.
-- **Rate limits** (in memory, enough for one server): at most 3 codes per address per 15 minutes and 10 per IP address per hour. Over the limit still returns `204` but sends nothing.
+- **Rate limits** (in memory, enough for one server): at most 3 codes per address per 15 minutes and 10 per IP address per hour. Over the limit still returns `204` but sends nothing. Behind the Cloudflare tunnel every request comes from the tunnel container, so the IP is read from Cloudflare's `CF-Connecting-IP` header when present (the app is only reachable through the tunnel on Voyager, so it can't be forged by going around Cloudflare).
+- **`add-email` start** sends nothing when the address is already on any account (this one or another); verify then reports `taken` for another account's address.
 - **Sending:** generic SMTP through `nodemailer`, configured by `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`. Email codes are enabled only when all are set. Bob picks the mail service at deploy time. The email is plain text: the code, how long it lasts, and "If you didn't ask for this, ignore it."
-- **Tests and E2E** replace the sender with an in-memory outbox they can read.
+- **Tests and E2E** replace the sender with an in-memory outbox they can read (E2E through `GET /api/auth/e2e/outbox?to=`, which exists only under the E2E fake sign-in).
 
 ### Passkeys
 
 - Built on `@simplewebauthn/server` and `@simplewebauthn/browser` (vetted per the dependency-vetting rules before install).
 - **Relying party:** id is `APP_BASE_URL`'s hostname (`passport.bobbyjoecool.dev`, or `localhost` locally), name "FamilyPassportMap". Passkeys are only offered when the page is a secure context.
 - **Discoverable credentials, user verification preferred**, so sign-in needs no username: the browser offers whichever passkeys it has for this site.
-- **Routes:** `POST /api/auth/passkey/register/options` and `/register/verify` (create an account with a new passkey when signed out, or add one when signed in), `POST /api/auth/passkey/signin/options` and `/signin/verify`. Challenges are kept server-side for 5 minutes, tied to a short-lived cookie.
-- **Signing up with a passkey** creates a User with no email. `displayName` starts as "New user" until the welcome step sets it from the Primary Person's name.
+- **Routes:** `POST /api/auth/passkey/register/options` and `/register/verify` (create an account with a new passkey when signed out, or add one when signed in), `POST /api/auth/passkey/signin/options` and `/signin/verify`. Challenges are kept server-side (in memory) for 5 minutes, used once, checked against their purpose, and tied to a short-lived `SameSite=Strict` cookie scoped to `/api/auth/passkey`. No attestation is requested, and the account's existing passkeys are sent as `excludeCredentials` when adding.
+- **Signing up with a passkey** creates a User with no email and an empty `displayName` (shown as "New user") until the welcome step sets it from the Primary Person's name. A new account's passkey is named "Passkey"; a passkey added later gets the name typed in (1–40 characters, default "Passkey").
 - `signCount` is checked and stored per the library's rules.
 
 ### Managing sign-in methods (API)
@@ -139,10 +147,11 @@ Move the app from Azure to Voyager in the same phase, keeping the existing datab
 
 ### Web app
 
-- **Sign-in page:** app name; one button per enabled provider ("Continue with Microsoft / Google / GitHub"); "Sign in with a passkey"; a divider; an email field with "Email me a code". After sending, the page shows a 6-digit code field, "Send a new code", and "Use a different email". Messages for `error=cancelled`, `error=failed`, and code errors. The privacy link stays.
+- **Sign-in page:** app name; one button per enabled provider ("Continue with Microsoft / Google / GitHub"); "Sign in with a passkey" with a "New here? Create an account with a passkey" link under it (both only when the browser supports WebAuthn in a secure context); a divider; an email field with "Email me a code". After sending, the page shows a 6-digit code field, "Send a new code", and "Use a different email". Messages for `error=cancelled`, `error=failed`, and code errors. The privacy link stays.
 - **Account menu** gains **Sign-in methods**, opening `/account/sign-in`.
 - **Sign-in methods page:** the list from the API with a remove button on each (disabled with a hint on the last one), a rename action on passkeys, and an "Add" area with the same choices as the sign-in page. `?error=taken` shows "That sign-in already belongs to another account."
 - **Welcome step:** the name field is prefilled from the provider when there is one, empty otherwise.
+- **Header:** shows the last provider's profile picture when there is one (Google, GitHub), otherwise the first letter of the name (Bob's answer to open question 2).
 - **Privacy page:** lists what's stored for each kind of sign-in method (provider account id, name and email; passkey public key and name, never a private key; email address), that email codes are sent through the configured mail service, and that removing a method or deleting the account deletes it.
 
 ## Move to Voyager
@@ -169,9 +178,11 @@ Move the app from Azure to Voyager in the same phase, keeping the existing datab
 - **[JANEWAY]**: normal Terminal on the M2
 - **[BROWSER]**: Azure portal, Microsoft Entra, Google Cloud Console, GitHub, Cloudflare Zero Trust
 
-#### Step 1. Add the Docker build files to the repo (part of this phase's code)
+#### Step 1. Add the Docker build files to the repo (part of this phase's code; done)
 
-`.dockerignore` at the repo root:
+The repo's `Dockerfile` and `.dockerignore` are the source of truth; what was first planned is below. As built, the Dockerfile has **two stages**: a build stage with `python3`, `make` and `g++` (better-sqlite3 has no prebuilt Linux binary for the current Node 24 and must compile), and a slim runtime stage with `openssl` (for Prisma's migration engine) that copies the built app. The `.dockerignore` also skips `.github`, `.claude`, `e2e/.auth`, `test-results` and `playwright-report`.
+
+`.dockerignore` at the repo root (first plan):
 ```
 **/node_modules
 **/dist
@@ -183,7 +194,7 @@ apps/server/data
 e2e/test-data
 ```
 
-`Dockerfile` at the repo root:
+`Dockerfile` at the repo root (first plan; see the repo for the two-stage version):
 ```dockerfile
 FROM node:24-bookworm-slim
 WORKDIR /app
@@ -427,5 +438,16 @@ New Prisma migrations apply automatically when the container starts.
 
 ## Open questions
 
-1. **Where should email codes come from?** `MAIL_FROM` could be `bob@bobbyjoecool.dev` or something like `no-reply@bobbyjoecool.dev`. This only matters at deploy time.
-2. **Should the header show a provider's profile picture** (Google and GitHub send one) instead of the initial? Phase 12 kept the column for this.
+1. **Where should email codes come from?** `MAIL_FROM` could be `bob@bobbyjoecool.dev` or something like `no-reply@bobbyjoecool.dev`. This only matters at deploy time (still open; Bob decides when choosing the mail service).
+2. ~~Should the header show a provider's profile picture?~~ **Yes** (Bob, 2026-11-20).
+
+## Changes made while building
+
+- **No-name accounts** store `displayName = ""` and show the email or "New user", instead of storing the text "New user" (Bob's choice).
+- **Passkeys don't count** toward the production startup rule (see Providers).
+- **Rate limits read `CF-Connecting-IP`**, since behind the tunnel every request has the same `req.ip`.
+- **Google emails** are kept only when Google has verified them; GitHub uses only a verified primary email.
+- **An unknown `/api/auth/<name>`** isn't a provider route; it falls through to the app-wide signed-out `401`, like any unknown `/api` path.
+- **E2E outbox route** `GET /api/auth/e2e/outbox?to=` (E2E fake sign-in only) so Playwright can read email codes; the fake sign-in page now stands in for every provider (`?provider=`).
+- **Two-stage Dockerfile** with Node 24 (the first plan said Node 22, single stage) because better-sqlite3 compiles from source.
+- **Guest demo:** the new `/api` routes have no fake-API handlers. That's fine because the demo hides the Sign-in methods page and never shows the sign-in page; opening `/account/sign-in` directly in the demo answers "Not available in the demo."

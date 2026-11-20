@@ -23,8 +23,8 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 
 | | |
 |---|---|
-| **Implemented** | Interactive US map (50 states) and world map (195 countries, one continent at a time); People with colors and profile pictures; visited counters; Compare and List views for US and World; Microsoft sign-in with private, per-account People (up to 10) and owner-only photos; account deletion; installable PWA. Live on Azure App Service. A **guest demo** on GitHub Pages runs the same app in the browser with a made-up family (an in-browser fake API, no server). |
-| **Tested** | Unit tests (`npm test`) for the server (sign-in, ownership checks, people, visits, private photos, the primary person, legacy data adoption, account deletion), the shared reference data, and the web app's API calls, components and pages. Playwright end-to-end tests (`npm run test:e2e`) cover every user flow, on desktop and phone sizes, plus the guest demo build. API contract tests run the same scenarios against the real server and the demo's fake API, so the demo can't drift from the real rules. |
+| **Implemented** | Interactive US map (50 states) and world map (195 countries, one continent at a time); People with colors and profile pictures; visited counters; Compare and List views for US and World; Sign-in with Microsoft, Google, GitHub, passkeys or email codes, with a Sign-in methods page to add and remove them; private, per-account People (up to 10) and owner-only photos; account deletion; installable PWA. Live on Azure App Service, moving to a Docker container on a home server (Voyager) with v2.5.0. A **guest demo** on GitHub Pages runs the same app in the browser with a made-up family (an in-browser fake API, no server). |
+| **Tested** | Unit tests (`npm test`) for the server (every sign-in method, including real passkey checks with a software authenticator, ownership checks, people, visits, private photos, the primary person, legacy data adoption, account deletion), the shared reference data, and the web app's API calls, components and pages. Playwright end-to-end tests (`npm run test:e2e`) cover every user flow, on desktop and phone sizes (passkeys through Chrome's virtual authenticator), plus the guest demo build. API contract tests run the same scenarios against the real server and the demo's fake API, so the demo can't drift from the real rules. |
 | **Planned** | **Link** and **Join**, so accounts can see or co-manage each other's People. Blended Compare coloring is deferred. See [`PHASES.md`](PHASES.md). |
 
 ## What it does
@@ -57,9 +57,9 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 ## Tech stack
 
 - **Frontend:** React + TypeScript (Vite), Tailwind CSS, installable as a PWA
-- **Backend:** Node.js + TypeScript (Express), with Microsoft sign-in and server-side sessions
+- **Backend:** Node.js + TypeScript (Express), with sign-in through Microsoft, Google and GitHub (OAuth / OpenID Connect), passkeys (WebAuthn) and email codes (SMTP), and server-side sessions
 - **Database:** SQLite via Prisma
-- **Hosting:** Azure App Service (free tier); the guest demo on GitHub Pages (`npm run build:demo`, published by `.github/workflows/demo-pages.yml`)
+- **Hosting:** Azure App Service (free tier) until the v2.5.0 move to a Docker container on Voyager behind a Cloudflare tunnel (`Dockerfile`); the guest demo on GitHub Pages (`npm run build:demo`, published by `.github/workflows/demo-pages.yml`)
 - **Testing:** Vitest unit tests for the server, the shared package and the web app (React Testing Library), run with `npm test`; Playwright end-to-end tests of every user flow against local servers, run with `npm run test:e2e`
 
 ## Project structure & docs
@@ -74,4 +74,4 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 
 ## Roadmap
 
-v1.0.0 shipped the US-states feature set; v2.0.0 added countries on a world map (Phases 8–11); v2.3.0 added Microsoft sign-in and private accounts (Phase 12); v2.4.0 adds a guest demo on GitHub Pages (Phase 14). Next up is **Link** and **Join**, so Users can see each other's People, or share in managing them as a Family. Blended/overlap coloring in Compare is still deliberately deferred. See [`PHASES.md`](PHASES.md).
+v1.0.0 shipped the US-states feature set; v2.0.0 added countries on a world map (Phases 8–11); v2.3.0 added Microsoft sign-in and private accounts (Phase 12); v2.4.0 adds a guest demo on GitHub Pages (Phase 14); v2.5.0 adds Google, GitHub, passkey and email-code sign-in and moves hosting to Voyager (Phase 13). Next up is **Link** and **Join**, so Users can see each other's People, or share in managing them as a Family. Blended/overlap coloring in Compare is still deliberately deferred. See [`PHASES.md`](PHASES.md).
