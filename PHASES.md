@@ -38,10 +38,10 @@ Login, per-User data, and (later) Link/Join between Users. Domain terms are in [
 | Phase | Version | Name | Spec doc | Status |
 |---|---|---|---|---|
 | 12 | v2.3.0 | Login & Accounts (Microsoft sign-in, Primary Person, per-User data) | [docs/Phase-12-Login-Accounts.md](docs/Phase-12-Login-Accounts.md) (tickets: [#1–#13](https://github.com/BobbyJoeCool/FamilyPassportMap/issues)) | **Complete (v2.3.0 shipped)**. All tickets built, the automated tests pass, and the manual local checklist passed (2026-10-25). Sign-in was switched from Google to Microsoft mid-phase (#13). |
-| 13 | v2.5.0 | Sign-in Methods (Microsoft, Google, GitHub, passkeys and email codes; add and remove methods from the account menu) | [docs/Phase-13-Sign-In-Methods.md](docs/Phase-13-Sign-In-Methods.md) | Not started (spec drafted 2026-11-19, awaiting Bob's approval) |
+| 13 | v2.5.0 | Sign-in Methods and Move to Voyager (Microsoft, Google, GitHub, passkeys and email codes; add and remove methods from the account menu; hosting moves from Azure to Voyager at `passport.bobbyjoecool.dev`) | [docs/Phase-13-Sign-In-Methods.md](docs/Phase-13-Sign-In-Methods.md) | Not started (spec drafted 2026-11-19, awaiting Bob's approval) |
 | 14 | v2.4.0 | Guest Demo on GitHub Pages (in-browser copy with a made-up family, resets on reload) | [docs/Phase-14-Guest-Demo.md](docs/Phase-14-Guest-Demo.md) (tickets: [#20–#25](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/20)) | **Built, pending verification** (2026-11-19, branch `phase-14-guest-demo`). Automated tests pass; waiting on Bob's manual checklist and the first Pages publish after merge. Built before Phase 13, so it takes v2.4.0 and Phase 13 moves to v2.5.0. |
 
-Phase 13 ships together with the move from Azure to Voyager ([docs/VOYAGER-DEPLOY.md](docs/VOYAGER-DEPLOY.md)), so every sign-in callback and the passkey domain are registered once, for `passport.bobbyjoecool.dev`.
+Phase 13 includes the move from Azure to Voyager (its spec has the runbook), so every sign-in callback and the passkey domain are registered once, for `passport.bobbyjoecool.dev`.
 
 ## Versioning convention
 

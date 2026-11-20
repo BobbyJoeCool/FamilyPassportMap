@@ -1,10 +1,10 @@
-# Phase 13 (v2.5.0) — Sign-in Methods
+# Phase 13 (v2.5.0) — Sign-in Methods and Move to Voyager
 
 > **Portability note:** This document is self-contained. It can be handed to a fresh Claude Desktop (or any LLM) session with **no access to the repository** and still contain everything needed to design this phase in detail. When the resulting design is brought back into the repo, Claude Code should reconcile it against this file and against `PHASES.md`.
 >
 > **Where the tickets live:** per ADR 0001, this spec stays here and its implementation tickets are GitHub issues linked from this doc and from the `PHASES.md` row. Tickets are cut once Bob approves this spec.
 
-**Status:** Draft, written 2026-11-19 from Bob's answers. The questions still open are listed at the end.
+**Status:** Draft, written 2026-11-19 from Bob's answers. On 2026-11-20 the Voyager move (formerly `docs/VOYAGER-DEPLOY.md`) was folded in, so this phase covers both: the new sign-in methods and moving the app from Azure to Voyager. The questions still open are listed at the end.
 
 ## Tickets
 
@@ -21,7 +21,7 @@ The app has three sections, each with shared sub-tabs:
 
 **Stack:** React, TypeScript, Vite and Tailwind on the front end (an installable PWA that caches only the app shell). A Node and Express API in TypeScript with Prisma 7 on SQLite. A shared package for types and reference data. npm workspaces: `apps/server`, `apps/web`, `packages/shared`.
 
-**Hosting:** today, one Azure App Service on the Free tier. This phase ships together with the move to **Voyager**, Bob's home server (a 2011 MacBook Pro running Docker behind a Cloudflare tunnel), at `https://passport.bobbyjoecool.dev`. The move plan is `docs/VOYAGER-DEPLOY.md`. Every provider's callback URL and the passkey domain are registered once, for that address. Hosting cost must stay $0. All testing is local.
+**Hosting:** today, one Azure App Service on the Free tier. This phase moves the app to **Voyager**, Bob's home server (a 2011 MacBook Pro running Docker behind a Cloudflare tunnel), at `https://passport.bobbyjoecool.dev` (see "Move to Voyager" below). Every provider's callback URL and the passkey domain are registered once, for that address. Hosting cost must stay $0. All testing is local. The guest demo (Phase 14) stays on GitHub Pages and isn't affected.
 
 ## Carried over from previous phases
 
@@ -47,11 +47,15 @@ _Avoid_: Magic link, OTP, password
 
 Sign-in only works with a Microsoft account. Family members who use Google, GitHub or no big-tech account at all can't get in, and someone who loses access to their one Microsoft account loses their data.
 
+The app also runs on Azure's Free tier, which is slow and keeps running out of disk during deploys. Bob's home server, Voyager, already hosts his other apps for free.
+
 ## Solution
 
 Offer five sign-in methods: **Microsoft**, **Google**, **GitHub**, **passkey** and **email code**. Any of them can create a new account. Once signed in, a User can add more sign-in methods to the same account from a new **Sign-in methods** page in the account menu, and remove ones they no longer want, as long as at least one is left.
 
 Apple sign-in is left out for now (it needs a $99/year Apple Developer Program membership).
+
+Move the app from Azure to Voyager in the same phase, keeping the existing database, photos and Microsoft sign-in. Every new provider's callback and the passkey domain are then registered once, for `passport.bobbyjoecool.dev`, instead of once for Azure and again after a later move.
 
 ## User Stories
 
@@ -74,6 +78,10 @@ Apple sign-in is left out for now (it needs a $99/year Apple Developer Program m
 
 ### Existing accounts
 14. As an existing Microsoft User, I keep signing in with Microsoft exactly as before, and my account shows Microsoft as its one sign-in method.
+
+### The move
+15. As a User, I open `https://passport.bobbyjoecool.dev` and find all my People, visits and photos, exactly as they were on Azure.
+16. As Bob, I update the app on Voyager by building an image and restarting one container. New database migrations apply on their own.
 
 ## Implementation Decisions
 
@@ -137,6 +145,227 @@ Apple sign-in is left out for now (it needs a $99/year Apple Developer Program m
 - **Welcome step:** the name field is prefilled from the provider when there is one, empty otherwise.
 - **Privacy page:** lists what's stored for each kind of sign-in method (provider account id, name and email; passkey public key and name, never a private key; email address), that email codes are sent through the configured mail service, and that removing a method or deleting the account deletes it.
 
+## Move to Voyager
+
+### Decisions
+
+- **One container**, the same single Node process as on Azure: Express serves the API, the photos and the built web app. Folder on the server: `~/apps/familypassportmap`.
+
+  | Service | Container | Port | Networks | Data |
+  |---|---|---|---|---|
+  | `app` | `familypassportmap-app-1` | 8080 | `web` | `~/apps/familypassportmap/data` → `/app/data` (holds `app.db` and `uploads/`) |
+
+- **No database port:** SQLite stays a file in the data folder.
+- **Migrations run on every container start** (`prisma migrate deploy`), as `startup.sh` does on Azure. That's how this phase's `SignInMethod` migration reaches the copied production database.
+- **The repo gains `Dockerfile` and `.dockerignore`** (Step 1). The image uses Node 24, the same as CI. Voyager is Intel (amd64) and Bob's laptop (Janeway) is ARM, so images are built with `--platform linux/amd64`.
+- **Order:** the code ships to Voyager directly. Azure keeps running the old version until the cutover is verified, then its deploy workflow is disabled, and a week later the Azure resources are deleted.
+- **This section replaces `docs/AZURE-SETUP.md` and `docs/Phase-6-Azure-Deployment.md`** as the deployment guide once the move is done. Server details and conventions come from `Voyager_Project_Setup_Guide.md` (Google Drive: Claude Instructions).
+
+### Runbook
+
+**Where each command runs:**
+
+- **[VOYAGER]**: Terminal on Janeway after `ssh voyager` (or `ssh voyager-remote` away from home)
+- **[JANEWAY]**: normal Terminal on the M2
+- **[BROWSER]**: Azure portal, Microsoft Entra, Google Cloud Console, GitHub, Cloudflare Zero Trust
+
+#### Step 1. Add the Docker build files to the repo (part of this phase's code)
+
+`.dockerignore` at the repo root:
+```
+**/node_modules
+**/dist
+**/dist-demo
+**/.env
+.git
+DevNotes
+apps/server/data
+e2e/test-data
+```
+
+`Dockerfile` at the repo root:
+```dockerfile
+FROM node:24-bookworm-slim
+WORKDIR /app
+# Set before npm ci, because apps/server's postinstall runs prisma generate
+ENV DATA_DIR=/app/data DATABASE_URL=file:/app/data/app.db
+COPY . .
+RUN npm ci && npm run build
+ENV NODE_ENV=production PORT=8080
+EXPOSE 8080
+CMD ["sh", "-c", "cd apps/server && npx prisma migrate deploy && cd /app && exec node apps/server/dist/index.js"]
+```
+`npm ci` creates the `@familypassportmap/shared` workspace link itself, so the symlink step from `startup.sh` isn't needed. `better-sqlite3` and `sharp` are compiled or downloaded for Linux amd64 during the build. Before deploying, Claude builds the image locally and runs it against a throwaway data folder to check that migrations apply and the app serves.
+
+#### Step 2. Build the image and send it to the server
+
+**[JANEWAY]**
+```bash
+cd ~/csd/Side-Projects/FamilyPassportMap
+docker buildx build --platform linux/amd64 -t familypassportmap:latest --load .
+docker save familypassportmap:latest | ssh voyager docker load
+```
+
+#### Step 3. Copy the live data and settings from Azure
+
+Do this right before cutover. Avoid adding people or photos on the Azure site between now and Step 8, or those changes won't come across.
+
+**[BROWSER]**
+
+1. While signed in to the Azure portal, open:
+   `https://family-passport-map.scm.azurewebsites.net/api/zip/data/`
+   This downloads a zip of `/home/data` (the SQLite database and the `uploads` folder).
+2. Azure portal → App Service `family-passport-map` → **Environment variables**. Copy the values of `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` and `LEGACY_DATA_OWNER_EMAIL`. Keep them out of chat and git.
+
+**[JANEWAY]**
+```bash
+mkdir -p ~/fpm-data && cd ~/fpm-data
+unzip ~/Downloads/data.zip     # adjust the file name if the browser renamed it
+ls                            # expect app.db and uploads/
+ssh voyager mkdir -p apps/familypassportmap/data
+rsync -av ~/fpm-data/ voyager:apps/familypassportmap/data/
+```
+
+#### Step 4. Register the sign-in providers' production callbacks
+
+**[BROWSER]**
+
+1. **Microsoft** (Entra admin center → App registrations → the FamilyPassportMap app):
+   - **Authentication → Web → Add URI:** `https://passport.bobbyjoecool.dev/api/auth/microsoft/callback` → Save. Leave the localhost URI for development, and leave the Azure URI until the old app is deleted.
+   - **Branding & properties:** home page `https://passport.bobbyjoecool.dev`, privacy statement `https://passport.bobbyjoecool.dev/privacy` → Save.
+2. **Google** (Google Cloud Console → APIs & Services → Credentials → the Web application OAuth client): add the authorized redirect URI `https://passport.bobbyjoecool.dev/api/auth/google/callback`. Copy the client id and secret.
+3. **GitHub** (Settings → Developer settings → OAuth Apps): the **production** OAuth app's callback is `https://passport.bobbyjoecool.dev/api/auth/github/callback` (GitHub allows one callback per app, so local development uses a second app). Copy its client id and a new client secret.
+4. **Mail service:** have the SMTP host, port, user, password and the `MAIL_FROM` address ready.
+
+#### Step 5. Create the settings file and compose file, and start the app
+
+**[VOYAGER]** Replace each `PASTE_…` value. A provider left blank is simply hidden on the sign-in page; email codes need all five mail settings.
+```bash
+cd ~/apps/familypassportmap
+umask 077
+cat > .env <<'EOF'
+APP_BASE_URL=https://passport.bobbyjoecool.dev
+LEGACY_DATA_OWNER_EMAIL=PASTE_FROM_AZURE
+MICROSOFT_CLIENT_ID=PASTE_FROM_AZURE
+MICROSOFT_CLIENT_SECRET=PASTE_FROM_AZURE
+GOOGLE_CLIENT_ID=PASTE_FROM_GOOGLE
+GOOGLE_CLIENT_SECRET=PASTE_FROM_GOOGLE
+GITHUB_CLIENT_ID=PASTE_FROM_GITHUB
+GITHUB_CLIENT_SECRET=PASTE_FROM_GITHUB
+SMTP_HOST=PASTE_FROM_MAIL_SERVICE
+SMTP_PORT=PASTE_FROM_MAIL_SERVICE
+SMTP_USER=PASTE_FROM_MAIL_SERVICE
+SMTP_PASSWORD=PASTE_FROM_MAIL_SERVICE
+MAIL_FROM=PASTE_ADDRESS
+EOF
+
+cat > compose.yaml <<'EOF'
+services:
+  app:
+    image: familypassportmap:latest
+    restart: unless-stopped
+    networks: [web]
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+networks:
+  web:
+    external: true
+EOF
+
+docker compose up -d
+docker compose logs --tail 30
+```
+**Success:** the log shows Prisma migrations applied (including this phase's sign-in methods migration) and `FamilyPassportMap server listening on http://localhost:8080`. If it exits complaining about missing settings, `APP_BASE_URL` is empty or no sign-in method is fully configured.
+
+Test from inside the server:
+```bash
+docker run --rm --network web curlimages/curl -s -o /dev/null -w "%{http_code}\n" http://familypassportmap-app-1:8080/
+```
+Expect `200`.
+
+#### Step 6. Publish it through the tunnel
+
+**[BROWSER]** Cloudflare Zero Trust → Networks → Tunnels → `voyager` → **Published application routes** → Add:
+
+| Field | Value |
+|---|---|
+| Subdomain | `passport` |
+| Domain | `bobbyjoecool.dev` |
+| Type | HTTP |
+| URL | `familypassportmap-app-1:8080` |
+
+#### Step 7. Verify on production
+
+Open `https://passport.bobbyjoecool.dev`:
+
+1. Sign in with Microsoft. People, US and World (Map / Compare / List) show the existing data and photos, and Sign-in methods lists Microsoft.
+2. Add Google, GitHub, a passkey and an email to that account; sign out; sign back in with each.
+3. Passkeys made on `localhost` during development don't carry over; make a new one here.
+
+#### Step 8. Stop Azure deploys
+
+**[JANEWAY]**
+```bash
+cd ~/csd/Side-Projects/FamilyPassportMap
+gh workflow disable "Deploy to Azure"
+```
+
+#### Step 9. Back up the data folder
+
+SQLite and photos are not covered by `~/backup.sh` automatically.
+
+**[VOYAGER]** Edit `~/backup.sh` and add this before the `find` cleanup line:
+```bash
+tar -czf "$BACKUP_DIR/familypassportmap-files-$(date +%F).tar.gz" -C /home/bobbyjoecool/apps/familypassportmap data
+```
+If you haven't already, change the cleanup line's `-name '*.dump'` to `\( -name '*.dump' -o -name '*.sql.gz' -o -name '*.tar.gz' \)`. Test:
+```bash
+~/backup.sh && ls -lh ~/backups
+```
+
+#### Step 10. Bookkeeping
+
+1. Add this row to the registry (section 5 of the Voyager setup guide):
+
+   | App folder | Public hostname | Container:port | DB local port |
+   |---|---|---|---|
+   | `familypassportmap` | `passport.bobbyjoecool.dev` | `familypassportmap-app-1:8080` | none (SQLite in `./data`) |
+
+2. Update the README's live link and hosting section.
+3. **After a week of it working** **[JANEWAY]**:
+   ```bash
+   az group delete -n family_passport_app_rg
+   ```
+   Then remove the Azure redirect URI from the Entra app registration. **Keep the app registration itself**, because sign-in depends on it. Then delete `.github/workflows/azure-deploy.yml`, `deploy.sh`, `startup.sh` and `docs/AZURE-SETUP.md`.
+
+### Updating after code changes
+
+**[JANEWAY]**
+```bash
+cd ~/csd/Side-Projects/FamilyPassportMap
+docker buildx build --platform linux/amd64 -t familypassportmap:latest --load .
+docker save familypassportmap:latest | ssh voyager docker load
+```
+**[VOYAGER]**
+```bash
+cd ~/apps/familypassportmap && docker compose up -d --force-recreate app
+```
+New Prisma migrations apply automatically when the container starts.
+
+### Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| A provider's sign-in error about the redirect URI | Its registered callback must match `APP_BASE_URL` + `/api/auth/<provider>/callback` exactly. |
+| A provider's button is missing | Its client id or secret is empty in `.env`. |
+| Passkey button missing or failing | The page must be the `https://` address; passkeys are tied to `passport.bobbyjoecool.dev`. |
+| Signed in, but bounced back to the sign-in page | Cookies are `secure` in production, so you must use the `https://` address, not a LAN `http://` address. |
+| People show but photos are broken | `uploads/` didn't land inside `~/apps/familypassportmap/data/`. Check with `ls ~/apps/familypassportmap/data`. |
+| `exec format error` | The image was built for ARM. Rebuild with `--platform linux/amd64`. |
+| Container keeps restarting | `cd ~/apps/familypassportmap && docker compose logs --tail 50 app` |
+| Cloudflare 502 / 1033 | The route must be exactly `familypassportmap-app-1:8080`. Check `cd ~/apps/tunnel && docker compose logs --tail 30`. |
+
 ## Testing Decisions
 
 - **Seams:** the HTTP API through Supertest stays the main one. The fakes are the three provider adapters, the mail sender (in-memory outbox) and, for passkeys, a test helper that produces valid WebAuthn responses from a software key pair.
@@ -151,6 +380,7 @@ Apple sign-in is left out for now (it needs a $99/year Apple Developer Program m
   - Delete account removes methods, passkeys and codes.
   - Legacy adoption still works through Microsoft, and never through other methods.
 - **Web unit tests** for the sign-in page (buttons follow `GET /api/auth/methods`, the email code steps) and the Sign-in methods page.
+- **Docker image:** Claude builds the image locally and runs it against a throwaway data folder (a copy of a test database with a Microsoft User from before this phase): the container applies the migrations, serves `/` and `/api/health`, and refuses to start with no sign-in method configured.
 - **E2E (Playwright):** the fake sign-in page gains a provider choice; email codes are read from the test outbox; passkeys use Chrome's virtual authenticator. One spec per flow: sign up and sign in with each method, add and remove methods, the last-method guard, and `taken`.
 
 ## Out of Scope
@@ -161,6 +391,8 @@ Apple sign-in is left out for now (it needs a $99/year Apple Developer Program m
 - Magic links (codes only).
 - Recovery codes or admin-assisted recovery. A User who loses every sign-in method loses the account; the Sign-in methods page encourages adding a second one.
 - Changing the access policy, Link or Join.
+- Moving the guest demo off GitHub Pages.
+- Running the app on any host other than Voyager (Azure is retired after the move).
 
 ## Acceptance criteria
 
@@ -174,7 +406,9 @@ Apple sign-in is left out for now (it needs a $99/year Apple Developer Program m
   6. Removing methods down to one works; the last one can't be removed.
   7. The code email arrives, a wrong code is refused, and an expired code is refused.
   8. Delete account, then sign in with any of its old methods: a fresh account starts.
-- ERD matches the schema. `CONTEXT.md` has the new terms. README, privacy page and `docs/VOYAGER-DEPLOY.md` describe the new settings.
+- The Docker image builds and runs locally as described under Testing Decisions.
+- **Voyager cutover** (Bob, following the runbook above): the app is live at `https://passport.bobbyjoecool.dev` with the production data and photos, every configured sign-in method works there (runbook Step 7), Azure deploys are disabled, and the data folder is in the nightly backup.
+- ERD matches the schema. `CONTEXT.md` has the new terms. README (live link and hosting) and the privacy page describe the new sign-in methods and hosting.
 - `PHASES.md` marks the phase complete; `CHANGELOG.md` gets a v2.5.0 entry.
 
 ## Decisions to carry forward
@@ -182,13 +416,14 @@ Apple sign-in is left out for now (it needs a $99/year Apple Developer Program m
 - **A sign-in method belongs to exactly one User**, enforced by the unique `(kind, subject)`. Accounts are never merged automatically; any future merge feature is its own phase.
 - **Adding a provider is a new adapter module plus settings.** Apple would be the next one.
 - **`User.email` can be null.** Anything that wants to contact a User must handle that.
-- **The guest demo (Phase 14) never talks to the server**, so none of this needs a demo mode on the server side.
+- **The guest demo (Phase 14) never talks to the server**, so none of this needs a demo mode on the server side. New `/api` routes still need a fake-API handler and a contract scenario (Phase 14's rule), or the demo shows them as "Not available in the demo."
+- **Production is Voyager.** Deploys are a Docker image build plus a container restart ("Updating after code changes"). Nothing deploys on push to `main` any more except the guest demo to GitHub Pages.
 
 ## Further Notes
 
-- **Settings to add on Voyager** (`.env`): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`, alongside the existing `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `APP_BASE_URL`, `LEGACY_DATA_OWNER_EMAIL`. `docs/VOYAGER-DEPLOY.md` steps 4 and 5 get updated to match.
+- **Settings on Voyager** (`.env`, runbook Step 5): `APP_BASE_URL`, `LEGACY_DATA_OWNER_EMAIL`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`.
 - **Bob registers** (not Claude): a Google OAuth client (Google Cloud Console, Web application) and a GitHub OAuth app, each with callbacks `http://localhost:5173/api/auth/<provider>/callback` and `https://passport.bobbyjoecool.dev/api/auth/<provider>/callback`. GitHub OAuth apps allow one callback URL each, so local and production need two GitHub apps.
-- **Passkeys are tied to the domain.** Passkeys made on `localhost` don't work on `passport.bobbyjoecool.dev`, and vice versa. That's a reason this phase deploys straight to Voyager instead of to Azure first.
+- **Passkeys are tied to the domain.** Passkeys made on `localhost` don't work on `passport.bobbyjoecool.dev`, and vice versa. That's why the move to Voyager is part of this phase instead of deploying to Azure first.
 
 ## Open questions
 
