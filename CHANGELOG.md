@@ -6,9 +6,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
-## [2.5.0] — unreleased — Guest Demo (Phase 14)
+## [2.4.0] — unreleased — Guest Demo (Phase 14)
 
-Built before Phase 13 (v2.4.0, sign-in methods), which hasn't shipped yet.
+Built before Phase 13 (sign-in methods), so this is v2.4.0 and Phase 13 becomes v2.5.0.
 
 ### Added
 

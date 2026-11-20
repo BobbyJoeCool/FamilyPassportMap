@@ -74,4 +74,4 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 
 ## Roadmap
 
-v1.0.0 shipped the US-states feature set; v2.0.0 added countries on a world map (Phases 8–11); v2.3.0 added Microsoft sign-in and private accounts (Phase 12); v2.5.0 adds a guest demo on GitHub Pages (Phase 14). Next up is **Link** and **Join**, so Users can see each other's People, or share in managing them as a Family. Blended/overlap coloring in Compare is still deliberately deferred. See [`PHASES.md`](PHASES.md).
+v1.0.0 shipped the US-states feature set; v2.0.0 added countries on a world map (Phases 8–11); v2.3.0 added Microsoft sign-in and private accounts (Phase 12); v2.4.0 adds a guest demo on GitHub Pages (Phase 14). Next up is **Link** and **Join**, so Users can see each other's People, or share in managing them as a Family. Blended/overlap coloring in Compare is still deliberately deferred. See [`PHASES.md`](PHASES.md).

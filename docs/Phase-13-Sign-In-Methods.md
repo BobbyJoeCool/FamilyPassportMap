@@ -1,4 +1,4 @@
-# Phase 13 (v2.4.0) — Sign-in Methods
+# Phase 13 (v2.5.0) — Sign-in Methods
 
 > **Portability note:** This document is self-contained. It can be handed to a fresh Claude Desktop (or any LLM) session with **no access to the repository** and still contain everything needed to design this phase in detail. When the resulting design is brought back into the repo, Claude Code should reconcile it against this file and against `PHASES.md`.
 >
@@ -175,7 +175,7 @@ Apple sign-in is left out for now (it needs a $99/year Apple Developer Program m
   7. The code email arrives, a wrong code is refused, and an expired code is refused.
   8. Delete account, then sign in with any of its old methods: a fresh account starts.
 - ERD matches the schema. `CONTEXT.md` has the new terms. README, privacy page and `docs/VOYAGER-DEPLOY.md` describe the new settings.
-- `PHASES.md` marks the phase complete; `CHANGELOG.md` gets a v2.4.0 entry.
+- `PHASES.md` marks the phase complete; `CHANGELOG.md` gets a v2.5.0 entry.
 
 ## Decisions to carry forward
 

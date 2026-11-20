@@ -1,4 +1,4 @@
-# Phase 14 (v2.5.0) — Guest Demo on GitHub Pages
+# Phase 14 (v2.4.0) — Guest Demo on GitHub Pages
 
 > **Portability note:** This document is self-contained. It can be handed to a fresh Claude Desktop (or any LLM) session with **no access to the repository** and still contain everything needed to design this phase in detail. When the resulting design is brought back into the repo, Claude Code should reconcile it against this file and against `PHASES.md`.
 >
@@ -129,7 +129,7 @@ Build the same web app a second way, with a `demo` build flag. In the demo build
   5. A deep link to `/world/compare` loads directly.
   6. No service worker is registered.
 - After merge, the Pages workflow publishes it and the README link opens it.
-- `PHASES.md` marks the phase complete; `CHANGELOG.md` gets a v2.5.0 entry.
+- `PHASES.md` marks the phase complete; `CHANGELOG.md` gets a v2.4.0 entry.
 
 ## Decisions to carry forward
 
@@ -154,3 +154,4 @@ Build the same web app a second way, with a `demo` build flag. In the demo build
 - The demo E2E serves the build with a GitHub Pages stand-in instead of `vite preview`, so the `404.html` deep-link fallback and the base path are really tested.
 - The normal build fails if any demo code is found in `dist/`, instead of a one-off search.
 - A root `npm run build:demo` builds the shared package first, as `npm run build` does.
+- Built before Phase 13, so Phase 14 is v2.4.0 and Phase 13 moved to v2.5.0 (Bob's call, 2026-11-19).
