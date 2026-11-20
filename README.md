@@ -17,6 +17,14 @@ FamilyPassportMap is a personal, family-friendly web app for tracking which plac
 <p align="center"><img src="docs/screenshots/mobile.png" alt="The app at phone width with bottom navigation" width="260"></p>
 <p align="center"><em>The same app on a phone, with mobile bottom navigation.</em></p>
 
+## Status
+
+| | |
+|---|---|
+| **Implemented** | Interactive US map (50 states) and world map (195 countries, one continent at a time); People with colors and profile pictures; visited counters; Compare and List views for US and World; Microsoft sign-in with private, per-account People (up to 10) and owner-only photos; account deletion; installable PWA. Live on Azure App Service. |
+| **Tested** | Unit tests (`npm test`) for the server (sign-in, ownership checks, people, visits, private photos, the primary person, legacy data adoption, account deletion), the shared reference data, and the web app's API calls, components and pages. Playwright end-to-end tests (`npm run test:e2e`) cover every user flow, on desktop and phone sizes. |
+| **Planned** | **Link** and **Join**, so accounts can see or co-manage each other's People. A demo account for portfolio visitors. Blended Compare coloring is deferred. See [`PHASES.md`](PHASES.md). |
+
 ## What it does
 
 - **Interactive US map** — click a state to mark it as visited.
