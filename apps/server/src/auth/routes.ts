@@ -11,6 +11,7 @@ import {
 import { adoptLegacyPeople } from "../access.js";
 import { enabledProviders, isEmailCodesEnabled, isLegacyDataOwner, isProviderEnabled } from "./config.js";
 import { emailRouter } from "./emailRoutes.js";
+import { passkeyRouter } from "./passkeyRoutes.js";
 import { e2eAuthRouter, fakeAuthorizationUrl, fakeIdentityFromCode, isE2eFakeAuthEnabled } from "./e2eFakeAuth.js";
 import { providerAdapter, type ProviderIdentity } from "./providers.js";
 import { deleteSession, readSessionToken, SESSION_COOKIE, sessionCookieOptions } from "./sessions.js";
@@ -27,6 +28,8 @@ export const authRouter = Router();
 authRouter.use("/e2e", e2eAuthRouter);
 // Email codes (404 unless a mail service is set up).
 authRouter.use("/email", emailRouter);
+// Passkeys (no settings needed beyond APP_BASE_URL).
+authRouter.use("/passkey", passkeyRouter);
 
 /** Short-lived cookie holding the in-flight provider sign-in: state, provider, intent, return path. */
 const PENDING_SIGN_IN_COOKIE = "fpm_signin";

@@ -121,3 +121,14 @@ export interface SignInResult {
   /** Where to go next: the welcome step, or the page the User was headed for. */
   redirectTo: string;
 }
+
+// --- Passkeys (Phase 13) ---
+
+/** Shown (400) for a passkey name that's empty or too long. */
+export const PASSKEY_NAME_MESSAGE = "Give the passkey a name of 1 to 40 characters.";
+
+/** A passkey's name ("Bob's iPhone"): trimmed, 1 to 40 characters. */
+export const passkeyNameSchema = z.string(PASSKEY_NAME_MESSAGE).trim().min(1, PASSKEY_NAME_MESSAGE).max(40, PASSKEY_NAME_MESSAGE);
+
+/** The name a passkey gets when none is given (e.g. one created while signing up). */
+export const DEFAULT_PASSKEY_NAME = "Passkey";
