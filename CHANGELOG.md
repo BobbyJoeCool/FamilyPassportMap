@@ -10,10 +10,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ### Added
 
-- **Five ways to sign in:** Microsoft, **Google**, **GitHub**, **passkeys** and **email codes**. Any of them can create an account. The sign-in page shows only the methods the server has set up.
-  - **Email codes:** type your email, get a 6-digit code (it lasts 10 minutes, works once, and allows 5 wrong guesses), type it in. Sending is rate-limited, and the reply never reveals whether an address has an account.
+- **Four ways to sign in:** Microsoft, **Google**, **GitHub** and **passkeys**. Any of them can create an account. The sign-in page shows only the methods the server has set up.
   - **Passkeys:** sign in with your device's fingerprint, face or PIN, with no username. "Create an account with a passkey" makes an account with no email.
-- **Sign-in methods page** (account menu → Sign-in methods): see every way you sign in, add a Microsoft, Google or GitHub account, a passkey or an email address, rename passkeys, and remove any method except your last. A method that already belongs to another account is refused. Accounts are never merged.
+- **Sign-in methods page** (account menu → Sign-in methods): see every way you sign in, add a Microsoft, Google or GitHub account or a passkey, rename passkeys, and remove any method except your last. A method that already belongs to another account is refused. Accounts are never merged.
 - **Header picture:** Google and GitHub profile pictures show in the header.
 - **Docker image** (`Dockerfile`) for hosting on Voyager, Bob's home server, at `passport.bobbyjoecool.dev`. Database migrations apply automatically on each start.
 
@@ -21,7 +20,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 - **Existing Microsoft accounts keep working unchanged.** A migration copies each account's Microsoft sign-in into the new `SignInMethod` table.
 - **Users:** email is now optional (passkey-only accounts), and an account with no name from a provider takes its Primary Person's name at the welcome step.
-- **Production startup** now needs `APP_BASE_URL` and at least one provider or email codes, instead of exactly the Microsoft settings. New settings: `GOOGLE_CLIENT_ID/SECRET`, `GITHUB_CLIENT_ID/SECRET`, and `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (see `apps/server/.env.example`).
+- **Production startup** now needs `APP_BASE_URL` and at least one provider, instead of exactly the Microsoft settings. New settings: `GOOGLE_CLIENT_ID/SECRET` and `GITHUB_CLIENT_ID/SECRET` (see `apps/server/.env.example`).
 - The sign-in buttons read "Continue with …" and look like each provider's own button (its logo and colors, light and dark). Passkey buttons show a passkey icon.
 - The privacy page describes what each kind of sign-in method stores.
 - **Hosting moves from Azure to Voyager** (the runbook is in `docs/Phase-13-Sign-In-Methods.md`). The Azure deploy workflow is disabled after the cutover.

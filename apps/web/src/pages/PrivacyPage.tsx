@@ -44,7 +44,6 @@ export function PrivacyPage() {
         <ul className="list-disc pl-6 space-y-1">
           <li><strong>Microsoft, Google or GitHub:</strong> that account's id, name and email address, and (Google and GitHub) the address of its profile picture, shown in the header.</li>
           <li><strong>Passkey:</strong> its public key and the name you gave it. The private key never leaves your device; we can't sign in as you with what we store.</li>
-          <li><strong>Email address:</strong> the address itself.</li>
         </ul>
         <p>We also store what you add: the People you track (each with a name, a color, and an optional photo) and the US states and countries each of them has visited.</p>
       </Section>
@@ -59,7 +58,6 @@ export function PrivacyPage() {
 
       <Section title="Signing in">
         <p>Microsoft, Google and GitHub are used only to sign you in. We never see your password there, and we don't read anything else from those accounts.</p>
-        <p>Email codes are sent through our mail service. A code works once, for 10 minutes, and we keep only a scrambled (hashed) copy of it until then.</p>
         <p>A cookie keeps you signed in on this device until you sign out or haven't used the app for 30 days.</p>
         <p>You can see and remove your sign-in methods under <strong>Sign-in methods</strong> in the account menu. Removing one deletes what we stored for it.</p>
       </Section>

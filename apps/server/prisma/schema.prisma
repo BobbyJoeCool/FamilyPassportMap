@@ -76,18 +76,17 @@ model User {
   people          Person[]       @relation("PersonOwner")
   signInMethods   SignInMethod[]
   passkeys        Passkey[]
-  emailCodes      EmailCode[]
 }
 
-// One way a User signs in with an outside identity: a Microsoft, Google or GitHub account, or an
-// email address that receives Email codes (Phase 13). The unique (kind, subject) is what makes a
+// One way a User signs in with an outside identity: a Microsoft, Google or GitHub account
+// (Phase 13). The unique (kind, subject) is what makes a
 // Sign-in method belong to exactly one User: accounts are never merged.
 model SignInMethod {
   id         String   @id @default(cuid())
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind       String // "microsoft" | "google" | "github" | "email"
-  // The provider's stable user id, or for "email" the lowercased, trimmed address.
+  kind       String // "microsoft" | "google" | "github"
+  // The provider's stable user id.
   subject    String
   // The account's email, shown on the Sign-in methods page. Null if the provider gave none.
   email      String?
@@ -113,23 +112,6 @@ model Passkey {
   lastUsedAt   DateTime @default(now())
 
   @@index([userId])
-}
-
-// A pending Email code (Phase 13): only its SHA-256 hash is stored. Only the newest code per
-// address and purpose is kept; it dies after 10 minutes or 5 wrong guesses.
-model EmailCode {
-  id        String   @id @default(cuid())
-  email     String // lowercased, trimmed
-  codeHash  String
-  purpose   String // "sign-in" | "add-email"
-  // The signed-in User adding this address ("add-email" only).
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  attempts  Int      @default(0)
-  createdAt DateTime @default(now())
-
-  @@index([email, purpose])
 }
 
 // A signed-in browser. The cookie carries a random token; only its SHA-256 hash is stored

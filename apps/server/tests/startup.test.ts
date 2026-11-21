@@ -23,7 +23,6 @@ describe("Server startup", () => {
         GOOGLE_CLIENT_SECRET: "",
         GITHUB_CLIENT_ID: "",
         GITHUB_CLIENT_SECRET: "",
-        SMTP_HOST: "",
       },
       // If the check were missing, the server would start and listen forever.
       timeout: 10_000,
@@ -32,7 +31,7 @@ describe("Server startup", () => {
     await expect(start).rejects.toMatchObject({
       killed: false,
       stderr: expect.stringContaining(
-        "Refusing to start: missing app setting APP_BASE_URL; no sign-in method is configured",
+        "Refusing to start: missing app setting APP_BASE_URL; no sign-in provider is configured",
       ),
     });
   });

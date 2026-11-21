@@ -2,8 +2,7 @@ import { PROVIDERS, type Provider } from "@familypassportmap/shared";
 import { isE2eFakeAuthEnabled } from "./e2eFakeAuth.js";
 
 // Sign-in settings (Phase 13). Each provider is enabled only when both its client id and secret
-// are set; email codes only when every mail setting is set. Everything is read per call, never at
-// import, so tests and local runs can change settings and nothing needs a restart to be checked.
+// are set. Everything is read per call, never at import, so tests and local runs can change settings and nothing needs a restart to be checked.
 
 /** The client id and secret settings for each provider. */
 const PROVIDER_SETTINGS: Record<Provider, { id: string; secret: string }> = {
@@ -11,9 +10,6 @@ const PROVIDER_SETTINGS: Record<Provider, { id: string; secret: string }> = {
   google: { id: "GOOGLE_CLIENT_ID", secret: "GOOGLE_CLIENT_SECRET" },
   github: { id: "GITHUB_CLIENT_ID", secret: "GITHUB_CLIENT_SECRET" },
 };
-
-/** The settings email codes need. All must be set, or email codes are off. */
-export const MAIL_SETTINGS = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "MAIL_FROM"] as const;
 
 /** Everything a provider adapter needs to talk to its provider. */
 export interface ProviderConfig {
@@ -47,20 +43,8 @@ export function enabledProviders(env: NodeJS.ProcessEnv = process.env): Provider
 }
 
 /**
- * Whether email codes can be sent: every mail setting is set (or the E2E fake sign-in is on, which
- * reads codes from an in-memory outbox instead of sending them).
- * @param env - the environment to check (defaults to `process.env`).
- * @returns true when email codes are offered.
- */
-export function isEmailCodesEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  // E2E runs read codes from the in-memory outbox; no mail service needed.
-  if (isE2eFakeAuthEnabled(env)) return true;
-  return MAIL_SETTINGS.every((name) => !!env[name]);
-}
-
-/**
  * What production needs to start: `APP_BASE_URL`, and at least one sign-in method that works
- * without the browser's help (a provider or email codes). Passkeys don't count: they need no
+ * without the browser's help: a provider. Passkeys don't count: they need no
  * settings, so counting them would make the rule always pass, and an existing account can't
  * sign in with a passkey it doesn't have yet.
  * @param env - the environment to check (defaults to `process.env`).
@@ -70,12 +54,9 @@ export function startupProblems(env: NodeJS.ProcessEnv = process.env): string[] 
   const problems: string[] = [];
   // Every redirect URI and the passkey domain come from the public address.
   if (!env.APP_BASE_URL) problems.push("missing app setting APP_BASE_URL");
-  // Nobody could sign in at all without a provider or email codes.
-  if (enabledProviders(env).length === 0 && !isEmailCodesEnabled(env)) {
-    problems.push(
-      "no sign-in method is configured (set a provider's CLIENT_ID and CLIENT_SECRET, or all of " +
-        `${MAIL_SETTINGS.join(", ")})`,
-    );
+  // Nobody with an existing account could sign in without a provider.
+  if (enabledProviders(env).length === 0) {
+    problems.push("no sign-in provider is configured (set a provider's CLIENT_ID and CLIENT_SECRET)");
   }
   return problems;
 }

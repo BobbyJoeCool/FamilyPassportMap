@@ -33,7 +33,7 @@ async function expectPath(path: string) {
 function renderApp(url: string, me: unknown) {
   mockFetch({
     "GET /api/me": me,
-    "GET /api/auth/methods": { providers: ["microsoft"], emailCodes: false, passkeys: true },
+    "GET /api/auth/methods": { providers: ["microsoft"], passkeys: true },
     "GET /api/people": [makePerson({ id: "p1", isPrimary: true })],
     "GET /api/people/allowance": { owned: 1, max: 10 },
     "GET /api/people/p1/visits": [],

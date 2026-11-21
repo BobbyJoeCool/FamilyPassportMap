@@ -14,7 +14,7 @@ import { isDemo } from "../demoMode";
  */
 export function UserMenu({ user }: { user: SignedInUser }) {
   const demo = isDemo();
-  // Passkey and email-code accounts may have no name (yet): fall back to the email, then "New user".
+  // Passkey accounts may have no name (yet): fall back to the email, then "New user".
   const label = userLabel(user);
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);

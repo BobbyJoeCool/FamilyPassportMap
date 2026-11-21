@@ -9,8 +9,7 @@ import {
   type SignInIntent,
 } from "@familypassportmap/shared";
 import { adoptLegacyPeople } from "../access.js";
-import { enabledProviders, isEmailCodesEnabled, isLegacyDataOwner, isProviderEnabled } from "./config.js";
-import { emailRouter } from "./emailRoutes.js";
+import { enabledProviders, isLegacyDataOwner, isProviderEnabled } from "./config.js";
 import { passkeyRouter } from "./passkeyRoutes.js";
 import { e2eAuthRouter, fakeAuthorizationUrl, fakeIdentityFromCode, isE2eFakeAuthEnabled } from "./e2eFakeAuth.js";
 import { providerAdapter, type ProviderIdentity } from "./providers.js";
@@ -26,8 +25,6 @@ export const authRouter = Router();
 
 // The E2E-only fake sign-in page (a 404 unless E2E_FAKE_AUTH=true outside production).
 authRouter.use("/e2e", e2eAuthRouter);
-// Email codes (404 unless a mail service is set up).
-authRouter.use("/email", emailRouter);
 // Passkeys (no settings needed beyond APP_BASE_URL).
 authRouter.use("/passkey", passkeyRouter);
 
@@ -99,7 +96,6 @@ function errorPath(intent: SignInIntent, reason: SignInError): string {
 authRouter.get("/methods", (_req, res) => {
   const body: AvailableSignInMethods = {
     providers: enabledProviders(),
-    emailCodes: isEmailCodesEnabled(),
     passkeys: true,
   };
   res.json(body);

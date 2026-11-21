@@ -4,7 +4,6 @@ import { jsonResponse, makePerson, mockFetch } from "../test/api";
 vi.mock("../navigation", () => ({ loadPage: vi.fn() }));
 const { loadPage } = await import("../navigation");
 const {
-  addEmailWithCode,
   createPrimaryPerson,
   deleteAccount,
   fetchAvailableSignInMethods,
@@ -13,9 +12,7 @@ const {
   providerSignInUrl,
   removeSignInMethod,
   renamePasskey,
-  signInWithEmailCode,
   signOut,
-  startEmailCode,
 } = await import("./auth");
 
 const me = {
@@ -94,28 +91,8 @@ describe("providerSignInUrl", () => {
 
 describe("sign-in method calls", () => {
   it("reads which sign-in methods the server offers", async () => {
-    mockFetch({ "GET /api/auth/methods": { providers: ["google"], emailCodes: true, passkeys: true } });
-    await expect(fetchAvailableSignInMethods()).resolves.toEqual({ providers: ["google"], emailCodes: true, passkeys: true });
-  });
-
-  it("sends and checks email codes with the right purpose", async () => {
-    const { calls } = mockFetch({
-      "POST /api/auth/email/start": jsonResponse(204),
-      "POST /api/auth/email/verify": (call: { body: unknown }) => (call.body as { purpose: string }).purpose === "sign-in" ? { redirectTo: "/welcome" } : jsonResponse(204),
-    });
-    await startEmailCode("a@b.co", "sign-in");
-    await expect(signInWithEmailCode("a@b.co", "123456", "/us/list")).resolves.toEqual({ redirectTo: "/welcome" });
-    await addEmailWithCode("c@d.co", "654321");
-    expect(calls.map((call) => call.body)).toEqual([
-      { email: "a@b.co", purpose: "sign-in" },
-      { email: "a@b.co", code: "123456", purpose: "sign-in", returnTo: "/us/list" },
-      { email: "c@d.co", code: "654321", purpose: "add-email" },
-    ]);
-  });
-
-  it("passes on the server's message for a wrong code", async () => {
-    mockFetch({ "POST /api/auth/email/verify": jsonResponse(400, { error: "That code didn't work. Check it or send a new one." }) });
-    await expect(signInWithEmailCode("a@b.co", "000000", "/")).rejects.toThrow("That code didn't work.");
+    mockFetch({ "GET /api/auth/methods": { providers: ["google"], passkeys: true } });
+    await expect(fetchAvailableSignInMethods()).resolves.toEqual({ providers: ["google"], passkeys: true });
   });
 
   it("lists, removes and renames sign-in methods", async () => {

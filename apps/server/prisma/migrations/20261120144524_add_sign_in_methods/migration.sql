@@ -34,19 +34,6 @@ CREATE TABLE "Passkey" (
     CONSTRAINT "Passkey_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- CreateTable
-CREATE TABLE "EmailCode" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "email" TEXT NOT NULL,
-    "codeHash" TEXT NOT NULL,
-    "purpose" TEXT NOT NULL,
-    "userId" TEXT,
-    "expiresAt" DATETIME NOT NULL,
-    "attempts" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "EmailCode_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
 -- RedefineTables
 PRAGMA defer_foreign_keys=ON;
 PRAGMA foreign_keys=OFF;
@@ -77,6 +64,3 @@ CREATE UNIQUE INDEX "Passkey_credentialId_key" ON "Passkey"("credentialId");
 
 -- CreateIndex
 CREATE INDEX "Passkey_userId_idx" ON "Passkey"("userId");
-
--- CreateIndex
-CREATE INDEX "EmailCode_email_purpose_idx" ON "EmailCode"("email", "purpose");

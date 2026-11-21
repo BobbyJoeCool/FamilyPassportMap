@@ -24,7 +24,7 @@ const { startAuthentication } = await import("@simplewebauthn/browser");
 const { SignInPage } = await import("./SignInPage");
 const { SignInMethodsPage } = await import("./SignInMethodsPage");
 
-const ALL_METHODS = { providers: ["microsoft", "google", "github"], emailCodes: true, passkeys: true };
+const ALL_METHODS = { providers: ["microsoft", "google", "github"], passkeys: true };
 
 beforeEach(() => {
   vi.mocked(loadPage).mockClear();
@@ -48,15 +48,14 @@ describe("SignInPage", () => {
     expect(screen.getByRole("link", { name: "Continue with Google" })).toHaveAttribute("href", "/api/auth/google?returnTo=%2Fworld%2Flist");
     expect(screen.getByRole("link", { name: "Continue with GitHub" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign in with a passkey" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Email me a code" })).toBeInTheDocument();
   });
 
-  it("shows only what's set up: no missing providers, no email without a mail service", async () => {
-    mockFetch({ "GET /api/auth/methods": { providers: ["google"], emailCodes: false, passkeys: true } });
+  it("shows only the providers that are set up, and no email field", async () => {
+    mockFetch({ "GET /api/auth/methods": { providers: ["google"], passkeys: true } });
     renderAt(<SignInPage />, "/signin");
     expect(await screen.findByRole("link", { name: "Continue with Google" })).toHaveAttribute("href", "/api/auth/google?returnTo=%2Fus%2Fmap");
     expect(screen.queryByRole("link", { name: "Continue with Microsoft" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Email me a code" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
   });
 
   it("hides passkeys when the browser or page can't use them", async () => {
@@ -65,44 +64,6 @@ describe("SignInPage", () => {
     renderAt(<SignInPage />, "/signin");
     await screen.findByRole("link", { name: "Continue with Microsoft" });
     expect(screen.queryByRole("button", { name: "Sign in with a passkey" })).not.toBeInTheDocument();
-  });
-
-  it("signs in with an email code: send, type the code, then load where the server says", async () => {
-    const { calls } = mockFetch({
-      "GET /api/auth/methods": ALL_METHODS,
-      "POST /api/auth/email/start": jsonResponse(204),
-      "POST /api/auth/email/verify": { redirectTo: "/welcome" },
-    });
-    renderAt(<SignInPage />, "/signin?returnTo=%2Fus%2Flist");
-    await userEvent.type(await screen.findByLabelText("Email"), "ann@example.com");
-    await userEvent.click(screen.getByRole("button", { name: "Email me a code" }));
-    expect(await screen.findByText(/a code is on its way/)).toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText("6-digit code"), "12a3456");
-    await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
-    await waitFor(() => expect(loadPage).toHaveBeenCalledWith("/welcome"));
-    expect(calls.find((call) => call.url === "/api/auth/email/verify")?.body).toEqual({
-      email: "ann@example.com",
-      code: "123456",
-      purpose: "sign-in",
-      returnTo: "/us/list",
-    });
-  });
-
-  it("shows a wrong code's message and stays on the code step, with a way back", async () => {
-    mockFetch({
-      "GET /api/auth/methods": ALL_METHODS,
-      "POST /api/auth/email/start": jsonResponse(204),
-      "POST /api/auth/email/verify": jsonResponse(400, { error: "That code didn't work. Check it or send a new one." }),
-    });
-    renderAt(<SignInPage />, "/signin");
-    await userEvent.type(await screen.findByLabelText("Email"), "ann@example.com");
-    await userEvent.click(screen.getByRole("button", { name: "Email me a code" }));
-    await userEvent.type(await screen.findByLabelText("6-digit code"), "000000");
-    await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("That code didn't work.");
-    expect(loadPage).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByRole("button", { name: "Use a different email" }));
-    expect(screen.getByLabelText("Email")).toBeInTheDocument();
   });
 
   it("signs in with a passkey", async () => {
@@ -175,7 +136,7 @@ describe("SignInMethodsPage", () => {
     expect(rowFor("alice@example.com")).toHaveTextContent(/Added .*2026.* Last used/);
     expect(screen.getByRole("link", { name: "Add Google" })).toHaveAttribute("href", "/api/auth/google?returnTo=%2Faccount%2Fsign-in&intent=add");
     expect(screen.getByRole("button", { name: "Add passkey" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Email me a code" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
   });
 
   it("removes a method and reloads the list", async () => {
@@ -237,22 +198,6 @@ describe("SignInMethodsPage", () => {
     await userEvent.type(await screen.findByPlaceholderText("e.g. Bob's iPhone"), "My laptop");
     await userEvent.click(screen.getByRole("button", { name: "Add passkey" }));
     await waitFor(() => expect(calls.find((call) => call.url === "/api/auth/passkey/register/verify")?.body).toEqual({ response: { id: "new-cred" }, name: "My laptop" }));
-  });
-
-  it("adds an email address with a code", async () => {
-    const { calls } = mockFetch({
-      "GET /api/me/sign-in-methods": { methods: [microsoft] },
-      "GET /api/auth/methods": ALL_METHODS,
-      "POST /api/auth/email/start": jsonResponse(204),
-      "POST /api/auth/email/verify": jsonResponse(204),
-    });
-    renderAt(<SignInMethodsPage />, "/account/sign-in");
-    await userEvent.type(await screen.findByLabelText("Email"), "a@mail.test");
-    await userEvent.click(screen.getByRole("button", { name: "Email me a code" }));
-    await userEvent.type(await screen.findByLabelText("6-digit code"), "123456");
-    await userEvent.click(screen.getByRole("button", { name: "Add email" }));
-    await waitFor(() => expect(screen.getByLabelText("Email")).toHaveValue(""));
-    expect(calls.filter((call) => call.method === "POST").map((call) => (call.body as { purpose: string }).purpose)).toEqual(["add-email", "add-email"]);
   });
 
   it("explains a provider add that came back taken", async () => {

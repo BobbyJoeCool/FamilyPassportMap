@@ -14,22 +14,19 @@ export const WELCOME_PATH = "/welcome";
 export const ACCOUNT_SIGN_IN_PATH = "/account/sign-in";
 
 /** The `SignInMethod.kind` values (passkeys have their own table). */
-export type MethodKind = "microsoft" | "google" | "github" | "email";
+export type MethodKind = "microsoft" | "google" | "github";
 
-/** Who a provider (or an email code) says is signing in. */
+/** Who a provider says is signing in. */
 export interface MethodIdentity {
   kind: MethodKind;
-  /** The provider's stable user id, or for email the lowercased, trimmed address. */
+  /** The provider's stable user id. */
   subject: string;
   /** The account's email, if any. Refreshes the User's display email. */
   email: string | null;
   /** The account's name, if the provider gives one. Refreshes the User's display name. */
   name: string | null;
-  /**
-   * The provider's profile picture. A provider always sets it (null when it sends none, as
-   * Microsoft doesn't); undefined (email codes) leaves the User's picture alone.
-   */
-  avatarUrl?: string | null;
+  /** The provider's profile picture; null when it sends none (Microsoft doesn't). */
+  avatarUrl: string | null;
 }
 
 /**
@@ -53,15 +50,15 @@ function refreshedDisplay(user: Pick<User, "email" | "displayName" | "avatarUrl"
   return {
     email: identity.email ?? user.email,
     displayName: identity.name || user.displayName,
-    // undefined means this kind of sign-in has no picture to offer, so the old one stays.
-    avatarUrl: identity.avatarUrl === undefined ? user.avatarUrl : identity.avatarUrl,
+    // The provider just used decides the picture, including taking it away (null).
+    avatarUrl: identity.avatarUrl,
   };
 }
 
 /**
  * Signs in with a Sign-in method: the User who has it, or a brand-new User when nobody does.
  * Refreshes the method's last use and the User's display values.
- * @param identity - who the provider (or email code) says this is.
+ * @param identity - who the provider says this is.
  * @returns the User, and whether they were just created.
  */
 export async function signInWithMethod(identity: MethodIdentity): Promise<{ user: User; created: boolean }> {

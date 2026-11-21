@@ -11,11 +11,11 @@ import { completeSignIn, fakeCode, identityFor, newAgent, signIn, type TestAgent
 // Phase 13's sign-in-method model, through the provider routes (Microsoft is the faked adapter;
 // Google and GitHub get their own tests once built).
 
-const ENV_KEYS = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "SMTP_HOST"];
+const ENV_KEYS = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"];
 const savedEnv = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]));
 
 afterEach(() => {
-  // Put back any provider or mail setting a test changed.
+  // Put back any provider setting a test changed.
   for (const [key, value] of Object.entries(savedEnv)) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
@@ -48,12 +48,12 @@ async function userIdFor(name: string): Promise<string> {
 }
 
 describe("GET /api/auth/methods", () => {
-  it("lists only the providers that are set up, and whether email codes are", async () => {
+  it("lists only the providers that are set up", async () => {
     // Tests set every provider up (tests/setup.ts); take Google and GitHub away for this one.
     for (const key of ["GOOGLE_CLIENT_ID", "GITHUB_CLIENT_SECRET"]) delete process.env[key];
     const res = await newAgent().get("/api/auth/methods");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ providers: ["microsoft"], emailCodes: false, passkeys: true });
+    expect(res.body).toEqual({ providers: ["microsoft"], passkeys: true });
   });
 
   it("adds a provider once both its id and secret are set", async () => {
@@ -146,13 +146,13 @@ describe("Adding a sign-in method", () => {
 });
 
 describe("Display values", () => {
-  it("a provider's details replace the stored ones; an email code leaves the name and picture alone", async () => {
+  it("a provider's details replace the stored ones; a missing name or email keeps the stored one", async () => {
     const { user } = await signInWithMethod({ kind: "google", subject: "g1", email: "a@g.com", name: "Ann", avatarUrl: "https://pic/1" });
     expect(user).toMatchObject({ email: "a@g.com", displayName: "Ann", avatarUrl: "https://pic/1" });
 
-    await prisma.signInMethod.create({ data: { userId: user.id, kind: "email", subject: "ann@mail.com", email: "ann@mail.com" } });
-    const byEmail = await signInWithMethod({ kind: "email", subject: "ann@mail.com", email: "ann@mail.com", name: null });
-    expect(byEmail.user).toMatchObject({ id: user.id, email: "ann@mail.com", displayName: "Ann", avatarUrl: "https://pic/1" });
+    await prisma.signInMethod.create({ data: { userId: user.id, kind: "github", subject: "gh1", email: null } });
+    const byGitHub = await signInWithMethod({ kind: "github", subject: "gh1", email: null, name: null, avatarUrl: "https://pic/2" });
+    expect(byGitHub.user).toMatchObject({ id: user.id, email: "a@g.com", displayName: "Ann", avatarUrl: "https://pic/2" });
 
     const byGoogle = await signInWithMethod({ kind: "google", subject: "g1", email: "a@g.com", name: "Ann B", avatarUrl: null });
     expect(byGoogle).toMatchObject({ created: false, user: { displayName: "Ann B", avatarUrl: null } });

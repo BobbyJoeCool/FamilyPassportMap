@@ -38,27 +38,6 @@ export async function completeFakeProvider(page: Page, userName: string): Promis
 }
 
 /**
- * The newest Email code "sent" to an address (E2E runs keep mail in an in-memory outbox).
- * @param request - a request client for the app.
- * @param to - the address.
- * @returns the 6-digit code.
- */
-export async function emailCodeFor(request: APIRequestContext, to: string): Promise<string> {
-  let code = "";
-  // The code is sent in the background, so give it a moment to land.
-  await expect
-    .poll(async () => {
-      const res = await request.get(`/api/auth/e2e/outbox?to=${encodeURIComponent(to)}`);
-      // No message yet.
-      if (!res.ok()) return "";
-      code = /\b(\d{6})\b/.exec((await res.json()).text)?.[1] ?? "";
-      return code;
-    })
-    .toMatch(/^\d{6}$/);
-  return code;
-}
-
-/**
  * Signs in through the real sign-in page and the E2E fake Microsoft page.
  * @param page - the browser page.
  * @param userName - the fake user name to sign in as.

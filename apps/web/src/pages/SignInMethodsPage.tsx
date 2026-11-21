@@ -11,16 +11,13 @@ import {
   type SignInMethodSummary,
 } from "@familypassportmap/shared";
 import {
-  addEmailWithCode,
   createPasskey,
   fetchAvailableSignInMethods,
   listSignInMethods,
   providerSignInUrl,
   removeSignInMethod,
   renamePasskey,
-  startEmailCode,
 } from "../api/auth";
-import { EmailCodeForm } from "../components/EmailCodeForm";
 import { PasskeyIcon, ProviderButton } from "../components/SignInButtons";
 import { canUsePasskeys, passkeyErrorMessage } from "../passkeySupport";
 
@@ -32,7 +29,7 @@ const ADD_ERRORS: Record<SignInError, string> = {
 };
 
 /** How each kind of method is named in the list. */
-const KIND_LABELS: Record<SignInMethodKind, string> = { ...PROVIDER_LABELS, email: "Email", passkey: "Passkey" };
+const KIND_LABELS: Record<SignInMethodKind, string> = { ...PROVIDER_LABELS, passkey: "Passkey" };
 
 /**
  * A date for the list, e.g. "Nov 20, 2026".
@@ -45,8 +42,8 @@ function shortDate(iso: string): string {
 
 /**
  * The Sign-in methods page (`/account/sign-in`, from the account menu): every way the User can sign
- * in, with remove (never the last one) and rename for passkeys, plus adding a provider account, a
- * passkey or an email address.
+ * in, with remove (never the last one) and rename for passkeys, plus adding a provider account or a
+ * passkey.
  */
 export function SignInMethodsPage() {
   const [params, setParams] = useSearchParams();
@@ -78,7 +75,7 @@ export function SignInMethodsPage() {
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Couldn't load your sign-in methods."));
     fetchAvailableSignInMethods()
       .then(setAvailable)
-      .catch(() => setAvailable({ providers: [], emailCodes: false, passkeys: false }));
+      .catch(() => setAvailable({ providers: [], passkeys: false }));
   }, []);
 
   /**
@@ -249,21 +246,6 @@ export function SignInMethodsPage() {
                 Add passkey
               </button>
             </form>
-          )}
-
-          {/* An email address, confirmed with a code. */}
-          {available.emailCodes && (
-            <div className="max-w-sm">
-              <EmailCodeForm
-                sendLabel="Email me a code"
-                verifyLabel="Add email"
-                onSend={(email) => startEmailCode(email, "add-email")}
-                onVerify={async (email, code) => {
-                  await addEmailWithCode(email, code);
-                  await refresh();
-                }}
-              />
-            </div>
           )}
         </div>
       )}

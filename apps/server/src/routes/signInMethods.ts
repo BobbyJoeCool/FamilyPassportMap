@@ -18,7 +18,7 @@ import { prisma } from "../db.js";
 export const signInMethodsRouter = Router();
 
 /**
- * The summary of a provider or email sign-in method.
+ * The summary of a provider sign-in method.
  * @param method - the row.
  * @returns what the Sign-in methods page shows.
  */
@@ -63,8 +63,8 @@ signInMethodsRouter.get("/sign-in-methods", async (req, res) => {
 });
 
 /**
- * `DELETE /api/me/sign-in-methods/:id` — remove one of the User's sign-in methods (provider, email
- * or passkey). The last one can't go: the count and the delete happen in one transaction, so two
+ * `DELETE /api/me/sign-in-methods/:id` — remove one of the User's sign-in methods (provider or
+ * passkey). The last one can't go: the count and the delete happen in one transaction, so two
  * removals at once can't both pass the check.
  */
 signInMethodsRouter.delete("/sign-in-methods/:id", async (req, res) => {

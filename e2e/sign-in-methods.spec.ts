@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
-import { api, completeFakeProvider, emailCodeFor, newUser, uniqueUserName } from "./helpers";
+import { api, completeFakeProvider, newUser, uniqueUserName } from "./helpers";
 
-// Phase 13's sign-in methods in a real browser. Providers go through the E2E fake sign-in page,
-// email codes are read from the server's E2E outbox, and passkeys use Chrome's virtual authenticator
+// Phase 13's sign-in methods in a real browser. Providers go through the E2E fake sign-in page, and
+// passkeys use Chrome's virtual authenticator
 // (a software passkey device driven through the DevTools protocol). Every test uses brand-new Users.
 
 /**
@@ -52,25 +52,14 @@ async function currentUserId(page: Page): Promise<string> {
   return (await api(page.request, "GET", "/api/me")).user.id;
 }
 
-/**
- * Signs in (or up) with an email code from the sign-in page.
- * @param page - the browser page (on /signin).
- * @param email - the address.
- */
-async function signInWithEmail(page: Page, email: string): Promise<void> {
-  await page.getByLabel("Email").fill(email);
-  await page.getByRole("button", { name: "Email me a code" }).click();
-  await page.getByLabel("6-digit code").fill(await emailCodeFor(page.request, email));
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-}
-
 test("the sign-in page offers every method set up on the server", async ({ page }) => {
   await page.goto("/signin");
   for (const provider of ["Microsoft", "Google", "GitHub"]) {
     await expect(page.getByRole("link", { name: `Continue with ${provider}` })).toBeVisible();
   }
   await expect(page.getByRole("button", { name: "Sign in with a passkey" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Email me a code" })).toBeVisible();
+  // Email codes were removed before v2.5.0 shipped.
+  await expect(page.getByLabel("Email")).toHaveCount(0);
 });
 
 for (const provider of ["Google", "GitHub"]) {
@@ -91,27 +80,6 @@ for (const provider of ["Google", "GitHub"]) {
   });
 }
 
-test("signing up with an email code lands on welcome; the account then shows the person's name", async ({ page }) => {
-  const email = `${uniqueUserName("mail")}@e2e.test`;
-  await page.goto("/signin");
-  await signInWithEmail(page, email);
-  await expect(page.getByLabel("Your name")).toHaveValue("");
-  await finishWelcome(page, "Mailer");
-  await expect(page.getByRole("button", { name: /Mailer/ }).first()).toBeVisible();
-});
-
-test("a wrong email code is refused", async ({ page }) => {
-  const email = `${uniqueUserName("wrong")}@e2e.test`;
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByRole("button", { name: "Email me a code" }).click();
-  const code = await emailCodeFor(page.request, email);
-  await page.getByLabel("6-digit code").fill(code === "000000" ? "111111" : "000000");
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("alert")).toHaveText("That code didn't work. Check it or send a new one.");
-  await expect(page).toHaveURL(/\/signin/);
-});
-
 test("creating an account with a passkey, then signing back in with it", async ({ page }) => {
   await addVirtualAuthenticator(page);
   await page.goto("/signin");
@@ -126,12 +94,11 @@ test("creating an account with a passkey, then signing back in with it", async (
   expect(await currentUserId(page)).toBe(id);
 });
 
-test("adding Google, an email and a passkey to a Microsoft account; each then signs into it", async ({ page }) => {
+test("adding Google and a passkey to a Microsoft account; each then signs into it", async ({ page }) => {
   await addVirtualAuthenticator(page);
   await newUser(page, "adder");
   const id = await currentUserId(page);
   const googleName = uniqueUserName("added-google");
-  const email = `${uniqueUserName("added")}@e2e.test`;
 
   await page.getByRole("button", { name: /Adder/ }).first().click();
   await page.getByRole("menuitem", { name: "Sign-in methods" }).click();
@@ -143,30 +110,17 @@ test("adding Google, an email and a passkey to a Microsoft account; each then si
   await expect(page).toHaveURL(/\/account\/sign-in$/);
   await expect(page.getByRole("listitem").filter({ hasText: "Google:" })).toBeVisible();
 
-  // An email address, confirmed with its code.
-  await page.getByLabel("Email").fill(email);
-  await page.getByRole("button", { name: "Email me a code" }).click();
-  await page.getByLabel("6-digit code").fill(await emailCodeFor(page.request, email));
-  await page.getByRole("button", { name: "Add email" }).click();
-  await expect(page.getByRole("listitem").filter({ hasText: email })).toBeVisible();
-
   // A passkey on this (virtual) device.
   await page.getByPlaceholder("e.g. Bob's iPhone").fill("E2E key");
   await page.getByRole("button", { name: "Add passkey" }).click();
   await expect(page.getByRole("listitem").filter({ hasText: "Passkey: E2E key" })).toBeVisible();
-  await expect(page.getByRole("listitem")).toHaveCount(4);
+  await expect(page.getByRole("listitem")).toHaveCount(3);
 
   // Each new method signs into the same account.
   await signOut(page);
   await page.goto("/signin");
   await page.getByRole("link", { name: "Continue with Google" }).click();
   await completeFakeProvider(page, googleName);
-  expect(await currentUserId(page)).toBe(id);
-
-  await signOut(page);
-  await page.goto("/signin");
-  await signInWithEmail(page, email);
-  await expect(page).toHaveURL(/\/us\/map$/);
   expect(await currentUserId(page)).toBe(id);
 
   await signOut(page);
@@ -178,12 +132,9 @@ test("adding Google, an email and a passkey to a Microsoft account; each then si
 
 test("removing methods down to the last one, which can't be removed", async ({ page }) => {
   await newUser(page, "remover");
-  const email = `${uniqueUserName("rm")}@e2e.test`;
   await page.goto("/account/sign-in");
-  await page.getByLabel("Email").fill(email);
-  await page.getByRole("button", { name: "Email me a code" }).click();
-  await page.getByLabel("6-digit code").fill(await emailCodeFor(page.request, email));
-  await page.getByRole("button", { name: "Add email" }).click();
+  await page.getByRole("link", { name: "Add GitHub" }).click();
+  await completeFakeProvider(page, uniqueUserName("rm-github"));
   await expect(page.getByRole("listitem")).toHaveCount(2);
 
   await page.getByRole("listitem").filter({ hasText: "Microsoft:" }).getByRole("button", { name: "Remove" }).click();

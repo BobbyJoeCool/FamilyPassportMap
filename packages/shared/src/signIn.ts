@@ -29,7 +29,7 @@ export function isProvider(value: unknown): value is Provider {
 }
 
 /** Every kind of sign-in method, as `GET /api/me/sign-in-methods` reports them. */
-export type SignInMethodKind = Provider | "email" | "passkey";
+export type SignInMethodKind = Provider | "passkey";
 
 /** What a provider sign-in start is for: signing in (or up), or adding to the signed-in account. */
 export type SignInIntent = "sign-in" | "add";
@@ -38,8 +38,6 @@ export type SignInIntent = "sign-in" | "add";
 export interface AvailableSignInMethods {
   /** Providers with a client id and secret configured, in display order. */
   providers: Provider[];
-  /** Email codes need a mail service configured. */
-  emailCodes: boolean;
   /** Passkeys need no settings; the browser must also be in a secure context. */
   passkeys: boolean;
 }
@@ -48,7 +46,7 @@ export interface AvailableSignInMethods {
 export interface SignInMethodSummary {
   id: string;
   kind: SignInMethodKind;
-  /** The account's email, the email address itself, or the passkey's name. */
+  /** The account's email, or the passkey's name. */
   label: string;
   createdAt: string;
   lastUsedAt: string;
@@ -80,49 +78,15 @@ export function safeReturnTo(value: unknown): string {
   return DEFAULT_LANDING_PATH;
 }
 
-// --- Email codes (Phase 13) ---
+// --- Passkey sign-in ---
 
-/** What an email code is for: signing in (or up), or adding the address to the signed-in account. */
-export const EMAIL_CODE_PURPOSES = ["sign-in", "add-email"] as const;
-export type EmailCodePurpose = (typeof EMAIL_CODE_PURPOSES)[number];
-
-/** Shown (400) for an address that isn't a valid email. */
-export const INVALID_EMAIL_MESSAGE = "Enter a valid email address.";
-
-/** Shown (400) for a wrong, expired, used-up or malformed code. */
-export const EMAIL_CODE_FAILED_MESSAGE = "That code didn't work. Check it or send a new one.";
-
-/** An email address as the app stores it: trimmed and lowercased, so one address is one subject. */
-export const emailAddressSchema = z
-  .string(INVALID_EMAIL_MESSAGE)
-  .trim()
-  .toLowerCase()
-  .max(254, INVALID_EMAIL_MESSAGE)
-  .pipe(z.email(INVALID_EMAIL_MESSAGE));
-
-/** Body of `POST /api/auth/email/start`. */
-export const emailCodeStartSchema = z.object({
-  email: emailAddressSchema,
-  purpose: z.enum(EMAIL_CODE_PURPOSES),
-});
-export type EmailCodeStartInput = z.infer<typeof emailCodeStartSchema>;
-
-/** Body of `POST /api/auth/email/verify`. The code is exactly 6 digits. */
-export const emailCodeVerifySchema = z.object({
-  email: emailAddressSchema,
-  code: z.string(EMAIL_CODE_FAILED_MESSAGE).trim().regex(/^\d{6}$/, EMAIL_CODE_FAILED_MESSAGE),
-  purpose: z.enum(EMAIL_CODE_PURPOSES),
-  returnTo: z.string().optional(),
-});
-export type EmailCodeVerifyInput = z.infer<typeof emailCodeVerifySchema>;
-
-/** Response of a successful sign-in through `POST /api/auth/email/verify` (or a passkey). */
+/** Response of a successful passkey sign-in or sign-up. */
 export interface SignInResult {
   /** Where to go next: the welcome step, or the page the User was headed for. */
   redirectTo: string;
 }
 
-// --- Passkeys (Phase 13) ---
+// --- Passkey names (Phase 13) ---
 
 /** Shown (400) for a passkey name that's empty or too long. */
 export const PASSKEY_NAME_MESSAGE = "Give the passkey a name of 1 to 40 characters.";

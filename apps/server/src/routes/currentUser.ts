@@ -38,7 +38,7 @@ currentUserRouter.post("/primary-person", async (req, res) => {
     res.status(409).json({ error: "You already have a Primary Person." });
     return;
   }
-  // A passkey or email-code account has no name from a provider; it takes its Primary Person's.
+  // A passkey account has no name from a provider; it takes its Primary Person's.
   await prisma.user.updateMany({ where: { id: req.user!.id, displayName: "" }, data: { displayName: person.name } });
   res.status(201).json(toPersonResponse(person, person.id));
 });

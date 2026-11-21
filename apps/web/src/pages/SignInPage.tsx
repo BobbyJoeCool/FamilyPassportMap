@@ -8,8 +8,7 @@ import {
   type AvailableSignInMethods,
   type SignInError,
 } from "@familypassportmap/shared";
-import { createPasskey, fetchAvailableSignInMethods, providerSignInUrl, signInWithEmailCode, signInWithPasskey, startEmailCode } from "../api/auth";
-import { EmailCodeForm } from "../components/EmailCodeForm";
+import { createPasskey, fetchAvailableSignInMethods, providerSignInUrl, signInWithPasskey } from "../api/auth";
 import { PasskeyButton, ProviderButton } from "../components/SignInButtons";
 import { loadPage } from "../navigation";
 import { canUsePasskeys, passkeyErrorMessage } from "../passkeySupport";
@@ -23,7 +22,7 @@ const ERROR_MESSAGES: Record<SignInError, string> = {
 
 /**
  * The public sign-in page: every signed-out visit lands here. Offers whichever sign-in methods the
- * server has set up (`GET /api/auth/methods`): a button per provider, a passkey, and an Email code.
+ * server has set up (`GET /api/auth/methods`): a button per provider, and a passkey.
  * Any of them signs in, or creates an account the first time, then returns to `returnTo`.
  */
 export function SignInPage() {
@@ -119,26 +118,6 @@ export function SignInPage() {
                   </p>
                 )}
               </div>
-            )}
-
-            {/* Email codes need a mail service on the server. */}
-            {methods.emailCodes && (
-              <>
-                {/* A divider, only when there's something above to divide from. */}
-                {(methods.providers.length > 0 || showPasskeys) && (
-                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-                    <span className="flex-1 border-t border-[var(--color-border)]" />
-                    or
-                    <span className="flex-1 border-t border-[var(--color-border)]" />
-                  </div>
-                )}
-                <EmailCodeForm
-                  sendLabel="Email me a code"
-                  verifyLabel="Sign in"
-                  onSend={(email) => startEmailCode(email, "sign-in")}
-                  onVerify={async (email, code) => loadPage((await signInWithEmailCode(email, code, returnTo)).redirectTo)}
-                />
-              </>
             )}
           </div>
         )}

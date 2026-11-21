@@ -184,24 +184,29 @@ describe("Protected routes", () => {
 
 describe("Sign-in configuration", () => {
   const microsoft = { MICROSOFT_CLIENT_ID: "id", MICROSOFT_CLIENT_SECRET: "secret" };
-  const mail = { SMTP_HOST: "h", SMTP_PORT: "587", SMTP_USER: "u", SMTP_PASSWORD: "p", MAIL_FROM: "a@b.c" };
 
-  it("needs APP_BASE_URL and at least one sign-in method", () => {
+  it("needs APP_BASE_URL and at least one provider", () => {
     expect(startupProblems({})).toEqual([
       "missing app setting APP_BASE_URL",
-      expect.stringContaining("no sign-in method is configured"),
+      expect.stringContaining("no sign-in provider is configured"),
     ]);
   });
 
-  it("is satisfied by any one complete provider, or by email codes alone", () => {
+  it("is satisfied by any one complete provider", () => {
     expect(startupProblems({ APP_BASE_URL: "http://x", ...microsoft })).toEqual([]);
     expect(startupProblems({ APP_BASE_URL: "http://x", GITHUB_CLIENT_ID: "id", GITHUB_CLIENT_SECRET: "s" })).toEqual([]);
-    expect(startupProblems({ APP_BASE_URL: "http://x", ...mail })).toEqual([]);
   });
 
-  it("doesn't count a provider missing its secret, or partial mail settings", () => {
-    expect(startupProblems({ APP_BASE_URL: "http://x", MICROSOFT_CLIENT_ID: "id", ...mail, SMTP_PASSWORD: "" })).toEqual([
-      expect.stringContaining("no sign-in method is configured"),
+  it("doesn't count a provider missing its secret", () => {
+    expect(startupProblems({ APP_BASE_URL: "http://x", MICROSOFT_CLIENT_ID: "id" })).toEqual([
+      expect.stringContaining("no sign-in provider is configured"),
+    ]);
+  });
+
+  it("still refuses old mail settings on their own, since email codes are gone", () => {
+    const oldMailSettings = { SMTP_HOST: "h", SMTP_PORT: "587", SMTP_USER: "u", SMTP_PASSWORD: "p", MAIL_FROM: "a@b.c" };
+    expect(startupProblems({ APP_BASE_URL: "http://x", ...oldMailSettings })).toEqual([
+      expect.stringContaining("no sign-in provider is configured"),
     ]);
   });
 });

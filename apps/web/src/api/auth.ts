@@ -3,7 +3,6 @@ import type {
   AvailableSignInMethods,
   CreatePersonInput,
   CurrentUserResponse,
-  EmailCodePurpose,
   Person,
   Provider,
   SignInIntent,
@@ -70,7 +69,7 @@ export function providerSignInUrl(provider: Provider, returnTo: string, intent: 
 
 /**
  * Which ways of signing in the server offers. Public: called while signed out.
- * @returns the enabled providers, and whether email codes and passkeys are available.
+ * @returns the enabled providers, and whether passkeys are available.
  */
 export async function fetchAvailableSignInMethods(): Promise<AvailableSignInMethods> {
   return handleResponse<AvailableSignInMethods>(await fetch("/api/auth/methods"));
@@ -89,39 +88,6 @@ async function postJson<T>(url: string, body?: unknown): Promise<T> {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   return handleResponse<T>(res);
-}
-
-/**
- * Asks for an Email code. The server answers the same way whether or not the address has an
- * account, so success only means "if it can be sent, it's on its way".
- * @param email - the address.
- * @param purpose - "sign-in", or "add-email" to add it to the signed-in account.
- * @throws with the server's message for an invalid address.
- */
-export async function startEmailCode(email: string, purpose: EmailCodePurpose): Promise<void> {
-  await postJson<void>("/api/auth/email/start", { email, purpose });
-}
-
-/**
- * Signs in (or up) with an Email code.
- * @param email - the address the code was sent to.
- * @param code - the 6 digits.
- * @param returnTo - the page to land on afterwards.
- * @returns where to go next.
- * @throws with the server's message for a wrong or expired code.
- */
-export async function signInWithEmailCode(email: string, code: string, returnTo: string): Promise<SignInResult> {
-  return postJson<SignInResult>("/api/auth/email/verify", { email, code, purpose: "sign-in", returnTo });
-}
-
-/**
- * Adds an email address to the signed-in account by confirming its code.
- * @param email - the address.
- * @param code - the 6 digits.
- * @throws with the server's message (wrong code, or the address is on another account).
- */
-export async function addEmailWithCode(email: string, code: string): Promise<void> {
-  await postJson<void>("/api/auth/email/verify", { email, code, purpose: "add-email" });
 }
 
 /**

@@ -18,7 +18,7 @@ describe("WelcomePage", () => {
     expect(screen.getByLabelText("Your name")).toHaveValue("Alice Smith");
   });
 
-  it("starts empty when the account has no name (passkey or email code)", () => {
+  it("starts empty when the account has no name (a passkey account)", () => {
     render(<WelcomePage suggestedName="" />);
     expect(screen.getByLabelText("Your name")).toHaveValue("");
   });
