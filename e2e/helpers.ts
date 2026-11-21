@@ -26,6 +26,18 @@ export function uniqueUserName(prefix: string): string {
 }
 
 /**
+ * Goes through a provider's fake sign-in page (E2E stand-in for Microsoft, Google or GitHub) after
+ * clicking its button.
+ * @param page - the browser page, already on the fake page.
+ * @param userName - the fake user name.
+ */
+export async function completeFakeProvider(page: Page, userName: string): Promise<void> {
+  await expect(page.getByRole("heading", { name: "Fake sign-in (E2E tests only)" })).toBeVisible();
+  await page.getByLabel("User name").fill(userName);
+  await page.getByRole("button", { name: "Sign in" }).click();
+}
+
+/**
  * Signs in through the real sign-in page and the E2E fake Microsoft page.
  * @param page - the browser page.
  * @param userName - the fake user name to sign in as.
@@ -36,7 +48,7 @@ export async function signInAs(page: Page, userName: string, returnTo?: string):
   if (!page.url().includes("/signin")) {
     await page.goto(returnTo ? `/signin?returnTo=${encodeURIComponent(returnTo)}` : "/signin");
   }
-  await page.getByRole("link", { name: "Sign in with Microsoft" }).click();
+  await page.getByRole("link", { name: "Continue with Microsoft" }).click();
   await expect(page.getByRole("heading", { name: "Fake sign-in (E2E tests only)" })).toBeVisible();
   await page.getByLabel("User name").fill(userName);
   await page.getByRole("button", { name: "Sign in" }).click();

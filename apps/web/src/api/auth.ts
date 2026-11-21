@@ -1,4 +1,15 @@
-import type { CreatePersonInput, CurrentUserResponse, Person } from "@familypassportmap/shared";
+import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
+import type {
+  AvailableSignInMethods,
+  CreatePersonInput,
+  CurrentUserResponse,
+  Person,
+  Provider,
+  SignInIntent,
+  SignInMethodsResponse,
+  SignInMethodSummary,
+  SignInResult,
+} from "@familypassportmap/shared";
 import { handleResponse } from "./http";
 
 /**
@@ -41,13 +52,99 @@ export async function signOut(): Promise<void> {
 }
 
 /**
- * The URL that starts Microsoft sign-in. A real navigation, not a fetch: the browser has to
- * leave for Microsoft's page and come back.
- * @param returnTo - the in-app path to land on afterwards.
- * @returns the sign-in start URL.
+ * The URL that starts a provider round trip. A real navigation, not a fetch: the browser has to
+ * leave for the provider's page and come back.
+ * @param provider - "microsoft", "google" or "github".
+ * @param returnTo - the in-app path to land on afterwards (signing in only).
+ * @param intent - "sign-in" (default) or "add" (to the signed-in account; comes back to the
+ *   Sign-in methods page).
+ * @returns the start URL.
  */
-export function microsoftSignInUrl(returnTo: string): string {
-  return `/api/auth/microsoft?returnTo=${encodeURIComponent(returnTo)}`;
+export function providerSignInUrl(provider: Provider, returnTo: string, intent: SignInIntent = "sign-in"): string {
+  const params = new URLSearchParams({ returnTo });
+  // Only adding needs saying; signing in is the default.
+  if (intent === "add") params.set("intent", "add");
+  return `/api/auth/${provider}?${params.toString()}`;
+}
+
+/**
+ * Which ways of signing in the server offers. Public: called while signed out.
+ * @returns the enabled providers, and whether passkeys are available.
+ */
+export async function fetchAvailableSignInMethods(): Promise<AvailableSignInMethods> {
+  return handleResponse<AvailableSignInMethods>(await fetch("/api/auth/methods"));
+}
+
+/**
+ * POSTs JSON and parses the reply.
+ * @param url - the API path.
+ * @param body - the JSON body (omit for none).
+ * @returns the parsed response.
+ */
+async function postJson<T>(url: string, body?: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  return handleResponse<T>(res);
+}
+
+/**
+ * Signs in with a passkey: the browser offers this site's passkeys and the chosen one signs the
+ * server's challenge.
+ * @param returnTo - the page to land on afterwards.
+ * @returns where to go next.
+ * @throws if the visitor cancels, or the server refuses the passkey.
+ */
+export async function signInWithPasskey(returnTo: string): Promise<SignInResult> {
+  const optionsJSON = await postJson<Parameters<typeof startAuthentication>[0]["optionsJSON"]>("/api/auth/passkey/signin/options");
+  const response = await startAuthentication({ optionsJSON });
+  return postJson<SignInResult>("/api/auth/passkey/signin/verify", { response, returnTo });
+}
+
+/**
+ * Creates a passkey: signed out, for a new account; signed in, added to the account.
+ * @param name - the passkey's name (adding only; a new account's passkey is named "Passkey").
+ * @returns where to go next when signing up, or undefined when added to an account.
+ * @throws if the visitor cancels, or the server refuses.
+ */
+export async function createPasskey(name?: string): Promise<SignInResult | undefined> {
+  const optionsJSON = await postJson<Parameters<typeof startRegistration>[0]["optionsJSON"]>("/api/auth/passkey/register/options");
+  const response = await startRegistration({ optionsJSON });
+  return postJson<SignInResult | undefined>("/api/auth/passkey/register/verify", { response, name });
+}
+
+/**
+ * Lists the signed-in User's sign-in methods.
+ * @returns every method, oldest first.
+ */
+export async function listSignInMethods(): Promise<SignInMethodSummary[]> {
+  return (await handleResponse<SignInMethodsResponse>(await fetch("/api/me/sign-in-methods"))).methods;
+}
+
+/**
+ * Removes one of the signed-in User's sign-in methods.
+ * @param id - the method's id.
+ * @throws with the server's message (e.g. it's the last one).
+ */
+export async function removeSignInMethod(id: string): Promise<void> {
+  await handleResponse<void>(await fetch(`/api/me/sign-in-methods/${encodeURIComponent(id)}`, { method: "DELETE" }));
+}
+
+/**
+ * Renames one of the signed-in User's passkeys.
+ * @param id - the passkey's id.
+ * @param name - the new name (1 to 40 characters).
+ * @returns the updated summary.
+ */
+export async function renamePasskey(id: string, name: string): Promise<SignInMethodSummary> {
+  const res = await fetch(`/api/me/passkeys/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  return handleResponse<SignInMethodSummary>(res);
 }
 
 /**

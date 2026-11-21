@@ -1,5 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
-import { microsoftConfig } from "./config.js";
+import { providerConfig } from "./config.js";
 
 // The Microsoft identity adapter: the ONLY code that talks to Microsoft. Tests replace this whole
 // module with a fake (tests/setup.ts), so everything else in sign-in is tested for real.
@@ -39,7 +39,7 @@ export interface MicrosoftIdentity {
  * @returns the URL to redirect to.
  */
 export function microsoftAuthorizationUrl(state: string): string {
-  const { clientId, redirectUri } = microsoftConfig();
+  const { clientId, redirectUri } = providerConfig("microsoft");
   const url = new URL(`${AUTHORITY}/authorize`);
   url.search = new URLSearchParams({
     client_id: clientId,
@@ -62,7 +62,7 @@ export function microsoftAuthorizationUrl(state: string): string {
  * @throws if the exchange or verification fails.
  */
 export async function microsoftIdentityFromCode(code: string): Promise<MicrosoftIdentity> {
-  const { clientId, clientSecret, redirectUri } = microsoftConfig();
+  const { clientId, clientSecret, redirectUri } = providerConfig("microsoft");
   const response = await fetch(`${AUTHORITY}/token`, {
     method: "POST",
     body: new URLSearchParams({

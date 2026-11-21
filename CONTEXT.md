@@ -31,12 +31,8 @@ A User making an existing Person their Primary Person. They become its Owner, an
 _Avoid_: Hand off, convert, promote, "make an account from"
 
 **Sign-in method**:
-One way a User can sign in: a Microsoft, Google or GitHub account, a passkey, or an email address that receives Email codes. A User has one or more, and each belongs to exactly one User. Accounts are never merged.
+One way a User can sign in: a Microsoft, Google or GitHub account, or a passkey. A User has one or more, and each belongs to exactly one User. Accounts are never merged.
 _Avoid_: Login, identity, credential, provider (a provider is only Microsoft, Google or GitHub)
-
-**Email code**:
-A short one-time code sent to an email address, typed in to prove the person controls that address.
-_Avoid_: Magic link, OTP, password
 
 **Guest demo**:
 A separate copy of the web app on GitHub Pages that runs entirely in the browser with a made-up family. Nothing is saved, and a reload starts it over.

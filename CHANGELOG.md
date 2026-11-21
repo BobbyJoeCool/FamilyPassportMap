@@ -6,6 +6,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
+## [2.5.0] — unreleased — Sign-in Methods and Move to Voyager (Phase 13)
+
+### Added
+
+- **Four ways to sign in:** Microsoft, **Google**, **GitHub** and **passkeys**. Any of them can create an account. The sign-in page shows only the methods the server has set up.
+  - **Passkeys:** sign in with your device's fingerprint, face or PIN, with no username. "Create an account with a passkey" makes an account with no email.
+- **Sign-in methods page** (account menu → Sign-in methods): see every way you sign in, add a Microsoft, Google or GitHub account or a passkey, rename passkeys, and remove any method except your last. A method that already belongs to another account is refused. Accounts are never merged.
+- **Header picture:** Google and GitHub profile pictures show in the header.
+- **Docker image** (`Dockerfile`) for hosting on Voyager, Bob's home server, at `passport.bobbyjoecool.dev`. Database migrations apply automatically on each start.
+
+### Changed
+
+- **Existing Microsoft accounts keep working unchanged.** A migration copies each account's Microsoft sign-in into the new `SignInMethod` table.
+- **Users:** email is now optional (passkey-only accounts), and an account with no name from a provider takes its Primary Person's name at the welcome step.
+- **Production startup** now needs `APP_BASE_URL` and at least one provider, instead of exactly the Microsoft settings. New settings: `GOOGLE_CLIENT_ID/SECRET` and `GITHUB_CLIENT_ID/SECRET` (see `apps/server/.env.example`).
+- The sign-in buttons read "Continue with …" and look like each provider's own button (its logo and colors, light and dark). Passkey buttons show a passkey icon.
+- The privacy page describes what each kind of sign-in method stores.
+- **Hosting moves from Azure to Voyager** (the runbook is in `docs/Phase-13-Sign-In-Methods.md`). The Azure deploy workflow is disabled after the cutover.
+
 ## [2.4.0] — unreleased — Guest Demo (Phase 14)
 
 Built before Phase 13 (sign-in methods), so this is v2.4.0 and Phase 13 becomes v2.5.0.

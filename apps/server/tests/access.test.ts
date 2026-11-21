@@ -31,7 +31,7 @@ let bob: Actor;
  */
 async function makeUser(name: string): Promise<Actor> {
   const user = await prisma.user.create({
-    data: { authProvider: "microsoft", authSubject: `sub-${name}`, email: `${name}@example.com`, displayName: name },
+    data: { email: `${name}@example.com`, displayName: name },
   });
   return { userId: user.id };
 }

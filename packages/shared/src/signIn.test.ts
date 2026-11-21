@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { DEFAULT_LANDING_PATH, SIGN_IN_ERRORS, safeReturnTo } from "./signIn.js";
+import { DEFAULT_LANDING_PATH, isProvider, PROVIDER_LABELS, PROVIDERS, SIGN_IN_ERRORS, safeReturnTo } from "./signIn.js";
+import { userLabel } from "./currentUser.js";
 
 describe("safeReturnTo", () => {
   it("keeps an in-app path, including its query and hash", () => {
@@ -32,7 +33,27 @@ describe("safeReturnTo", () => {
 });
 
 describe("SIGN_IN_ERRORS", () => {
-  it("has the two reasons the sign-in page knows how to explain", () => {
-    expect([...SIGN_IN_ERRORS]).toEqual(["cancelled", "failed"]);
+  it("has the three reasons the sign-in pages know how to explain", () => {
+    expect([...SIGN_IN_ERRORS]).toEqual(["cancelled", "failed", "taken"]);
+  });
+});
+
+describe("providers", () => {
+  it("are Microsoft, Google and GitHub, each with a label", () => {
+    expect([...PROVIDERS]).toEqual(["microsoft", "google", "github"]);
+    expect(PROVIDERS.map((provider) => PROVIDER_LABELS[provider])).toEqual(["Microsoft", "Google", "GitHub"]);
+  });
+
+  it("recognizes only those three", () => {
+    expect(isProvider("google")).toBe(true);
+    for (const value of ["apple", "Google", "", undefined, 1]) expect(isProvider(value)).toBe(false);
+  });
+});
+
+describe("userLabel", () => {
+  it("prefers the display name, then the email, then 'New user'", () => {
+    expect(userLabel({ displayName: "Ann", email: "a@b.c" })).toBe("Ann");
+    expect(userLabel({ displayName: "", email: "a@b.c" })).toBe("a@b.c");
+    expect(userLabel({ displayName: "", email: null })).toBe("New user");
   });
 });

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import type { SignedInUser } from "@familypassportmap/shared";
+import { userLabel, type SignedInUser } from "@familypassportmap/shared";
 import { signOut } from "../api/auth";
 import { DeleteAccountDialog } from "./DeleteAccountDialog";
 import { loadPage } from "../navigation";
@@ -8,12 +8,14 @@ import { isDemo } from "../demoMode";
 
 /**
  * The signed-in User's avatar (and name, on wide screens), opening a small menu with their
- * name and email, the privacy page, Sign out, and Delete account. In the guest demo there's no
+ * name and email, Sign-in methods, the privacy page, Sign out, and Delete account. In the guest demo there's no
  * account, so the menu has only the Guest's name and Privacy.
  * @param user - the signed-in User.
  */
 export function UserMenu({ user }: { user: SignedInUser }) {
   const demo = isDemo();
+  // Passkey accounts may have no name (yet): fall back to the email, then "New user".
+  const label = userLabel(user);
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export function UserMenu({ user }: { user: SignedInUser }) {
         aria-expanded={open}
         className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-[var(--color-bg-card)] transition-colors"
       >
-        {/* The sign-in provider's picture when there is one (Microsoft sends none); otherwise the first letter of the name. */}
+        {/* The last provider's picture when there is one (Google, GitHub; Microsoft sends none); otherwise the first letter. */}
         {user.avatarUrl ? (
           // no-referrer: avatar hosts can refuse images requested with a Referer.
           <img
@@ -61,12 +63,10 @@ export function UserMenu({ user }: { user: SignedInUser }) {
           />
         ) : (
           <span className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--color-primary)] text-white text-sm font-medium">
-            {user.displayName.charAt(0).toUpperCase()}
+            {label.charAt(0).toUpperCase()}
           </span>
         )}
-        <span className="hidden md:inline text-sm text-[var(--color-text-heading)]">
-          {user.displayName}
-        </span>
+        <span className="hidden md:inline text-sm text-[var(--color-text-heading)]">{label}</span>
       </button>
 
       {/* The menu itself, only while open. */}
@@ -77,12 +77,23 @@ export function UserMenu({ user }: { user: SignedInUser }) {
         >
           {/* The name is hidden next to the avatar on phones, so the menu always shows it. */}
           <div className="px-3 py-2">
-            <p className="text-sm text-[var(--color-text-heading)] truncate">{user.displayName}</p>
-            {/* The demo's Guest has no email address to show. */}
-            {!demo && (
+            <p className="text-sm text-[var(--color-text-heading)] truncate">{label}</p>
+            {/* The demo's Guest has no email address to show, and neither does a passkey-only account. */}
+            {!demo && user.email && user.email !== label && (
               <p className="text-xs text-[var(--color-text-muted)] truncate">{user.email}</p>
             )}
           </div>
+          {/* Managing sign-in methods needs a real account. */}
+          {!demo && (
+            <Link
+              to="/account/sign-in"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-sm hover:bg-[var(--color-bg-card)]"
+            >
+              Sign-in methods
+            </Link>
+          )}
           <Link
             to="/privacy"
             role="menuitem"

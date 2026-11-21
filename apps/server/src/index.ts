@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { app } from "./app.js";
-import { missingAuthSettings } from "./auth/config.js";
+import { startupProblems } from "./auth/config.js";
 import { isE2eFakeAuthMisconfigured } from "./auth/e2eFakeAuth.js";
 import { UPLOADS_DIR } from "./env.js";
 import { shrinkOversizedPhotos } from "./photos.js";
@@ -14,12 +14,12 @@ if (isE2eFakeAuthMisconfigured()) {
   throw new Error("Refusing to start: E2E_FAKE_AUTH must never be set in production");
 }
 
-// Production must be able to sign people in. Refuse to start without the Microsoft settings, so a
-// misconfigured deploy fails at startup instead of on someone's first sign-in. (Local runs and
-// tests don't need them until someone actually signs in.)
-const missingSettings = missingAuthSettings();
-if (process.env.NODE_ENV === "production" && missingSettings.length > 0) {
-  throw new Error(`Refusing to start: missing app settings ${missingSettings.join(", ")}`);
+// Production must be able to sign people in. Refuse to start without APP_BASE_URL and at least one
+// sign-in method, so a misconfigured deploy fails at startup instead of on someone's first sign-in.
+// (Local runs and tests don't need them until someone actually signs in.)
+const problems = startupProblems();
+if (process.env.NODE_ENV === "production" && problems.length > 0) {
+  throw new Error(`Refusing to start: ${problems.join("; ")}`);
 }
 
 // Shrink any photos uploaded before uploads were shrunk (Phase 12). Runs every start but

@@ -82,6 +82,9 @@ export default defineConfig(({ mode }) => {
     build: demo ? { outDir: "dist-demo", emptyOutDir: true } : {},
     plugins: [react(), tailwindcss(), ...(demo ? [notFoundPageCopy()] : [pwa()])],
     server: {
+      // Build output isn't source: without this, building the guest demo (which the E2E run does)
+      // reloads every open dev-server page.
+      watch: { ignored: ["**/dist/**", "**/dist-demo/**"] },
       // The API server the dev server forwards to. The E2E run points it at its own server
       // (API_PROXY_TARGET), so tests never touch the normal dev server's data.
       proxy: {

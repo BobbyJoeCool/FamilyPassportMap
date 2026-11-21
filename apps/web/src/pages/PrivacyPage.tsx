@@ -18,7 +18,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 /**
  * The public privacy page: a plain-language summary of what the app stores, who can see it,
  * and how to delete it. Reachable without signing in (linked from the sign-in page), and its
- * URL is the privacy-policy link on the Microsoft app registration's branding page. The guest demo
+ * URL is the privacy-policy link registered with Microsoft, Google and GitHub. The guest demo
  * shows a short notice instead, since nothing leaves the browser there.
  */
 export function PrivacyPage() {
@@ -40,7 +40,11 @@ export function PrivacyPage() {
       <h1 className="text-2xl md:text-3xl font-bold mb-6">Privacy</h1>
 
       <Section title="What we store">
-        <p>When you sign in with Microsoft, we store the name and email address on your Microsoft account.</p>
+        <p>For each way you sign in, we store only what's needed to recognize it:</p>
+        <ul className="list-disc pl-6 space-y-1">
+          <li><strong>Microsoft, Google or GitHub:</strong> that account's id, name and email address, and (Google and GitHub) the address of its profile picture, shown in the header.</li>
+          <li><strong>Passkey:</strong> its public key and the name you gave it. The private key never leaves your device; we can't sign in as you with what we store.</li>
+        </ul>
         <p>We also store what you add: the People you track (each with a name, a color, and an optional photo) and the US states and countries each of them has visited.</p>
       </Section>
 
@@ -53,12 +57,13 @@ export function PrivacyPage() {
       </Section>
 
       <Section title="Signing in">
-        <p>Microsoft is used only to sign you in. We never see your Microsoft password, and we don't read anything else from your Microsoft account.</p>
+        <p>Microsoft, Google and GitHub are used only to sign you in. We never see your password there, and we don't read anything else from those accounts.</p>
         <p>A cookie keeps you signed in on this device until you sign out or haven't used the app for 30 days.</p>
+        <p>You can see and remove your sign-in methods under <strong>Sign-in methods</strong> in the account menu. Removing one deletes what we stored for it.</p>
       </Section>
 
       <Section title="Deleting your data">
-        <p>Choose <strong>Delete account</strong> from the account menu to permanently delete your account and everything in it: all your People, their visits, and their photos. This can't be undone.</p>
+        <p>Choose <strong>Delete account</strong> from the account menu to permanently delete your account and everything in it: all your People, their visits, their photos, and every sign-in method. This can't be undone.</p>
       </Section>
     </article>
   );

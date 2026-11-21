@@ -28,6 +28,37 @@ vi.mock("../src/auth/microsoft.js", () => ({
   },
 }));
 
+// Google and GitHub are faked the same way: the "code" is the identity, base64url-encoded (see
+// tests/helpers.ts providerCode); "bad-code" fails.
+/**
+ * A fake provider adapter's code exchange.
+ * @param code - the identity, base64url-encoded, or "bad-code".
+ * @returns the decoded identity.
+ */
+async function decodeFakeCode(code: string) {
+  // Simulate the provider refusing the exchange.
+  if (code === "bad-code") throw new Error("Provider rejected the code");
+  return JSON.parse(Buffer.from(code, "base64url").toString("utf8"));
+}
+vi.mock("../src/auth/google.js", () => ({
+  googleAuthorizationUrl: (state: string) => `https://accounts.google.test/o/oauth2/v2/auth?state=${state}`,
+  googleIdentityFromCode: decodeFakeCode,
+}));
+vi.mock("../src/auth/github.js", () => ({
+  githubAuthorizationUrl: (state: string) => `https://github.test/login/oauth/authorize?state=${state}`,
+  githubIdentityFromCode: decodeFakeCode,
+}));
+
+// Every provider counts as set up in tests (each adapter is faked above or below), so their start
+// routes exist. Tests about disabled providers clear these for themselves.
+process.env.MICROSOFT_CLIENT_ID = "test-microsoft-id";
+process.env.MICROSOFT_CLIENT_SECRET = "test-microsoft-secret";
+process.env.GOOGLE_CLIENT_ID = "test-google-id";
+process.env.GOOGLE_CLIENT_SECRET = "test-google-secret";
+process.env.GITHUB_CLIENT_ID = "test-github-id";
+process.env.GITHUB_CLIENT_SECRET = "test-github-secret";
+process.env.APP_BASE_URL = "http://localhost:5173";
+
 // No keep-alive for test requests. Supertest starts and stops servers constantly; with Node's
 // default keep-alive (Node 19+), a pooled socket can outlive its server and a later request
 // gets a stale or someone else's response (seen as "Parse Error: Expected HTTP/" and as a
@@ -63,6 +94,8 @@ beforeEach(async () => {
   await prisma.visitedCountry.deleteMany();
   await prisma.person.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.passkey.deleteMany();
+  await prisma.signInMethod.deleteMany();
   await prisma.user.deleteMany();
 });
 

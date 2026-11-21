@@ -5,6 +5,7 @@ import { deleteAccount } from "../account.js";
 import { SESSION_COOKIE, sessionCookieOptions } from "../auth/sessions.js";
 import { createPrimaryPerson } from "../primaryPerson.js";
 import { toPersonResponse } from "../personResponse.js";
+import { prisma } from "../db.js";
 
 /** Router for `/api/me` — the signed-in User. Mounted behind `requireUser`. */
 export const currentUserRouter = Router();
@@ -37,6 +38,8 @@ currentUserRouter.post("/primary-person", async (req, res) => {
     res.status(409).json({ error: "You already have a Primary Person." });
     return;
   }
+  // A passkey account has no name from a provider; it takes its Primary Person's.
+  await prisma.user.updateMany({ where: { id: req.user!.id, displayName: "" }, data: { displayName: person.name } });
   res.status(201).json(toPersonResponse(person, person.id));
 });
 

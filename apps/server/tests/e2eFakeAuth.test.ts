@@ -35,22 +35,33 @@ describe("E2E fake sign-in settings", () => {
   });
 
   it("builds a local sign-in page URL carrying the state", () => {
-    expect(fakeAuthorizationUrl("a+b/c")).toBe("/api/auth/e2e/authorize?state=a%2Bb%2Fc");
+    expect(fakeAuthorizationUrl("microsoft", "a+b/c")).toBe("/api/auth/e2e/authorize?provider=microsoft&state=a%2Bb%2Fc");
+    expect(fakeAuthorizationUrl("github", "s")).toBe("/api/auth/e2e/authorize?provider=github&state=s");
   });
 
-  it("turns a user name into a personal-account identity", async () => {
-    await expect(fakeIdentityFromCode("alice")).resolves.toEqual({
+  it("turns a user name into a personal Microsoft account identity", async () => {
+    await expect(fakeIdentityFromCode("microsoft", "alice")).resolves.toEqual({
       subject: "e2e-alice",
       email: "alice@e2e.test",
       name: "Alice",
-      isPersonalAccount: true,
+      avatarUrl: null,
+      isPersonalMicrosoftAccount: true,
     });
+  });
+
+  it("gives each provider its own subject for the same user name", async () => {
+    await expect(fakeIdentityFromCode("google", "alice")).resolves.toMatchObject({
+      subject: "e2e-google-alice",
+      email: "alice@e2e.test",
+      isPersonalMicrosoftAccount: false,
+    });
+    await expect(fakeIdentityFromCode("github", "alice")).resolves.toMatchObject({ subject: "e2e-github-alice" });
   });
 
   it("rejects anything that isn't a short lowercase user name", async () => {
     // Uppercase, spaces, markup, empty and over-long names are all refused.
     for (const code of ["Alice", "a b", "<script>", "", "x".repeat(41)]) {
-      await expect(fakeIdentityFromCode(code)).rejects.toThrow("Not a valid fake E2E user name");
+      await expect(fakeIdentityFromCode("microsoft", code)).rejects.toThrow("Not a valid fake E2E user name");
     }
   });
 });

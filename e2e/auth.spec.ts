@@ -6,7 +6,7 @@ import { signInAs, uniqueUserName } from "./helpers";
 test("a signed-out visitor lands on the sign-in page", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/signin/);
-  await expect(page.getByRole("link", { name: "Sign in with Microsoft" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue with Microsoft" })).toBeVisible();
 });
 
 test("a new User signs in, finishes the welcome step and lands on the US map", async ({ page }) => {
