@@ -4,7 +4,7 @@
 >
 > **Where the tickets live:** per ADR 0001, this spec stays here and its implementation tickets are GitHub issues linked from this doc and from the `PHASES.md` row. Tickets are cut once Bob approves this spec.
 
-**Status:** Built 2026-11-20 on branch `phase-13-sign-in-methods` (all code, tests and the Docker image). Waiting on Bob's provider registrations, manual checklist and the Voyager cutover. Email codes were built, then removed before release (2026-11-20, #37). The Voyager move (formerly `docs/VOYAGER-DEPLOY.md`) was folded in on 2026-11-20, so this phase covers both. Where the build differs from the first draft, this doc was updated, and the differences are listed under "Changes made while building".
+**Status:** Complete (v2.5.0). Built 2026-11-20 and merged in #38; the Voyager cutover was done 2026-11-21, and the app is live at `https://passport.bobbyjoecool.dev` with the Azure deploy workflow disabled. Email codes were built, then removed before release (2026-11-20, #37). The Voyager move (formerly `docs/VOYAGER-DEPLOY.md`) was folded in on 2026-11-20, so this phase covers both. Where the build differs from the first draft, this doc was updated, and the differences are listed under "Changes made while building".
 
 ## Tickets
 

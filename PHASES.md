@@ -38,8 +38,8 @@ Login, per-User data, and (later) Link/Join between Users. Domain terms are in [
 | Phase | Version | Name | Spec doc | Status |
 |---|---|---|---|---|
 | 12 | v2.3.0 | Login & Accounts (Microsoft sign-in, Primary Person, per-User data) | [docs/Phase-12-Login-Accounts.md](docs/Phase-12-Login-Accounts.md) (tickets: [#1–#13](https://github.com/BobbyJoeCool/FamilyPassportMap/issues)) | **Complete (v2.3.0 shipped)**. All tickets built, the automated tests pass, and the manual local checklist passed (2026-10-25). Sign-in was switched from Google to Microsoft mid-phase (#13). |
-| 13 | v2.5.0 | Sign-in Methods and Move to Voyager (Microsoft, Google, GitHub and passkeys; add and remove methods from the account menu; hosting moves from Azure to Voyager at `passport.bobbyjoecool.dev`) | [docs/Phase-13-Sign-In-Methods.md](docs/Phase-13-Sign-In-Methods.md) (tickets: [#27–#34, #37](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/27); email codes (#30) were built, then removed before release) | **Built, pending verification** (2026-11-20, branch `phase-13-sign-in-methods`). Code, tests and the Docker image are done; waiting on Bob\'s provider registrations, manual checklist and the Voyager cutover. |
-| 14 | v2.4.0 | Guest Demo on GitHub Pages (in-browser copy with a made-up family, resets on reload) | [docs/Phase-14-Guest-Demo.md](docs/Phase-14-Guest-Demo.md) (tickets: [#20–#25](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/20)) | **Built, pending verification** (2026-11-19, branch `phase-14-guest-demo`). Automated tests pass; waiting on Bob's manual checklist and the first Pages publish after merge. Built before Phase 13, so it takes v2.4.0 and Phase 13 moves to v2.5.0. |
+| 13 | v2.5.0 | Sign-in Methods and Move to Voyager (Microsoft, Google, GitHub and passkeys; add and remove methods from the account menu; hosting moves from Azure to Voyager at `passport.bobbyjoecool.dev`) | [docs/Phase-13-Sign-In-Methods.md](docs/Phase-13-Sign-In-Methods.md) (tickets: [#27–#34, #37](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/27); email codes (#30) were built, then removed before release) | **Complete (v2.5.0 shipped)**. Merged 2026-11-20 (#38); live on Voyager at `passport.bobbyjoecool.dev` since 2026-11-21, with the Azure deploy workflow disabled. |
+| 14 | v2.4.0 | Guest Demo on GitHub Pages (in-browser copy with a made-up family, resets on reload) | [docs/Phase-14-Guest-Demo.md](docs/Phase-14-Guest-Demo.md) (tickets: [#20–#25](https://github.com/BobbyJoeCool/FamilyPassportMap/issues/20)) | **Complete (v2.4.0 shipped)**. Merged 2026-11-20 (#26); the demo is published on GitHub Pages. Built before Phase 13, so it takes v2.4.0 and Phase 13 moves to v2.5.0. |
 
 Phase 13 includes the move from Azure to Voyager (its spec has the runbook), so every sign-in callback and the passkey domain are registered once, for `passport.bobbyjoecool.dev`.
 
@@ -57,7 +57,7 @@ These came up during initial design and were deliberately deferred, not forgotte
 - Countries / world map support — **no longer deferred**: picked up as the post-v1.0 round above, starting with Phase 8
 - Login / authentication / multi-household accounts — **no longer deferred**: picked up as Phase 12 (v2.3.0). Link/Join between Users comes in a later phase.
 - Blended/overlap coloring in Compare view (v1 renders separate maps side by side)
-- Native desktop packaging (Electron) — v1 is a responsive, installable PWA hosted on Azure instead
+- Native desktop packaging (Electron) — v1 is a responsive, installable PWA hosted on a server instead (Azure until v2.5.0, now Voyager)
 
 ## Status legend
 

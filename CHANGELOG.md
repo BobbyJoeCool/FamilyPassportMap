@@ -6,7 +6,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 
 ## [Unreleased]
 
-## [2.5.0] — unreleased — Sign-in Methods and Move to Voyager (Phase 13)
+## [2.5.0] — 2026-11-21 — Sign-in Methods and Move to Voyager (Phase 13)
 
 ### Added
 
@@ -23,9 +23,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 - **Production startup** now needs `APP_BASE_URL` and at least one provider, instead of exactly the Microsoft settings. New settings: `GOOGLE_CLIENT_ID/SECRET` and `GITHUB_CLIENT_ID/SECRET` (see `apps/server/.env.example`).
 - The sign-in buttons read "Continue with …" and look like each provider's own button (its logo and colors, light and dark). Passkey buttons show a passkey icon.
 - The privacy page describes what each kind of sign-in method stores.
-- **Hosting moves from Azure to Voyager** (the runbook is in `docs/Phase-13-Sign-In-Methods.md`). The Azure deploy workflow is disabled after the cutover.
+- **Hosting moves from Azure to Voyager** (the runbook is in `docs/Phase-13-Sign-In-Methods.md`). The app is live at `https://passport.bobbyjoecool.dev`, and the Azure deploy workflow is disabled.
 
-## [2.4.0] — unreleased — Guest Demo (Phase 14)
+## [2.4.0] — 2026-11-20 — Guest Demo (Phase 14)
 
 Built before Phase 13 (sign-in methods), so this is v2.4.0 and Phase 13 becomes v2.5.0.
 

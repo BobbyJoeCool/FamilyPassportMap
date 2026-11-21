@@ -4,7 +4,7 @@
 >
 > **Where the tickets live:** per ADR 0001, this spec stays here and its implementation tickets are GitHub issues linked from this doc and from the `PHASES.md` row. Tickets are cut once Bob approves this spec.
 
-**Status:** Built 2026-11-19 on branch `phase-14-guest-demo`, pending Bob's manual checklist and the first Pages publish. Both open questions are answered (see the end). Where the build differs from the first draft, this doc was updated to match, and the changes are listed under "Changes made while building".
+**Status:** Complete (v2.4.0). Built 2026-11-19 and merged in #26 on 2026-11-20; the demo is published on GitHub Pages. Both open questions are answered (see the end). Where the build differs from the first draft, this doc was updated to match, and the changes are listed under "Changes made while building".
 
 ## Tickets
 
