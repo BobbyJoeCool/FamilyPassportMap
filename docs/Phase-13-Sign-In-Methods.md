@@ -147,7 +147,7 @@ Move the app from Azure to Voyager in the same phase, keeping the existing datab
 
 ### Web app
 
-- **Sign-in page:** app name; one button per enabled provider ("Continue with Microsoft / Google / GitHub"); "Sign in with a passkey" with a "New here? Create an account with a passkey" link under it (both only when the browser supports WebAuthn in a secure context); a divider; an email field with "Email me a code". After sending, the page shows a 6-digit code field, "Send a new code", and "Use a different email". Messages for `error=cancelled`, `error=failed`, and code errors. The privacy link stays.
+- **Sign-in page:** app name; one button per enabled provider ("Continue with Microsoft / Google / GitHub"), each dressed in that provider's own branding: its logo and colors, light and dark (`components/SignInButtons.tsx`); "Sign in with a passkey" with a "New here? Create an account with a passkey" link under it (both only when the browser supports WebAuthn in a secure context); a divider; an email field with "Email me a code". After sending, the page shows a 6-digit code field, "Send a new code", and "Use a different email". Messages for `error=cancelled`, `error=failed`, and code errors. The privacy link stays.
 - **Account menu** gains **Sign-in methods**, opening `/account/sign-in`.
 - **Sign-in methods page:** the list from the API with a remove button on each (disabled with a hint on the last one), a rename action on passkeys, and an "Add" area with the same choices as the sign-in page. `?error=taken` shows "That sign-in already belongs to another account."
 - **Welcome step:** the name field is prefilled from the provider when there is one, empty otherwise.
@@ -267,7 +267,7 @@ SMTP_HOST=PASTE_FROM_MAIL_SERVICE
 SMTP_PORT=PASTE_FROM_MAIL_SERVICE
 SMTP_USER=PASTE_FROM_MAIL_SERVICE
 SMTP_PASSWORD=PASTE_FROM_MAIL_SERVICE
-MAIL_FROM=PASTE_ADDRESS
+MAIL_FROM=FamilyPassportMap <no-reply@bobbyjoecool.dev>
 EOF
 
 cat > compose.yaml <<'EOF'
@@ -438,7 +438,7 @@ New Prisma migrations apply automatically when the container starts.
 
 ## Open questions
 
-1. **Where should email codes come from?** `MAIL_FROM` could be `bob@bobbyjoecool.dev` or something like `no-reply@bobbyjoecool.dev`. This only matters at deploy time (still open; Bob decides when choosing the mail service).
+1. ~~Where should email codes come from?~~ **`no-reply@bobbyjoecool.dev`**, set as `MAIL_FROM=FamilyPassportMap <no-reply@bobbyjoecool.dev>` (Bob, 2026-11-20).
 2. ~~Should the header show a provider's profile picture?~~ **Yes** (Bob, 2026-11-20).
 
 ## Changes made while building
@@ -447,6 +447,7 @@ New Prisma migrations apply automatically when the container starts.
 - **Passkeys don't count** toward the production startup rule (see Providers).
 - **Rate limits read `CF-Connecting-IP`**, since behind the tunnel every request has the same `req.ip`.
 - **Google emails** are kept only when Google has verified them; GitHub uses only a verified primary email.
+- **Branded buttons** (Bob, 2026-11-20): the provider buttons on the sign-in page and the "Add <provider>" buttons on the Sign-in methods page follow each provider's branding (Google's and Microsoft's sign-in button guidelines; GitHub's dark UI color and official mark). The passkey buttons carry a passkey icon drawn for the app, not Apple's Keychain icon (Apple's trademark) or the FIDO passkey icon (needs FIDO's usage agreement first).
 - **An unknown `/api/auth/<name>`** isn't a provider route; it falls through to the app-wide signed-out `401`, like any unknown `/api` path.
 - **E2E outbox route** `GET /api/auth/e2e/outbox?to=` (E2E fake sign-in only) so Playwright can read email codes; the fake sign-in page now stands in for every provider (`?provider=`).
 - **Two-stage Dockerfile** with Node 24 (the first plan said Node 22, single stage) because better-sqlite3 compiles from source.

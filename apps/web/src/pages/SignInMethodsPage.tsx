@@ -21,6 +21,7 @@ import {
   startEmailCode,
 } from "../api/auth";
 import { EmailCodeForm } from "../components/EmailCodeForm";
+import { PasskeyIcon, ProviderButton } from "../components/SignInButtons";
 import { canUsePasskeys, passkeyErrorMessage } from "../passkeySupport";
 
 /** Where adding a method came back with an error (the `error` query value). */
@@ -217,11 +218,11 @@ export function SignInMethodsPage() {
         <div className="space-y-6">
           {/* A provider: round trip through it, coming back here. */}
           {available.providers.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:grid-cols-3">
               {available.providers.map((provider) => (
-                <a key={provider} href={providerSignInUrl(provider, "/account/sign-in", "add")} className={smallButton}>
+                <ProviderButton key={provider} provider={provider} href={providerSignInUrl(provider, "/account/sign-in", "add")}>
                   Add {PROVIDER_LABELS[provider]}
-                </a>
+                </ProviderButton>
               ))}
             </div>
           )}
@@ -239,7 +240,12 @@ export function SignInMethodsPage() {
                   className="mt-1 w-full px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-base"
                 />
               </label>
-              <button type="submit" disabled={busy} className={smallButton}>
+              <button
+                type="submit"
+                disabled={busy}
+                className="flex h-10 items-center gap-2 px-3 rounded border border-[var(--color-primary)] bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white text-sm font-medium disabled:opacity-50 transition-colors"
+              >
+                <PasskeyIcon />
                 Add passkey
               </button>
             </form>

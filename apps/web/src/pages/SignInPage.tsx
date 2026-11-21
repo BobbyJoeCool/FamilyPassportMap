@@ -10,6 +10,7 @@ import {
 } from "@familypassportmap/shared";
 import { createPasskey, fetchAvailableSignInMethods, providerSignInUrl, signInWithEmailCode, signInWithPasskey, startEmailCode } from "../api/auth";
 import { EmailCodeForm } from "../components/EmailCodeForm";
+import { PasskeyButton, ProviderButton } from "../components/SignInButtons";
 import { loadPage } from "../navigation";
 import { canUsePasskeys, passkeyErrorMessage } from "../passkeySupport";
 
@@ -71,8 +72,6 @@ export function SignInPage() {
   }
 
   const showPasskeys = !!methods?.passkeys && canUsePasskeys();
-  const primaryButton =
-    "block w-full px-4 py-2 rounded-lg bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-medium transition-colors disabled:opacity-50";
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8">
@@ -95,17 +94,17 @@ export function SignInPage() {
           <div className="space-y-3">
             {/* One button per provider set up on the server. Plain links: the browser must leave and come back. */}
             {methods.providers.map((provider) => (
-              <a key={provider} href={providerSignInUrl(provider, returnTo)} className={primaryButton}>
+              <ProviderButton key={provider} provider={provider} href={providerSignInUrl(provider, returnTo)}>
                 Continue with {PROVIDER_LABELS[provider]}
-              </a>
+              </ProviderButton>
             ))}
 
             {/* Passkeys need browser support and a secure page (https or localhost). */}
             {showPasskeys && (
               <div className="space-y-1">
-                <button type="button" disabled={passkeyBusy} onClick={() => handlePasskey(() => signInWithPasskey(returnTo))} className={primaryButton}>
+                <PasskeyButton disabled={passkeyBusy} onClick={() => handlePasskey(() => signInWithPasskey(returnTo))}>
                   Sign in with a passkey
-                </button>
+                </PasskeyButton>
                 <button
                   type="button"
                   disabled={passkeyBusy}
