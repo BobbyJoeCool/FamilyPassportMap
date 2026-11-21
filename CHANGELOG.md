@@ -22,7 +22,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Versioni
 - **Existing Microsoft accounts keep working unchanged.** A migration copies each account's Microsoft sign-in into the new `SignInMethod` table.
 - **Users:** email is now optional (passkey-only accounts), and an account with no name from a provider takes its Primary Person's name at the welcome step.
 - **Production startup** now needs `APP_BASE_URL` and at least one provider or email codes, instead of exactly the Microsoft settings. New settings: `GOOGLE_CLIENT_ID/SECRET`, `GITHUB_CLIENT_ID/SECRET`, and `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (see `apps/server/.env.example`).
-- The sign-in buttons read "Continue with …".
+- The sign-in buttons read "Continue with …" and look like each provider's own button (its logo and colors, light and dark). Passkey buttons show a passkey icon.
 - The privacy page describes what each kind of sign-in method stores.
 - **Hosting moves from Azure to Voyager** (the runbook is in `docs/Phase-13-Sign-In-Methods.md`). The Azure deploy workflow is disabled after the cutover.
 
