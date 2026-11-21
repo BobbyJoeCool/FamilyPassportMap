@@ -37,6 +37,8 @@ interface PendingSignIn {
   provider: Provider;
   intent: SignInIntent;
   returnTo: string;
+  /** The User who started an add; null for a sign-in. The callback only adds to this same User. */
+  userId: string | null;
 }
 
 /**
@@ -68,11 +70,20 @@ function readPendingSignIn(raw: unknown): PendingSignIn | null {
       typeof parsed.state !== "string" ||
       typeof parsed.returnTo !== "string" ||
       !isProvider(parsed.provider) ||
-      (parsed.intent !== "sign-in" && parsed.intent !== "add")
+      (parsed.intent !== "sign-in" && parsed.intent !== "add") ||
+      // An add must say who started it; a sign-in has nobody yet.
+      (parsed.intent === "add" ? typeof parsed.userId !== "string" : parsed.userId !== null)
     ) {
       return null;
     }
-    return { state: parsed.state, provider: parsed.provider, intent: parsed.intent, returnTo: safeReturnTo(parsed.returnTo) };
+    return {
+      state: parsed.state,
+      provider: parsed.provider,
+      intent: parsed.intent,
+      returnTo: safeReturnTo(parsed.returnTo),
+      // Checked above: a string for an add, null for a sign-in.
+      userId: typeof parsed.userId === "string" ? parsed.userId : null,
+    };
   } catch {
     return null;
   }
@@ -107,6 +118,8 @@ authRouter.post("/signout", async (req, res) => {
   // Only a real token has a session row to delete; the cookie is cleared either way.
   if (token) await deleteSession(token);
   res.clearCookie(SESSION_COOKIE, sessionCookieOptions());
+  // An add started before signing out must not finish for whoever signs in next.
+  res.clearCookie(PENDING_SIGN_IN_COOKIE, pendingCookieOptions());
   res.status(204).end();
 });
 
@@ -137,7 +150,8 @@ authRouter.get("/:provider", (req, res, next) => {
 
   const state = crypto.randomBytes(16).toString("base64url");
   const returnTo = intent === "add" ? ACCOUNT_SIGN_IN_PATH : safeReturnTo(req.query.returnTo);
-  const pending: PendingSignIn = { state, provider, intent, returnTo };
+  // An add remembers who started it, so the callback can't add to a different account.
+  const pending: PendingSignIn = { state, provider, intent, returnTo, userId: intent === "add" ? req.user!.id : null };
   res.cookie(PENDING_SIGN_IN_COOKIE, JSON.stringify(pending), pendingCookieOptions());
   // E2E runs sign in through the local fake page instead of the provider.
   res.redirect(isE2eFakeAuthEnabled() ? fakeAuthorizationUrl(provider, state) : providerAdapter(provider).authorizationUrl(state));
@@ -190,6 +204,12 @@ authRouter.get("/:provider/callback", async (req, res, next) => {
       // The session ended during the round trip: nothing to add it to.
       if (!req.user) {
         res.redirect(errorPath("sign-in", "failed"));
+        return;
+      }
+      // Someone else signed in during the round trip: the identity belongs to whoever started the
+      // add, so attaching it to this account would let them into it.
+      if (req.user.id !== pending.userId) {
+        res.redirect(errorPath("add", "failed"));
         return;
       }
       const outcome = await attachMethod(req.user.id, methodIdentity);
